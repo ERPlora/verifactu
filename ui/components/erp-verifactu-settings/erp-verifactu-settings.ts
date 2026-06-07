@@ -1,12 +1,6 @@
-import { Component, State, h } from '@stencil/core';
-// DataTable compartido (efecto secundario: auto-registro + bundling). No se usa una
-// tabla aquí (es un formulario), pero se importa para mantener el contrato de bundling
-// del módulo consistente con el resto de vistas.
-import '../../../../_shared/ui/components/data-table/data-table';
-
-// Web Component del módulo `verifactu`: formulario de configuración (singleton por hub).
-// Carga la config vía erplora.query y la guarda vía erplora.command. El WC NO toca la BD.
-// El certificado se cifra en el runtime (capacidad de host); aquí solo se envía en claro.
+import { LitElement, html, css, nothing } from 'lit';
+import { state } from 'lit/decorators.js';
+import { define } from '@erplora/outfitkit/define';
 
 interface ErploraClientLike {
   query<T = unknown>(name: string, params?: Record<string, unknown>): Promise<T>;
@@ -35,10 +29,8 @@ function erplora(): ErploraClientLike {
   return c;
 }
 
-@Component({
-  tag: 'erp-verifactu-settings',
-  shadow: true,
-  styles: `
+export class ErpVerifactuSettings extends LitElement {
+  static styles = css`
     :host { display:block; font-family: system-ui, sans-serif; color: var(--ink, #1c1b18); }
     header { display:flex; gap:.5rem; align-items:center; margin-bottom:.75rem; }
     h2 { margin:0; font-size:1.15rem; flex:1; }
@@ -48,16 +40,23 @@ function erplora(): ErploraClientLike {
     label { font-size:.85rem; color:var(--muted,#8b897f); }
     .err { color:#d9480f; font-weight:600; }
     .ok { color:#2b8a3e; font-weight:600; }
-  `,
-})
-export class ErpVerifactuSettings {
-  @State() cfg: VerifactuConfig = {};
-  @State() loading = true;
-  @State() saving = false;
-  @State() error = '';
-  @State() saved = false;
+  `;
 
-  async componentWillLoad() {
+  @state() cfg: VerifactuConfig = {};
+
+  @state() loading = true;
+
+  @state() saving = false;
+
+  @state() error = '';
+
+  @state() saved = false;
+
+  // TODO-LIT: componentWillLoad → connectedCallback. Recuerda: connectedCallback se dispara
+  // en CADA reconexión al DOM (no solo en el primer montaje). Si la init debe correr una
+  // sola vez tras el primer render, considera firstUpdated() en su lugar.
+  async connectedCallback() {
+    super.connectedCallback();
     await this.refresh();
   }
 
@@ -110,81 +109,40 @@ export class ErpVerifactuSettings {
   }
 
   render() {
-    return (
-      <div>
+    return html`<div>
         <header>
           <h2>Configuración VeriFactu</h2>
         </header>
-
-        {this.error && <p class="err">{this.error}</p>}
-        {this.saved && <p class="ok">Configuración guardada correctamente.</p>}
-
-        <form class="form" onSubmit={(e) => this.save(e)}>
+        ${this.error ? html`<p class="err">${this.error}</p>` : nothing}
+        ${this.saved ? html`<p class="ok">Configuración guardada correctamente.</p>` : nothing}
+        <form class="form" @submit=${(e) => this.save(e)}>
           <div class="row">
-            <ion-checkbox
-              checked={!!this.cfg.enabled}
-              onIonChange={(e: any) => this.set('enabled', e.target.checked)}
-            />
+            <ion-checkbox ?checked=${!!this.cfg.enabled} @ionChange=${(e: any) => this.set('enabled', e.target.checked)}></ion-checkbox>
             <label>Activar VeriFactu</label>
           </div>
-
           <label>Entorno AEAT</label>
-          <ion-select
-            value={this.cfg.environment || 'testing'}
-            onIonChange={(e: any) => this.set('environment', e.target.value)}
-          >
+          <ion-select .value=${this.cfg.environment || 'testing'} @ionChange=${(e: any) => this.set('environment', e.target.value)}>
             <ion-select-option value="testing">Pruebas (AEAT Test)</ion-select-option>
             <ion-select-option value="production">Producción</ion-select-option>
           </ion-select>
-
           <label>NIF del software / emisor</label>
-          <ion-input
-            value={this.cfg.software_nif || ''}
-            placeholder="B12345678"
-            onIonInput={(e: any) => this.set('software_nif', e.target.value)}
-          />
-
+          <ion-input .value=${this.cfg.software_nif || ''} placeholder="B12345678" @ionInput=${(e: any) => this.set('software_nif', e.target.value)}></ion-input>
           <label>Nombre del software</label>
-          <ion-input
-            value={this.cfg.software_name || ''}
-            placeholder="ERPlora Hub"
-            onIonInput={(e: any) => this.set('software_name', e.target.value)}
-          />
-
+          <ion-input .value=${this.cfg.software_name || ''} placeholder="ERPlora Hub" @ionInput=${(e: any) => this.set('software_name', e.target.value)}></ion-input>
           <label>ID del software</label>
-          <ion-input
-            value={this.cfg.software_id || ''}
-            placeholder="ERPLORA-001"
-            onIonInput={(e: any) => this.set('software_id', e.target.value)}
-          />
-
+          <ion-input .value=${this.cfg.software_id || ''} placeholder="ERPLORA-001" @ionInput=${(e: any) => this.set('software_id', e.target.value)}></ion-input>
           <label>Versión del software</label>
-          <ion-input
-            value={this.cfg.software_version || ''}
-            placeholder="1.0.0"
-            onIonInput={(e: any) => this.set('software_version', e.target.value)}
-          />
-
+          <ion-input .value=${this.cfg.software_version || ''} placeholder="1.0.0" @ionInput=${(e: any) => this.set('software_version', e.target.value)}></ion-input>
           <label>Ruta del certificado (.p12)</label>
-          <ion-input
-            value={this.cfg.certificate_path || ''}
-            placeholder="/ruta/al/certificado.p12"
-            onIonInput={(e: any) => this.set('certificate_path', e.target.value)}
-          />
-
+          <ion-input .value=${this.cfg.certificate_path || ''} placeholder="/ruta/al/certificado.p12" @ionInput=${(e: any) => this.set('certificate_path', e.target.value)}></ion-input>
           <div class="row">
-            <ion-checkbox
-              checked={this.cfg.auto_transmit !== false}
-              onIonChange={(e: any) => this.set('auto_transmit', e.target.checked)}
-            />
+            <ion-checkbox ?checked=${this.cfg.auto_transmit !== false} @ionChange=${(e: any) => this.set('auto_transmit', e.target.checked)}></ion-checkbox>
             <label>Transmisión automática a AEAT</label>
           </div>
-
-          <ion-button type="submit" disabled={this.saving || this.loading}>
-            {this.saving ? 'Guardando…' : 'Guardar configuración'}
-          </ion-button>
+          <ion-button type="submit" ?disabled=${this.saving || this.loading}>${this.saving ? 'Guardando…' : 'Guardar configuración'}</ion-button>
         </form>
-      </div>
-    );
+      </div>`;
   }
 }
+
+define('erp-verifactu-settings', ErpVerifactuSettings);

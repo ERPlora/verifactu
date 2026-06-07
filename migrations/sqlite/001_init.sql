@@ -4,7 +4,7 @@
 -- certificado opcional y generación de QR.
 -- Modelos: VerifactuConfig (singleton por hub), VerifactuRecord (registro encadenado),
 -- VerifactuEvent (log de auditoría, append-only) y ContingencyQueue (cola de reintentos).
--- Contrato de fila estándar de hub-next (§2.5): hub_id + soft-delete + auditoría.
+-- Contrato de fila estándar de hub (§2.5): hub_id + soft-delete + auditoría.
 --
 -- NOTA cross-módulo: invoice_id es solo una REFERENCIA almacenada (snapshot de los datos
 -- de la factura en el momento del alta). NO hay FK a las tablas privadas del módulo
