@@ -14,11 +14,15 @@ de red y por lotes vive aquí** y debe convertirse en un handler WASM
 > emitir) que el runtime valida y persiste en una transacción. Importes con `quantize(0.01)`,
 > 2 decimales, punto como separador (formato AEAT `format_amount`).
 
-> ⚠️ Nota de arquitectura (CLAUDE.md hub §5.3): `verifactu` es **compliance-critical** y
-> es candidato explícito a *first-party native plugin estáticamente enlazado* en vez de
-> WASM/Extism (igual que `payroll`). La red TLS-mutua a la AEAT y la firma con certificado
-> PKCS#12 pueden exceder lo que el sandbox WASM permite — ver pieza 6/7. Si se elige plugin
-> nativo, este documento describe igualmente el contrato de cada función.
+> ⚠️ Nota de arquitectura — **DECIDIDO (ADR-0009, 2026-06-10)**: el motor fiscal/red es un
+> **plugin nativo first-party** (crate `hub/crates/verifactu`, horneado en el runtime), NO
+> un `handler.wasm` descargable. La red TLS-mutua a la AEAT y la firma con certificado
+> PKCS#12 exceden el sandbox WASM. Los commands del manifest declaran `handler.type:
+> "native"`; las intenciones van contra los commands SQL internos `verifactu._insert_record`
+> / `_insert_event` / `_enqueue_contingency` / `_apply_transmission`. Estado: piezas **1**
+> (`create_record`, issue #2) y **6** (`transmit_record`, issue #3) implementadas en el
+> crate; **3** (`validate_chain`, #4) y **7** (`process_contingency_queue`, #7) pendientes.
+> Este documento sigue siendo el contrato de cada función.
 
 ---
 
