@@ -5,7 +5,7 @@
 -- Tipos: subconjunto portable "ERPlora SQL" (ADR-0007):
 --   * ids/refs → TEXT (UUIDs del runtime como texto);
 --   * flags 0/1 → INTEGER (los commands bindean 0/1; Postgres no castea entero→bool);
---   * importes → NUMERIC;
+--   * importes → INTEGER en céntimos (ADR-0007); tasas % → REAL;
 --   * FECHAS → TEXT ISO-8601 (NO TIMESTAMPTZ): el motor de sync (ADR-0031) compara
 --     updated_at como string lexicográfico; timestamptz rompería el LWW entre dialectos.
 
@@ -52,10 +52,10 @@ CREATE TABLE IF NOT EXISTS verifactu_record (
     invoice_date            TEXT NOT NULL,                      -- ISO YYYY-MM-DD
     invoice_type            TEXT NOT NULL,
     description             TEXT NOT NULL DEFAULT '',
-    base_amount             NUMERIC NOT NULL DEFAULT 0,
-    tax_rate                NUMERIC NOT NULL DEFAULT 21,
-    tax_amount              NUMERIC NOT NULL DEFAULT 0,
-    total_amount            NUMERIC NOT NULL DEFAULT 0,
+    base_amount             INTEGER NOT NULL DEFAULT 0,  -- céntimos (ADR-0007; contrato inter-módulo)
+    tax_rate                REAL NOT NULL DEFAULT 21,       -- tasa % (no es dinero)
+    tax_amount              INTEGER NOT NULL DEFAULT 0,  -- céntimos
+    total_amount            INTEGER NOT NULL DEFAULT 0,  -- céntimos
     previous_hash           TEXT NOT NULL DEFAULT '',
     record_hash             TEXT NOT NULL DEFAULT '',
     is_first_record         INTEGER NOT NULL DEFAULT 0,
