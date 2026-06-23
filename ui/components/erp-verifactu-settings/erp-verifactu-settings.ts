@@ -1,11 +1,16 @@
 import { LitElement, html, css, nothing } from 'lit';
 import { state } from 'lit/decorators.js';
 import { define } from '@erplora/outfitkit/define';
+import esLocale from '../../../locales/es.json';
+import enLocale from '../../../locales/en.json';
+const CATALOG: Record<string, unknown> = { es: esLocale, en: enLocale };
 
 interface ErploraClientLike {
   query<T = unknown>(name: string, params?: Record<string, unknown>): Promise<T>;
   command<T = unknown>(name: string, payload?: Record<string, unknown>): Promise<T>;
   on(event: string, cb: (payload: unknown) => void): () => void;
+  locale: string;
+  t(catalog: Record<string, unknown>, key: string, params?: Record<string, unknown>): string;
 }
 
 interface VerifactuConfig {
@@ -55,9 +60,17 @@ export class ErpVerifactuSettings extends LitElement {
   // TODO-LIT: componentWillLoad → connectedCallback. Recuerda: connectedCallback se dispara
   // en CADA reconexión al DOM (no solo en el primer montaje). Si la init debe correr una
   // sola vez tras el primer render, considera firstUpdated() en su lugar.
+  private readonly onLocaleChange = (): void => this.requestUpdate();
+
   async connectedCallback() {
     super.connectedCallback();
+    window.addEventListener('erplora:locale-changed', this.onLocaleChange);
     await this.refresh();
+  }
+
+  disconnectedCallback() {
+    window.removeEventListener('erplora:locale-changed', this.onLocaleChange);
+    super.disconnectedCallback();
   }
 
   private async refresh() {
@@ -67,7 +80,7 @@ export class ErpVerifactuSettings extends LitElement {
       const c = await erplora().query<VerifactuConfig | null>('verifactu.config.get');
       this.cfg = c ?? {};
     } catch (e) {
-      this.error = e instanceof Error ? e.message : 'Error cargando la configuración';
+      this.error = e instanceof Error ? e.message : erplora().t(CATALOG, 'ui.errLoadConfig');
     } finally {
       this.loading = false;
     }
@@ -102,44 +115,45 @@ export class ErpVerifactuSettings extends LitElement {
       this.saved = true;
       await this.refresh();
     } catch (e) {
-      this.error = e instanceof Error ? e.message : 'No se pudo guardar la configuración';
+      this.error = e instanceof Error ? e.message : erplora().t(CATALOG, 'ui.errSaveConfig');
     } finally {
       this.saving = false;
     }
   }
 
   render() {
+    const t = (k: string): string => erplora().t(CATALOG, k);
     return html`<div>
         <header>
-          <h2>Configuración VeriFactu</h2>
+          <h2>${t('ui.settingsTitle')}</h2>
         </header>
         ${this.error ? html`<p class="err">${this.error}</p>` : nothing}
-        ${this.saved ? html`<p class="ok">Configuración guardada correctamente.</p>` : nothing}
+        ${this.saved ? html`<p class="ok">${t('ui.settingsSaved')}</p>` : nothing}
         <form class="form" @submit=${(e) => this.save(e)}>
           <div class="row">
             <ion-checkbox ?checked=${!!this.cfg.enabled} @ionChange=${(e: any) => this.set('enabled', e.target.checked)}></ion-checkbox>
-            <label>Activar VeriFactu</label>
+            <label>${t('ui.enableVerifactu')}</label>
           </div>
-          <label>Entorno AEAT</label>
+          <label>${t('ui.envAeat')}</label>
           <ion-select .value=${this.cfg.environment || 'testing'} @ionChange=${(e: any) => this.set('environment', e.target.value)}>
-            <ion-select-option value="testing">Pruebas (AEAT Test)</ion-select-option>
-            <ion-select-option value="production">Producción</ion-select-option>
+            <ion-select-option value="testing">${t('ui.envTesting')}</ion-select-option>
+            <ion-select-option value="production">${t('ui.envProduction')}</ion-select-option>
           </ion-select>
-          <label>NIF del software / emisor</label>
+          <label>${t('ui.softwareNif')}</label>
           <ion-input .value=${this.cfg.software_nif || ''} placeholder="B12345678" @ionInput=${(e: any) => this.set('software_nif', e.target.value)}></ion-input>
-          <label>Nombre del software</label>
+          <label>${t('ui.softwareName')}</label>
           <ion-input .value=${this.cfg.software_name || ''} placeholder="ERPlora Hub" @ionInput=${(e: any) => this.set('software_name', e.target.value)}></ion-input>
-          <label>ID del software</label>
+          <label>${t('ui.softwareId')}</label>
           <ion-input .value=${this.cfg.software_id || ''} placeholder="ERPLORA-001" @ionInput=${(e: any) => this.set('software_id', e.target.value)}></ion-input>
-          <label>Versión del software</label>
+          <label>${t('ui.softwareVersion')}</label>
           <ion-input .value=${this.cfg.software_version || ''} placeholder="1.0.0" @ionInput=${(e: any) => this.set('software_version', e.target.value)}></ion-input>
-          <label>Ruta del certificado (.p12)</label>
-          <ion-input .value=${this.cfg.certificate_path || ''} placeholder="/ruta/al/certificado.p12" @ionInput=${(e: any) => this.set('certificate_path', e.target.value)}></ion-input>
+          <label>${t('ui.certificatePath')}</label>
+          <ion-input .value=${this.cfg.certificate_path || ''} placeholder=${t('ui.certificatePathPlaceholder')} @ionInput=${(e: any) => this.set('certificate_path', e.target.value)}></ion-input>
           <div class="row">
             <ion-checkbox ?checked=${this.cfg.auto_transmit !== false} @ionChange=${(e: any) => this.set('auto_transmit', e.target.checked)}></ion-checkbox>
-            <label>Transmisión automática a AEAT</label>
+            <label>${t('ui.autoTransmit')}</label>
           </div>
-          <ion-button type="submit" ?disabled=${this.saving || this.loading}>${this.saving ? 'Guardando…' : 'Guardar configuración'}</ion-button>
+          <ion-button type="submit" ?disabled=${this.saving || this.loading}>${this.saving ? t('ui.saving') : t('ui.save')}</ion-button>
         </form>
       </div>`;
   }

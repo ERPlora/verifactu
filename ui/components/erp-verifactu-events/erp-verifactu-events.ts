@@ -5,12 +5,17 @@ import '@erplora/outfitkit/ok-data-table';
 import type { DataTableColumn } from '@erplora/outfitkit';
 import { createListController } from '@erplora/module-sdk';
 import type { ListController, ListClient, ListParams, ListPage } from '@erplora/module-sdk';
+import esLocale from '../../../locales/es.json';
+import enLocale from '../../../locales/en.json';
+const CATALOG: Record<string, unknown> = { es: esLocale, en: enLocale };
 
 interface ErploraClientLike extends ListClient {
   query<T = unknown>(name: string, params?: Record<string, unknown>): Promise<T>;
   queryPage<R = unknown>(name: string, params: ListParams): Promise<ListPage<R>>;
   command<T = unknown>(name: string, payload?: Record<string, unknown>): Promise<T>;
   on(event: string, cb: (payload: unknown) => void): () => void;
+  locale: string;
+  t(catalog: Record<string, unknown>, key: string, params?: Record<string, unknown>): string;
 }
 
 interface VerifactuEvent {
@@ -40,31 +45,37 @@ export class ErpVerifactuEvents extends LitElement {
 
   private ctrl!: ListController<VerifactuEvent>;
 
-  private columns: DataTableColumn[] = [
-    { key: 'timestamp', header: 'Cuándo', sortable: true, filterable: true, filterType: 'text' },
+  private get columns(): DataTableColumn[] {
+    const t = (k: string): string => erplora().t(CATALOG, k);
+    return [
+    { key: 'timestamp', header: t('ui.colWhen'), sortable: true, filterable: true, filterType: 'text' },
     {
       key: 'severity',
-      header: 'Severidad',
+      header: t('ui.colSeverity'),
       sortable: true,
       filterable: true,
       filterType: 'select',
       options: [
-        { value: 'debug', label: 'Debug' },
-        { value: 'info', label: 'Info' },
-        { value: 'warning', label: 'Aviso' },
-        { value: 'error', label: 'Error' },
-        { value: 'critical', label: 'Crítico' },
+        { value: 'debug', label: t('ui.sevDebug') },
+        { value: 'info', label: t('ui.sevInfo') },
+        { value: 'warning', label: t('ui.sevWarning') },
+        { value: 'error', label: t('ui.sevError') },
+        { value: 'critical', label: t('ui.sevCritical') },
       ],
     },
-    { key: 'event_type', header: 'Tipo', sortable: true, filterable: true, filterType: 'text' },
-    { key: 'message', header: 'Mensaje', sortable: true, filterable: true, filterType: 'text' },
-  ];
+    { key: 'event_type', header: t('ui.colType'), sortable: true, filterable: true, filterType: 'text' },
+    { key: 'message', header: t('ui.colMessage'), sortable: true, filterable: true, filterType: 'text' },
+    ];
+  }
 
   // TODO-LIT: componentWillLoad → connectedCallback. Recuerda: connectedCallback se dispara
   // en CADA reconexión al DOM (no solo en el primer montaje). Si la init debe correr una
   // sola vez tras el primer render, considera firstUpdated() en su lugar.
+  private readonly onLocaleChange = (): void => this.requestUpdate();
+
   async connectedCallback() {
     super.connectedCallback();
+    window.addEventListener('erplora:locale-changed', this.onLocaleChange);
     this.ctrl = createListController<VerifactuEvent>(erplora(), 'verifactu.events.list', () => this.requestUpdate(), {
       pageSize: 50,
       sort: 'id',
@@ -73,13 +84,19 @@ export class ErpVerifactuEvents extends LitElement {
     await this.ctrl.load();
   }
 
+  disconnectedCallback() {
+    window.removeEventListener('erplora:locale-changed', this.onLocaleChange);
+    super.disconnectedCallback();
+  }
+
   render() {
+    const t = (k: string): string => erplora().t(CATALOG, k);
     return html`<div>
         <header>
-          <h2>Eventos de auditoría</h2>
+          <h2>${t('ui.eventsTitle')}</h2>
         </header>
         ${this.ctrl?.error ? html`<p class="err">${this.ctrl.error}</p>` : nothing}
-        <ok-data-table .serverSide=${true} .columns=${this.columns} .rows=${this.ctrl?.rows ?? []} .total=${this.ctrl?.total ?? 0} .page=${this.ctrl?.state.page ?? 0} .pageSize=${this.ctrl?.state.pageSize ?? 50} .sort=${this.ctrl?.state.sort} .sortDir=${this.ctrl?.state.dir ?? 'asc'} .searchable=${true} .searchPlaceholder=${"Buscar tipo o mensaje…"} .emptyMessage=${this.ctrl?.loading ? 'Cargando…' : 'Sin eventos.'} @pageChange=${(e: CustomEvent<number>) => this.ctrl.setPage(e.detail)} @sortChange=${(e: CustomEvent<{ sort: string; dir: 'asc' | 'desc' }>) => this.ctrl.setSort(e.detail.sort, e.detail.dir)} @searchChange=${(e: CustomEvent<string>) => this.ctrl.setSearch(e.detail)} @filterChange=${(e: CustomEvent<{ col: string; value: unknown }>) => this.ctrl.setFilter(e.detail.col, e.detail.value)}></ok-data-table>
+        <ok-data-table .serverSide=${true} .columns=${this.columns} .rows=${this.ctrl?.rows ?? []} .total=${this.ctrl?.total ?? 0} .page=${this.ctrl?.state.page ?? 0} .pageSize=${this.ctrl?.state.pageSize ?? 50} .sort=${this.ctrl?.state.sort} .sortDir=${this.ctrl?.state.dir ?? 'asc'} .searchable=${true} .searchPlaceholder=${t('ui.eventsSearchPlaceholder')} .emptyMessage=${this.ctrl?.loading ? t('ui.loading') : t('ui.eventsEmpty')} @pageChange=${(e: CustomEvent<number>) => this.ctrl.setPage(e.detail)} @sortChange=${(e: CustomEvent<{ sort: string; dir: 'asc' | 'desc' }>) => this.ctrl.setSort(e.detail.sort, e.detail.dir)} @searchChange=${(e: CustomEvent<string>) => this.ctrl.setSearch(e.detail)} @filterChange=${(e: CustomEvent<{ col: string; value: unknown }>) => this.ctrl.setFilter(e.detail.col, e.detail.value)}></ok-data-table>
       </div>`;
   }
 }

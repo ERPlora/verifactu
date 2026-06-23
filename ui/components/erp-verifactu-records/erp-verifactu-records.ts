@@ -5,12 +5,17 @@ import '@erplora/outfitkit/ok-data-table';
 import type { DataTableColumn } from '@erplora/outfitkit';
 import { createListController } from '@erplora/module-sdk';
 import type { ListController, ListClient, ListParams, ListPage } from '@erplora/module-sdk';
+import esLocale from '../../../locales/es.json';
+import enLocale from '../../../locales/en.json';
+const CATALOG: Record<string, unknown> = { es: esLocale, en: enLocale };
 
 interface ErploraClientLike extends ListClient {
   query<T = unknown>(name: string, params?: Record<string, unknown>): Promise<T>;
   queryPage<R = unknown>(name: string, params: ListParams): Promise<ListPage<R>>;
   command<T = unknown>(name: string, payload?: Record<string, unknown>): Promise<T>;
   on(event: string, cb: (payload: unknown) => void): () => void;
+  locale: string;
+  t(catalog: Record<string, unknown>, key: string, params?: Record<string, unknown>): string;
 }
 
 interface VerifactuRecord {
@@ -48,26 +53,28 @@ export class ErpVerifactuRecords extends LitElement {
 
   private unsub?: () => void;
 
-  private columns: DataTableColumn[] = [
-    { key: 'sequence_number', header: 'Seq', align: 'right', sortable: true, filterable: true, filterType: 'text' },
-    { key: 'invoice_number', header: 'Factura', sortable: true, filterable: true, filterType: 'text' },
-    { key: 'invoice_date', header: 'Fecha', sortable: true, filterable: true, filterType: 'daterange' },
+  private get columns(): DataTableColumn[] {
+    const t = (k: string): string => erplora().t(CATALOG, k);
+    return [
+    { key: 'sequence_number', header: t('ui.colSeq'), align: 'right', sortable: true, filterable: true, filterType: 'text' },
+    { key: 'invoice_number', header: t('ui.colInvoice'), sortable: true, filterable: true, filterType: 'text' },
+    { key: 'invoice_date', header: t('ui.colDate'), sortable: true, filterable: true, filterType: 'daterange' },
     {
       key: 'record_type',
-      header: 'Tipo',
+      header: t('ui.colType'),
       sortable: true,
       filterable: true,
       filterType: 'select',
       options: [
-        { value: 'alta', label: 'Alta' },
-        { value: 'anulacion', label: 'Anulación' },
+        { value: 'alta', label: t('ui.recTypeAlta') },
+        { value: 'anulacion', label: t('ui.recTypeAnulacion') },
       ],
     },
-    { key: 'invoice_type', header: 'F.', sortable: true, filterable: true, filterType: 'text' },
-    { key: 'issuer_name', header: 'Emisor', sortable: true, filterable: true, filterType: 'text' },
+    { key: 'invoice_type', header: t('ui.colInvoiceType'), sortable: true, filterable: true, filterType: 'text' },
+    { key: 'issuer_name', header: t('ui.colIssuer'), sortable: true, filterable: true, filterType: 'text' },
     {
       key: 'total_amount',
-      header: 'Total',
+      header: t('ui.colTotal'),
       align: 'right',
       sortable: true,
       filterable: true,
@@ -76,26 +83,30 @@ export class ErpVerifactuRecords extends LitElement {
     },
     {
       key: 'status',
-      header: 'Estado',
+      header: t('ui.colStatus'),
       sortable: true,
       filterable: true,
       filterType: 'select',
       options: [
-        { value: 'pending', label: 'Pendiente' },
-        { value: 'transmitted', label: 'Transmitido' },
-        { value: 'accepted', label: 'Aceptado' },
-        { value: 'rejected', label: 'Rechazado' },
-        { value: 'error', label: 'Error' },
-        { value: 'retry', label: 'Reintento' },
+        { value: 'pending', label: t('ui.statusPending') },
+        { value: 'transmitted', label: t('ui.statusTransmitted') },
+        { value: 'accepted', label: t('ui.statusAccepted') },
+        { value: 'rejected', label: t('ui.statusRejected') },
+        { value: 'error', label: t('ui.statusError') },
+        { value: 'retry', label: t('ui.statusRetry') },
       ],
     },
-  ];
+    ];
+  }
 
   // TODO-LIT: componentWillLoad → connectedCallback. Recuerda: connectedCallback se dispara
   // en CADA reconexión al DOM (no solo en el primer montaje). Si la init debe correr una
   // sola vez tras el primer render, considera firstUpdated() en su lugar.
+  private readonly onLocaleChange = (): void => this.requestUpdate();
+
   async connectedCallback() {
     super.connectedCallback();
+    window.addEventListener('erplora:locale-changed', this.onLocaleChange);
     this.ctrl = createListController<VerifactuRecord>(erplora(), 'verifactu.records.list', () => this.requestUpdate(), {
       pageSize: 50,
       sort: 'id',
@@ -115,17 +126,19 @@ export class ErpVerifactuRecords extends LitElement {
   }
 
   disconnectedCallback() {
+    window.removeEventListener('erplora:locale-changed', this.onLocaleChange);
     super.disconnectedCallback();
     this.unsub?.();
   }
 
   render() {
+    const t = (k: string): string => erplora().t(CATALOG, k);
     return html`<div>
         <header>
-          <h2>Registros VeriFactu</h2>
+          <h2>${t('ui.recordsTitle')}</h2>
         </header>
         ${this.ctrl?.error ? html`<p class="err">${this.ctrl.error}</p>` : nothing}
-        <ok-data-table .serverSide=${true} .columns=${this.columns} .rows=${this.ctrl?.rows ?? []} .total=${this.ctrl?.total ?? 0} .page=${this.ctrl?.state.page ?? 0} .pageSize=${this.ctrl?.state.pageSize ?? 50} .sort=${this.ctrl?.state.sort} .sortDir=${this.ctrl?.state.dir ?? 'asc'} .searchable=${true} .searchPlaceholder=${"Buscar factura, emisor o NIF…"} .emptyMessage=${this.ctrl?.loading ? 'Cargando…' : 'Sin registros VeriFactu.'} @pageChange=${(e: CustomEvent<number>) => this.ctrl.setPage(e.detail)} @sortChange=${(e: CustomEvent<{ sort: string; dir: 'asc' | 'desc' }>) => this.ctrl.setSort(e.detail.sort, e.detail.dir)} @searchChange=${(e: CustomEvent<string>) => this.ctrl.setSearch(e.detail)} @filterChange=${(e: CustomEvent<{ col: string; value: unknown }>) => this.ctrl.setFilter(e.detail.col, e.detail.value)}></ok-data-table>
+        <ok-data-table .serverSide=${true} .columns=${this.columns} .rows=${this.ctrl?.rows ?? []} .total=${this.ctrl?.total ?? 0} .page=${this.ctrl?.state.page ?? 0} .pageSize=${this.ctrl?.state.pageSize ?? 50} .sort=${this.ctrl?.state.sort} .sortDir=${this.ctrl?.state.dir ?? 'asc'} .searchable=${true} .searchPlaceholder=${t('ui.recordsSearchPlaceholder')} .emptyMessage=${this.ctrl?.loading ? t('ui.loading') : t('ui.recordsEmpty')} @pageChange=${(e: CustomEvent<number>) => this.ctrl.setPage(e.detail)} @sortChange=${(e: CustomEvent<{ sort: string; dir: 'asc' | 'desc' }>) => this.ctrl.setSort(e.detail.sort, e.detail.dir)} @searchChange=${(e: CustomEvent<string>) => this.ctrl.setSearch(e.detail)} @filterChange=${(e: CustomEvent<{ col: string; value: unknown }>) => this.ctrl.setFilter(e.detail.col, e.detail.value)}></ok-data-table>
       </div>`;
   }
 }

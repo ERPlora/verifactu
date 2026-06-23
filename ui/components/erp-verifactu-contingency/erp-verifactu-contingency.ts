@@ -5,12 +5,17 @@ import '@erplora/outfitkit/ok-data-table';
 import type { DataTableColumn } from '@erplora/outfitkit';
 import { createListController } from '@erplora/module-sdk';
 import type { ListController, ListClient, ListParams, ListPage } from '@erplora/module-sdk';
+import esLocale from '../../../locales/es.json';
+import enLocale from '../../../locales/en.json';
+const CATALOG: Record<string, unknown> = { es: esLocale, en: enLocale };
 
 interface ErploraClientLike extends ListClient {
   query<T = unknown>(name: string, params?: Record<string, unknown>): Promise<T>;
   queryPage<R = unknown>(name: string, params: ListParams): Promise<ListPage<R>>;
   command<T = unknown>(name: string, payload?: Record<string, unknown>): Promise<T>;
   on(event: string, cb: (payload: unknown) => void): () => void;
+  locale: string;
+  t(catalog: Record<string, unknown>, key: string, params?: Record<string, unknown>): string;
 }
 
 interface ContingencyEntry {
@@ -49,14 +54,16 @@ export class ErpVerifactuContingency extends LitElement {
 
   private unsub?: () => void;
 
-  private columns: DataTableColumn[] = [
-    { key: 'record_id', header: 'Registro', sortable: true, filterable: true, filterType: 'text' },
-    { key: 'priority', header: 'Prioridad', align: 'right', sortable: true, filterable: true, filterType: 'text' },
-    { key: 'attempts', header: 'Intentos', align: 'right', sortable: true, filterable: true, filterType: 'text' },
-    { key: 'status', header: 'Estado', sortable: true, filterable: true, filterType: 'text' },
+  private get columns(): DataTableColumn[] {
+    const t = (k: string): string => erplora().t(CATALOG, k);
+    return [
+    { key: 'record_id', header: t('ui.colRecord'), sortable: true, filterable: true, filterType: 'text' },
+    { key: 'priority', header: t('ui.colPriority'), align: 'right', sortable: true, filterable: true, filterType: 'text' },
+    { key: 'attempts', header: t('ui.colAttempts'), align: 'right', sortable: true, filterable: true, filterType: 'text' },
+    { key: 'status', header: t('ui.colStatus'), sortable: true, filterable: true, filterType: 'text' },
     {
       key: 'next_attempt_at',
-      header: 'Próximo intento',
+      header: t('ui.colNextAttempt'),
       sortable: true,
       filterable: true,
       filterType: 'daterange',
@@ -64,19 +71,23 @@ export class ErpVerifactuContingency extends LitElement {
     },
     {
       key: 'last_error',
-      header: 'Último error',
+      header: t('ui.colLastError'),
       sortable: true,
       filterable: true,
       filterType: 'text',
       format: (r) => ((r.last_error as string) || '').slice(0, 80),
     },
-  ];
+    ];
+  }
 
   // TODO-LIT: componentWillLoad → connectedCallback. Recuerda: connectedCallback se dispara
   // en CADA reconexión al DOM (no solo en el primer montaje). Si la init debe correr una
   // sola vez tras el primer render, considera firstUpdated() en su lugar.
+  private readonly onLocaleChange = (): void => this.requestUpdate();
+
   async connectedCallback() {
     super.connectedCallback();
+    window.addEventListener('erplora:locale-changed', this.onLocaleChange);
     this.ctrl = createListController<ContingencyEntry>(erplora(), 'verifactu.contingency.list', () => this.requestUpdate(), {
       pageSize: 50,
       sort: 'id',
@@ -98,6 +109,7 @@ export class ErpVerifactuContingency extends LitElement {
   }
 
   disconnectedCallback() {
+    window.removeEventListener('erplora:locale-changed', this.onLocaleChange);
     super.disconnectedCallback();
     this.unsub?.();
   }
@@ -109,7 +121,7 @@ export class ErpVerifactuContingency extends LitElement {
       await erplora().command('verifactu.contingency.process', { limit: 100 });
       await this.ctrl.load();
     } catch (e) {
-      this.error = e instanceof Error ? e.message : 'No se pudo procesar la cola';
+      this.error = e instanceof Error ? e.message : erplora().t(CATALOG, 'ui.errProcessQueue');
     } finally {
       this.busy = false;
     }
@@ -122,7 +134,7 @@ export class ErpVerifactuContingency extends LitElement {
       await erplora().command('verifactu.contingency.retry', { queue_id: queueId });
       await this.ctrl.load();
     } catch (e) {
-      this.error = e instanceof Error ? e.message : 'No se pudo reencolar';
+      this.error = e instanceof Error ? e.message : erplora().t(CATALOG, 'ui.errRetry');
     } finally {
       this.busy = false;
     }
@@ -135,23 +147,24 @@ export class ErpVerifactuContingency extends LitElement {
       await erplora().command('verifactu.contingency.cancel', { queue_id: queueId });
       await this.ctrl.load();
     } catch (e) {
-      this.error = e instanceof Error ? e.message : 'No se pudo cancelar';
+      this.error = e instanceof Error ? e.message : erplora().t(CATALOG, 'ui.errCancel');
     } finally {
       this.busy = false;
     }
   }
 
   render() {
+    const t = (k: string): string => erplora().t(CATALOG, k);
     return html`<div>
         <header>
-          <h2>Cola de contingencia</h2>
-          <ion-button size="small" ?disabled=${this.busy} @click=${() => this.processQueue()}>${this.busy ? 'Procesando…' : 'Procesar cola'}</ion-button>
+          <h2>${t('ui.contingencyTitle')}</h2>
+          <ion-button size="small" ?disabled=${this.busy} @click=${() => this.processQueue()}>${this.busy ? t('ui.processing') : t('ui.processQueue')}</ion-button>
         </header>
         ${this.error ? html`<p class="err">${this.error}</p>` : nothing}
         ${this.ctrl?.error ? html`<p class="err">${this.ctrl.error}</p>` : nothing}
-        <ok-data-table .serverSide=${true} .columns=${this.columns} .rows=${this.ctrl?.rows ?? []} .total=${this.ctrl?.total ?? 0} .page=${this.ctrl?.state.page ?? 0} .pageSize=${this.ctrl?.state.pageSize ?? 50} .sort=${this.ctrl?.state.sort} .sortDir=${this.ctrl?.state.dir ?? 'asc'} .searchable=${true} .searchPlaceholder=${"Buscar registro o estado…"} .emptyMessage=${this.ctrl?.loading ? 'Cargando…' : 'Cola vacía.'} .actions=${[
-            { id: 'retry', label: 'Reintentar' },
-            { id: 'cancel', label: 'Cancelar', color: 'danger' },
+        <ok-data-table .serverSide=${true} .columns=${this.columns} .rows=${this.ctrl?.rows ?? []} .total=${this.ctrl?.total ?? 0} .page=${this.ctrl?.state.page ?? 0} .pageSize=${this.ctrl?.state.pageSize ?? 50} .sort=${this.ctrl?.state.sort} .sortDir=${this.ctrl?.state.dir ?? 'asc'} .searchable=${true} .searchPlaceholder=${t('ui.contingencySearchPlaceholder')} .emptyMessage=${this.ctrl?.loading ? t('ui.loading') : t('ui.contingencyEmpty')} .actions=${[
+            { id: 'retry', label: t('ui.actionRetry') },
+            { id: 'cancel', label: t('ui.actionCancel'), color: 'danger' },
           ]} @rowAction=${(e: CustomEvent<{ actionId: string; row: Record<string, unknown> }>) => {
             const { actionId, row } = e.detail;
             if (actionId === 'retry') this.retry(row.id as string);

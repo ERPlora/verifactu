@@ -9,7 +9,7 @@ var __decorateClass = (decorators, target, key, kind) => {
   return result;
 };
 
-// ../../node_modules/.pnpm/@lit-labs+ssr-dom-shim@1.6.0/node_modules/@lit-labs/ssr-dom-shim/lib/element-internals.js
+// node_modules/@lit-labs/ssr-dom-shim/lib/element-internals.js
 var ElementInternalsShim = class ElementInternals {
   get shadowRoot() {
     return this.__host.__shadowRoot;
@@ -88,7 +88,7 @@ var ElementInternalsShim = class ElementInternals {
   }
 };
 
-// ../../node_modules/.pnpm/@lit-labs+ssr-dom-shim@1.6.0/node_modules/@lit-labs/ssr-dom-shim/lib/events.js
+// node_modules/@lit-labs/ssr-dom-shim/lib/events.js
 var __classPrivateFieldSet = function(receiver, state, value, kind, f3) {
   if (kind === "m") throw new TypeError("Private method is not writable");
   if (kind === "a" && !f3) throw new TypeError("Private accessor was defined without a setter");
@@ -246,7 +246,7 @@ Object.defineProperties(CustomEventShim.prototype, {
 var EventShimWithRealType = EventShim;
 var CustomEventShimWithRealType = CustomEventShim;
 
-// ../../node_modules/.pnpm/@lit-labs+ssr-dom-shim@1.6.0/node_modules/@lit-labs/ssr-dom-shim/lib/css.js
+// node_modules/@lit-labs/ssr-dom-shim/lib/css.js
 var _a2;
 var CSSRuleShim = (_a2 = class CSSRule {
   constructor() {
@@ -277,7 +277,7 @@ var CSSRuleShim = (_a2 = class CSSRule {
   }
 }, _a2.STYLE_RULE = 1, _a2.CHARSET_RULE = 2, _a2.IMPORT_RULE = 3, _a2.MEDIA_RULE = 4, _a2.FONT_FACE_RULE = 5, _a2.PAGE_RULE = 6, _a2.NAMESPACE_RULE = 10, _a2.KEYFRAMES_RULE = 7, _a2.KEYFRAME_RULE = 8, _a2.SUPPORTS_RULE = 12, _a2.COUNTER_STYLE_RULE = 11, _a2.FONT_FEATURE_VALUES_RULE = 14, _a2.MARGIN_RULE = 9, _a2);
 
-// ../../node_modules/.pnpm/@lit-labs+ssr-dom-shim@1.6.0/node_modules/@lit-labs/ssr-dom-shim/index.js
+// node_modules/@lit-labs/ssr-dom-shim/index.js
 globalThis.Event ??= EventShimWithRealType;
 globalThis.CustomEvent ??= CustomEventShimWithRealType;
 var constructionToken = Symbol();
@@ -674,7 +674,7 @@ var CustomElementRegistryShimWithRealType = CustomElementRegistry;
 var customElements2 = new CustomElementRegistryShimWithRealType();
 var windowShim = new WindowShim(constructionToken);
 
-// ../../node_modules/.pnpm/@lit+reactive-element@2.1.2/node_modules/@lit/reactive-element/node/css-tag.js
+// node_modules/@lit/reactive-element/node/css-tag.js
 var t = globalThis;
 var e = t.ShadowRoot && (void 0 === t.ShadyCSS || t.ShadyCSS.nativeShadow) && "adoptedStyleSheets" in Document.prototype && "replace" in CSSStyleSheet.prototype;
 var s = Symbol();
@@ -719,7 +719,7 @@ var c = e || void 0 === t.CSSStyleSheet ? (t5) => t5 : (t5) => t5 instanceof CSS
   return r(e5);
 })(t5) : t5;
 
-// ../../node_modules/.pnpm/@lit+reactive-element@2.1.2/node_modules/@lit/reactive-element/node/reactive-element.js
+// node_modules/@lit/reactive-element/node/reactive-element.js
 var { is: h, defineProperty: r2, getOwnPropertyDescriptor: o2, getOwnPropertyNames: n2, getOwnPropertySymbols: a, getPrototypeOf: c2 } = Object;
 var l = globalThis;
 l.customElements ??= customElements2;
@@ -942,7 +942,7 @@ var g = class extends (globalThis.HTMLElement ?? HTMLElementShimWithRealType) {
 };
 g.elementStyles = [], g.shadowRootOptions = { mode: "open" }, g[f("elementProperties")] = /* @__PURE__ */ new Map(), g[f("finalized")] = /* @__PURE__ */ new Map(), u?.({ ReactiveElement: g }), (l.reactiveElementVersions ??= []).push("2.1.2");
 
-// ../../node_modules/.pnpm/lit-html@3.3.3/node_modules/lit-html/lit-html.js
+// node_modules/lit-html/lit-html.js
 var t2 = globalThis;
 var i2 = (t5) => t5;
 var s2 = t2.trustedTypes;
@@ -1197,7 +1197,7 @@ var D = (t5, i7, s5) => {
   return h4._$AI(t5), h4;
 };
 
-// ../../node_modules/.pnpm/lit-element@4.2.2/node_modules/lit-element/lit-element.js
+// node_modules/lit-element/lit-element.js
 var s3 = globalThis;
 var i3 = class extends g {
   constructor() {
@@ -1226,7 +1226,7 @@ var o4 = s3.litElementPolyfillSupport;
 o4?.({ LitElement: i3 });
 (s3.litElementVersions ??= []).push("4.2.2");
 
-// ../../node_modules/.pnpm/@lit+reactive-element@2.1.2/node_modules/@lit/reactive-element/node/decorators/property.js
+// node_modules/@lit/reactive-element/node/decorators/property.js
 var o5 = { attribute: true, type: String, converter: b, reflect: false, hasChanged: m };
 var r4 = (t5 = o5, e5, r6) => {
   const { kind: n6, metadata: i7 } = r6;
@@ -1256,19 +1256,19 @@ function n4(t5) {
   })(t5, e5, o7);
 }
 
-// ../../node_modules/.pnpm/@lit+reactive-element@2.1.2/node_modules/@lit/reactive-element/node/decorators/state.js
+// node_modules/@lit/reactive-element/node/decorators/state.js
 function r5(r6) {
   return n4({ ...r6, state: true, attribute: false });
 }
 
-// ../../node_modules/.pnpm/@outfitkit+core@file+..+outfitkit/node_modules/@outfitkit/core/dist/define.js
+// ../outfitkit/dist/define.js
 function define(tag, ctor) {
   if (typeof customElements !== "undefined" && !customElements.get(tag)) {
     customElements.define(tag, ctor);
   }
 }
 
-// ../../node_modules/.pnpm/lit-html@3.3.3/node_modules/lit-html/directive.js
+// node_modules/lit-html/directive.js
 var t3 = { ATTRIBUTE: 1, CHILD: 2, PROPERTY: 3, BOOLEAN_ATTRIBUTE: 4, EVENT: 5, ELEMENT: 6 };
 var e4 = (t5) => (...e5) => ({ _$litDirective$: t5, values: e5 });
 var i4 = class {
@@ -1288,7 +1288,7 @@ var i4 = class {
   }
 };
 
-// ../../node_modules/.pnpm/lit-html@3.3.3/node_modules/lit-html/directive-helpers.js
+// node_modules/lit-html/directive-helpers.js
 var { I: t4 } = j;
 var i5 = (o7) => o7;
 var s4 = () => document.createComment("");
@@ -1321,7 +1321,7 @@ var h3 = (o7) => {
   o7._$AR(), o7._$AA.remove();
 };
 
-// ../../node_modules/.pnpm/lit-html@3.3.3/node_modules/lit-html/directives/repeat.js
+// node_modules/lit-html/directives/repeat.js
 var u4 = (e5, s5, t5) => {
   const r6 = /* @__PURE__ */ new Map();
   for (let l3 = s5; l3 <= t5; l3++) r6.set(e5[l3], l3);
@@ -1374,7 +1374,7 @@ var c4 = e4(class extends i4 {
   }
 });
 
-// ../../node_modules/.pnpm/lit-html@3.3.3/node_modules/lit-html/directives/style-map.js
+// node_modules/lit-html/directives/style-map.js
 var n5 = "important";
 var i6 = " !" + n5;
 var o6 = e4(class extends i4 {
@@ -1403,7 +1403,7 @@ var o6 = e4(class extends i4 {
   }
 });
 
-// ../../node_modules/.pnpm/@outfitkit+core@file+..+outfitkit/node_modules/@outfitkit/core/dist/ok-data-table.js
+// ../outfitkit/dist/ok-data-table.js
 var __defProp2 = Object.defineProperty;
 var __decorateClass2 = (decorators, target, key, kind) => {
   var result = void 0;
@@ -1571,12 +1571,15 @@ var OkDataTable = class extends i3 {
 
     /* ── Topbar / cabecera (relieve) ─────────────────────────────────────────────────────── */
     .bar { display: flex; flex-direction: column; gap: 0.6rem; padding: 0.65rem 1rem; border-bottom: 1px solid var(--border-color); background: var(--header-background); }
-    /* Toolbar CONSOLIDADA: TODOS los controles (buscador, filtros, page-size, vistas, columnas,
-     * CSV, ⋮, alta) son hijos directos de UNA sola fila flex que envuelve ELEMENTO A ELEMENTO
-     * (no por bloques): caben en una línea → una línea; los que no caben bajan a la(s) línea(s)
-     * que hagan falta. El cluster derecho se empuja al borde con .tk-spacer (hueco flexible)
-     * solo cuando todo cabe en una línea; al envolver, el spacer se oculta y todo se apila a la
-     * izquierda. */
+    /* Toolbar CONSOLIDADA: TODOS los controles son hijos directos de UNA sola fila flex que
+     * envuelve ELEMENTO A ELEMENTO (no por bloques): caben en una línea → una línea; los que no
+     * caben bajan a la(s) línea(s) que hagan falta. El cluster derecho se empuja al borde con
+     * .tk-spacer (hueco flexible) solo cuando todo cabe en una línea; al envolver, el spacer se
+     * oculta y todo se apila a la izquierda.
+     * ORDEN CANÓNICO (2026-06-22, izquierda→derecha): [buscador] · [filtros en línea] · ‹spacer› ·
+     * [SELECTORES: columnas → filas/página] · [BOTONES: vistas → filtros(funnel) → import → export →
+     * alta → ⋮ → acción primaria]. Es decir: buscador al inicio, filtros en medio, y al final los
+     * selectores (columnas, luego «N por página») seguidos de los botones de acción. */
     .bar-main { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
     .bar-main > ion-button { --padding-start: 0.5rem; --padding-end: 0.5rem; margin: 0; }
     /* Spacer que absorbe el hueco libre en pantallas anchas (empuja el cluster derecho al borde).
@@ -2287,6 +2290,19 @@ var OkDataTable = class extends i3 {
                   ${this.hasSearch ? b2`<div class="search">${searchbar}</div>` : A}
                   ${this.inlineFilters ? this.renderInlineFilters() : A}
                   <span class="tk-spacer"></span>
+                    ${this.effColumnPicker ? b2`
+                          <ion-select
+                            class="tk-cols"
+                            multiple
+                            interface="popover"
+                            aria-label=${this.t.columnsVisible}
+                            .value=${this.visibleColumns.map((c5) => c5.key)}
+                            .selectedText=${this.t.columns}
+                            @ionChange=${(e5) => this.setVisibleColumns(e5.detail.value)}
+                          >
+                            ${this.columns.map((c5) => b2`<ion-select-option value=${c5.key}>${c5.header}</ion-select-option>`)}
+                          </ion-select>
+                        ` : A}
                     ${this.effPageSizes.length ? b2`
                           <ion-select
                             class="tk-psize"
@@ -2303,19 +2319,6 @@ var OkDataTable = class extends i3 {
                             ${this.toolButton("list-outline", this.viewMode === "table", () => this.setViewMode("table"), this.t.viewList)}
                             ${this.toolButton("grid-outline", this.viewMode === "cards", () => this.setViewMode("cards"), this.t.viewCards)}
                           </span>
-                        ` : A}
-                    ${this.effColumnPicker ? b2`
-                          <ion-select
-                            class="tk-cols"
-                            multiple
-                            interface="popover"
-                            aria-label=${this.t.columnsVisible}
-                            .value=${this.visibleColumns.map((c5) => c5.key)}
-                            .selectedText=${this.t.columns}
-                            @ionChange=${(e5) => this.setVisibleColumns(e5.detail.value)}
-                          >
-                            ${this.columns.map((c5) => b2`<ion-select-option value=${c5.key}>${c5.header}</ion-select-option>`)}
-                          </ion-select>
                         ` : A}
                     ${this.hasFilterRow && !this.inlineFilters ? this.toolButton("funnel-outline", this.panel === "filters" || this.activeFilterCount > 0, () => this.toggle("filters"), this.t.filters, this.serverSide ? void 0 : this.activeFilterCount) : A}
                     ${this.effImport ? b2`
@@ -2678,7 +2681,7 @@ __decorateClass2([
 ], OkDataTable.prototype, "menuOpen");
 define("ok-data-table", OkDataTable);
 
-// ../../node_modules/.pnpm/@erplora+module-sdk@file+..+hub+packages+module-sdk/node_modules/@erplora/module-sdk/src/index.ts
+// ../hub/packages/module-sdk/src/index.ts
 function isEmpty(v3) {
   return v3 === null || v3 === void 0 || v3 === "";
 }
@@ -2796,7 +2799,176 @@ function createListController(client, queryName, onChange = () => {
   return new ListController(client, queryName, onChange, opts);
 }
 
-// ui/components/erp-verifactu-contingency/erp-verifactu-contingency.ts
+// ../modules-workspace/modules/verifactu/locales/es.json
+var es_default = {
+  name: "VeriFactu",
+  navigation: {
+    records: {
+      label: "Registros"
+    },
+    contingency: {
+      label: "Contingencia"
+    },
+    events: {
+      label: "Eventos"
+    },
+    settings: {
+      label: "Ajustes"
+    }
+  },
+  ui: {
+    loading: "Cargando\u2026",
+    colWhen: "Cu\xE1ndo",
+    colSeverity: "Severidad",
+    colType: "Tipo",
+    colMessage: "Mensaje",
+    sevDebug: "Debug",
+    sevInfo: "Info",
+    sevWarning: "Aviso",
+    sevError: "Error",
+    sevCritical: "Cr\xEDtico",
+    eventsTitle: "Eventos de auditor\xEDa",
+    eventsSearchPlaceholder: "Buscar tipo o mensaje\u2026",
+    eventsEmpty: "Sin eventos.",
+    colSeq: "Seq",
+    colInvoice: "Factura",
+    colDate: "Fecha",
+    colInvoiceType: "F.",
+    colIssuer: "Emisor",
+    colTotal: "Total",
+    colStatus: "Estado",
+    recTypeAlta: "Alta",
+    recTypeAnulacion: "Anulaci\xF3n",
+    statusPending: "Pendiente",
+    statusTransmitted: "Transmitido",
+    statusAccepted: "Aceptado",
+    statusRejected: "Rechazado",
+    statusError: "Error",
+    statusRetry: "Reintento",
+    recordsTitle: "Registros VeriFactu",
+    recordsSearchPlaceholder: "Buscar factura, emisor o NIF\u2026",
+    recordsEmpty: "Sin registros VeriFactu.",
+    colRecord: "Registro",
+    colPriority: "Prioridad",
+    colAttempts: "Intentos",
+    colNextAttempt: "Pr\xF3ximo intento",
+    colLastError: "\xDAltimo error",
+    contingencyTitle: "Cola de contingencia",
+    processQueue: "Procesar cola",
+    processing: "Procesando\u2026",
+    contingencySearchPlaceholder: "Buscar registro o estado\u2026",
+    contingencyEmpty: "Cola vac\xEDa.",
+    actionRetry: "Reintentar",
+    actionCancel: "Cancelar",
+    errProcessQueue: "No se pudo procesar la cola",
+    errRetry: "No se pudo reencolar",
+    errCancel: "No se pudo cancelar",
+    settingsTitle: "Configuraci\xF3n VeriFactu",
+    settingsSaved: "Configuraci\xF3n guardada correctamente.",
+    errLoadConfig: "Error cargando la configuraci\xF3n",
+    errSaveConfig: "No se pudo guardar la configuraci\xF3n",
+    enableVerifactu: "Activar VeriFactu",
+    envAeat: "Entorno AEAT",
+    envTesting: "Pruebas (AEAT Test)",
+    envProduction: "Producci\xF3n",
+    softwareNif: "NIF del software / emisor",
+    softwareName: "Nombre del software",
+    softwareId: "ID del software",
+    softwareVersion: "Versi\xF3n del software",
+    certificatePath: "Ruta del certificado (.p12)",
+    certificatePathPlaceholder: "/ruta/al/certificado.p12",
+    autoTransmit: "Transmisi\xF3n autom\xE1tica a AEAT",
+    save: "Guardar configuraci\xF3n",
+    saving: "Guardando\u2026"
+  }
+};
+
+// ../modules-workspace/modules/verifactu/locales/en.json
+var en_default = {
+  name: "VeriFactu",
+  navigation: {
+    records: {
+      label: "Records"
+    },
+    contingency: {
+      label: "Contingency"
+    },
+    events: {
+      label: "Events"
+    },
+    settings: {
+      label: "Settings"
+    }
+  },
+  ui: {
+    loading: "Loading\u2026",
+    colWhen: "When",
+    colSeverity: "Severity",
+    colType: "Type",
+    colMessage: "Message",
+    sevDebug: "Debug",
+    sevInfo: "Info",
+    sevWarning: "Warning",
+    sevError: "Error",
+    sevCritical: "Critical",
+    eventsTitle: "Audit events",
+    eventsSearchPlaceholder: "Search type or message\u2026",
+    eventsEmpty: "No events.",
+    colSeq: "Seq",
+    colInvoice: "Invoice",
+    colDate: "Date",
+    colInvoiceType: "F.",
+    colIssuer: "Issuer",
+    colTotal: "Total",
+    colStatus: "Status",
+    recTypeAlta: "Registration",
+    recTypeAnulacion: "Cancellation",
+    statusPending: "Pending",
+    statusTransmitted: "Transmitted",
+    statusAccepted: "Accepted",
+    statusRejected: "Rejected",
+    statusError: "Error",
+    statusRetry: "Retry",
+    recordsTitle: "VeriFactu records",
+    recordsSearchPlaceholder: "Search invoice, issuer or tax ID\u2026",
+    recordsEmpty: "No VeriFactu records.",
+    colRecord: "Record",
+    colPriority: "Priority",
+    colAttempts: "Attempts",
+    colNextAttempt: "Next attempt",
+    colLastError: "Last error",
+    contingencyTitle: "Contingency queue",
+    processQueue: "Process queue",
+    processing: "Processing\u2026",
+    contingencySearchPlaceholder: "Search record or status\u2026",
+    contingencyEmpty: "Queue empty.",
+    actionRetry: "Retry",
+    actionCancel: "Cancel",
+    errProcessQueue: "Could not process the queue",
+    errRetry: "Could not requeue",
+    errCancel: "Could not cancel",
+    settingsTitle: "VeriFactu configuration",
+    settingsSaved: "Configuration saved successfully.",
+    errLoadConfig: "Error loading configuration",
+    errSaveConfig: "Could not save configuration",
+    enableVerifactu: "Enable VeriFactu",
+    envAeat: "AEAT environment",
+    envTesting: "Testing (AEAT Test)",
+    envProduction: "Production",
+    softwareNif: "Software / issuer tax ID",
+    softwareName: "Software name",
+    softwareId: "Software ID",
+    softwareVersion: "Software version",
+    certificatePath: "Certificate path (.p12)",
+    certificatePathPlaceholder: "/path/to/certificate.p12",
+    autoTransmit: "Automatic transmission to AEAT",
+    save: "Save configuration",
+    saving: "Saving\u2026"
+  }
+};
+
+// ../modules-workspace/modules/verifactu/ui/components/erp-verifactu-contingency/erp-verifactu-contingency.ts
+var CATALOG = { es: es_default, en: en_default };
 function erplora() {
   const c5 = globalThis.erplora;
   if (!c5) throw new Error("erplora SDK no inicializado por el shell");
@@ -2808,28 +2980,10 @@ var ErpVerifactuContingency = class extends i3 {
     this.error = "";
     this.busy = false;
     this.tick = 0;
-    this.columns = [
-      { key: "record_id", header: "Registro", sortable: true, filterable: true, filterType: "text" },
-      { key: "priority", header: "Prioridad", align: "right", sortable: true, filterable: true, filterType: "text" },
-      { key: "attempts", header: "Intentos", align: "right", sortable: true, filterable: true, filterType: "text" },
-      { key: "status", header: "Estado", sortable: true, filterable: true, filterType: "text" },
-      {
-        key: "next_attempt_at",
-        header: "Pr\xF3ximo intento",
-        sortable: true,
-        filterable: true,
-        filterType: "daterange",
-        format: (r6) => r6.next_attempt_at ?? "\u2014"
-      },
-      {
-        key: "last_error",
-        header: "\xDAltimo error",
-        sortable: true,
-        filterable: true,
-        filterType: "text",
-        format: (r6) => (r6.last_error || "").slice(0, 80)
-      }
-    ];
+    // TODO-LIT: componentWillLoad → connectedCallback. Recuerda: connectedCallback se dispara
+    // en CADA reconexión al DOM (no solo en el primer montaje). Si la init debe correr una
+    // sola vez tras el primer render, considera firstUpdated() en su lugar.
+    this.onLocaleChange = () => this.requestUpdate();
   }
   static {
     this.styles = i`
@@ -2840,11 +2994,34 @@ var ErpVerifactuContingency = class extends i3 {
     .actions { display:flex; gap:.35rem; }
   `;
   }
-  // TODO-LIT: componentWillLoad → connectedCallback. Recuerda: connectedCallback se dispara
-  // en CADA reconexión al DOM (no solo en el primer montaje). Si la init debe correr una
-  // sola vez tras el primer render, considera firstUpdated() en su lugar.
+  get columns() {
+    const t5 = (k2) => erplora().t(CATALOG, k2);
+    return [
+      { key: "record_id", header: t5("ui.colRecord"), sortable: true, filterable: true, filterType: "text" },
+      { key: "priority", header: t5("ui.colPriority"), align: "right", sortable: true, filterable: true, filterType: "text" },
+      { key: "attempts", header: t5("ui.colAttempts"), align: "right", sortable: true, filterable: true, filterType: "text" },
+      { key: "status", header: t5("ui.colStatus"), sortable: true, filterable: true, filterType: "text" },
+      {
+        key: "next_attempt_at",
+        header: t5("ui.colNextAttempt"),
+        sortable: true,
+        filterable: true,
+        filterType: "daterange",
+        format: (r6) => r6.next_attempt_at ?? "\u2014"
+      },
+      {
+        key: "last_error",
+        header: t5("ui.colLastError"),
+        sortable: true,
+        filterable: true,
+        filterType: "text",
+        format: (r6) => (r6.last_error || "").slice(0, 80)
+      }
+    ];
+  }
   async connectedCallback() {
     super.connectedCallback();
+    window.addEventListener("erplora:locale-changed", this.onLocaleChange);
     this.ctrl = createListController(erplora(), "verifactu.contingency.list", () => this.requestUpdate(), {
       pageSize: 50,
       sort: "id",
@@ -2864,6 +3041,7 @@ var ErpVerifactuContingency = class extends i3 {
     }
   }
   disconnectedCallback() {
+    window.removeEventListener("erplora:locale-changed", this.onLocaleChange);
     super.disconnectedCallback();
     this.unsub?.();
   }
@@ -2874,7 +3052,7 @@ var ErpVerifactuContingency = class extends i3 {
       await erplora().command("verifactu.contingency.process", { limit: 100 });
       await this.ctrl.load();
     } catch (e5) {
-      this.error = e5 instanceof Error ? e5.message : "No se pudo procesar la cola";
+      this.error = e5 instanceof Error ? e5.message : erplora().t(CATALOG, "ui.errProcessQueue");
     } finally {
       this.busy = false;
     }
@@ -2886,7 +3064,7 @@ var ErpVerifactuContingency = class extends i3 {
       await erplora().command("verifactu.contingency.retry", { queue_id: queueId });
       await this.ctrl.load();
     } catch (e5) {
-      this.error = e5 instanceof Error ? e5.message : "No se pudo reencolar";
+      this.error = e5 instanceof Error ? e5.message : erplora().t(CATALOG, "ui.errRetry");
     } finally {
       this.busy = false;
     }
@@ -2898,22 +3076,23 @@ var ErpVerifactuContingency = class extends i3 {
       await erplora().command("verifactu.contingency.cancel", { queue_id: queueId });
       await this.ctrl.load();
     } catch (e5) {
-      this.error = e5 instanceof Error ? e5.message : "No se pudo cancelar";
+      this.error = e5 instanceof Error ? e5.message : erplora().t(CATALOG, "ui.errCancel");
     } finally {
       this.busy = false;
     }
   }
   render() {
+    const t5 = (k2) => erplora().t(CATALOG, k2);
     return b2`<div>
         <header>
-          <h2>Cola de contingencia</h2>
-          <ion-button size="small" ?disabled=${this.busy} @click=${() => this.processQueue()}>${this.busy ? "Procesando\u2026" : "Procesar cola"}</ion-button>
+          <h2>${t5("ui.contingencyTitle")}</h2>
+          <ion-button size="small" ?disabled=${this.busy} @click=${() => this.processQueue()}>${this.busy ? t5("ui.processing") : t5("ui.processQueue")}</ion-button>
         </header>
         ${this.error ? b2`<p class="err">${this.error}</p>` : A}
         ${this.ctrl?.error ? b2`<p class="err">${this.ctrl.error}</p>` : A}
-        <ok-data-table .serverSide=${true} .columns=${this.columns} .rows=${this.ctrl?.rows ?? []} .total=${this.ctrl?.total ?? 0} .page=${this.ctrl?.state.page ?? 0} .pageSize=${this.ctrl?.state.pageSize ?? 50} .sort=${this.ctrl?.state.sort} .sortDir=${this.ctrl?.state.dir ?? "asc"} .searchable=${true} .searchPlaceholder=${"Buscar registro o estado\u2026"} .emptyMessage=${this.ctrl?.loading ? "Cargando\u2026" : "Cola vac\xEDa."} .actions=${[
-      { id: "retry", label: "Reintentar" },
-      { id: "cancel", label: "Cancelar", color: "danger" }
+        <ok-data-table .serverSide=${true} .columns=${this.columns} .rows=${this.ctrl?.rows ?? []} .total=${this.ctrl?.total ?? 0} .page=${this.ctrl?.state.page ?? 0} .pageSize=${this.ctrl?.state.pageSize ?? 50} .sort=${this.ctrl?.state.sort} .sortDir=${this.ctrl?.state.dir ?? "asc"} .searchable=${true} .searchPlaceholder=${t5("ui.contingencySearchPlaceholder")} .emptyMessage=${this.ctrl?.loading ? t5("ui.loading") : t5("ui.contingencyEmpty")} .actions=${[
+      { id: "retry", label: t5("ui.actionRetry") },
+      { id: "cancel", label: t5("ui.actionCancel"), color: "danger" }
     ]} @rowAction=${(e5) => {
       const { actionId, row } = e5.detail;
       if (actionId === "retry") this.retry(row.id);
@@ -2933,7 +3112,8 @@ __decorateClass([
 ], ErpVerifactuContingency.prototype, "tick", 2);
 define("erp-verifactu-contingency", ErpVerifactuContingency);
 
-// ui/components/erp-verifactu-events/erp-verifactu-events.ts
+// ../modules-workspace/modules/verifactu/ui/components/erp-verifactu-events/erp-verifactu-events.ts
+var CATALOG2 = { es: es_default, en: en_default };
 function erplora2() {
   const c5 = globalThis.erplora;
   if (!c5) throw new Error("erplora SDK no inicializado por el shell");
@@ -2943,25 +3123,10 @@ var ErpVerifactuEvents = class extends i3 {
   constructor() {
     super(...arguments);
     this.tick = 0;
-    this.columns = [
-      { key: "timestamp", header: "Cu\xE1ndo", sortable: true, filterable: true, filterType: "text" },
-      {
-        key: "severity",
-        header: "Severidad",
-        sortable: true,
-        filterable: true,
-        filterType: "select",
-        options: [
-          { value: "debug", label: "Debug" },
-          { value: "info", label: "Info" },
-          { value: "warning", label: "Aviso" },
-          { value: "error", label: "Error" },
-          { value: "critical", label: "Cr\xEDtico" }
-        ]
-      },
-      { key: "event_type", header: "Tipo", sortable: true, filterable: true, filterType: "text" },
-      { key: "message", header: "Mensaje", sortable: true, filterable: true, filterType: "text" }
-    ];
+    // TODO-LIT: componentWillLoad → connectedCallback. Recuerda: connectedCallback se dispara
+    // en CADA reconexión al DOM (no solo en el primer montaje). Si la init debe correr una
+    // sola vez tras el primer render, considera firstUpdated() en su lugar.
+    this.onLocaleChange = () => this.requestUpdate();
   }
   static {
     this.styles = i`
@@ -2971,11 +3136,31 @@ var ErpVerifactuEvents = class extends i3 {
     .err { color:#d9480f; font-weight:600; }
   `;
   }
-  // TODO-LIT: componentWillLoad → connectedCallback. Recuerda: connectedCallback se dispara
-  // en CADA reconexión al DOM (no solo en el primer montaje). Si la init debe correr una
-  // sola vez tras el primer render, considera firstUpdated() en su lugar.
+  get columns() {
+    const t5 = (k2) => erplora2().t(CATALOG2, k2);
+    return [
+      { key: "timestamp", header: t5("ui.colWhen"), sortable: true, filterable: true, filterType: "text" },
+      {
+        key: "severity",
+        header: t5("ui.colSeverity"),
+        sortable: true,
+        filterable: true,
+        filterType: "select",
+        options: [
+          { value: "debug", label: t5("ui.sevDebug") },
+          { value: "info", label: t5("ui.sevInfo") },
+          { value: "warning", label: t5("ui.sevWarning") },
+          { value: "error", label: t5("ui.sevError") },
+          { value: "critical", label: t5("ui.sevCritical") }
+        ]
+      },
+      { key: "event_type", header: t5("ui.colType"), sortable: true, filterable: true, filterType: "text" },
+      { key: "message", header: t5("ui.colMessage"), sortable: true, filterable: true, filterType: "text" }
+    ];
+  }
   async connectedCallback() {
     super.connectedCallback();
+    window.addEventListener("erplora:locale-changed", this.onLocaleChange);
     this.ctrl = createListController(erplora2(), "verifactu.events.list", () => this.requestUpdate(), {
       pageSize: 50,
       sort: "id",
@@ -2983,13 +3168,18 @@ var ErpVerifactuEvents = class extends i3 {
     });
     await this.ctrl.load();
   }
+  disconnectedCallback() {
+    window.removeEventListener("erplora:locale-changed", this.onLocaleChange);
+    super.disconnectedCallback();
+  }
   render() {
+    const t5 = (k2) => erplora2().t(CATALOG2, k2);
     return b2`<div>
         <header>
-          <h2>Eventos de auditoría</h2>
+          <h2>${t5("ui.eventsTitle")}</h2>
         </header>
         ${this.ctrl?.error ? b2`<p class="err">${this.ctrl.error}</p>` : A}
-        <ok-data-table .serverSide=${true} .columns=${this.columns} .rows=${this.ctrl?.rows ?? []} .total=${this.ctrl?.total ?? 0} .page=${this.ctrl?.state.page ?? 0} .pageSize=${this.ctrl?.state.pageSize ?? 50} .sort=${this.ctrl?.state.sort} .sortDir=${this.ctrl?.state.dir ?? "asc"} .searchable=${true} .searchPlaceholder=${"Buscar tipo o mensaje\u2026"} .emptyMessage=${this.ctrl?.loading ? "Cargando\u2026" : "Sin eventos."} @pageChange=${(e5) => this.ctrl.setPage(e5.detail)} @sortChange=${(e5) => this.ctrl.setSort(e5.detail.sort, e5.detail.dir)} @searchChange=${(e5) => this.ctrl.setSearch(e5.detail)} @filterChange=${(e5) => this.ctrl.setFilter(e5.detail.col, e5.detail.value)}></ok-data-table>
+        <ok-data-table .serverSide=${true} .columns=${this.columns} .rows=${this.ctrl?.rows ?? []} .total=${this.ctrl?.total ?? 0} .page=${this.ctrl?.state.page ?? 0} .pageSize=${this.ctrl?.state.pageSize ?? 50} .sort=${this.ctrl?.state.sort} .sortDir=${this.ctrl?.state.dir ?? "asc"} .searchable=${true} .searchPlaceholder=${t5("ui.eventsSearchPlaceholder")} .emptyMessage=${this.ctrl?.loading ? t5("ui.loading") : t5("ui.eventsEmpty")} @pageChange=${(e5) => this.ctrl.setPage(e5.detail)} @sortChange=${(e5) => this.ctrl.setSort(e5.detail.sort, e5.detail.dir)} @searchChange=${(e5) => this.ctrl.setSearch(e5.detail)} @filterChange=${(e5) => this.ctrl.setFilter(e5.detail.col, e5.detail.value)}></ok-data-table>
       </div>`;
   }
 };
@@ -2998,7 +3188,8 @@ __decorateClass([
 ], ErpVerifactuEvents.prototype, "tick", 2);
 define("erp-verifactu-events", ErpVerifactuEvents);
 
-// ui/components/erp-verifactu-records/erp-verifactu-records.ts
+// ../modules-workspace/modules/verifactu/ui/components/erp-verifactu-records/erp-verifactu-records.ts
+var CATALOG3 = { es: es_default, en: en_default };
 function erplora3() {
   const c5 = globalThis.erplora;
   if (!c5) throw new Error("erplora SDK no inicializado por el shell");
@@ -3008,48 +3199,10 @@ var ErpVerifactuRecords = class extends i3 {
   constructor() {
     super(...arguments);
     this.tick = 0;
-    this.columns = [
-      { key: "sequence_number", header: "Seq", align: "right", sortable: true, filterable: true, filterType: "text" },
-      { key: "invoice_number", header: "Factura", sortable: true, filterable: true, filterType: "text" },
-      { key: "invoice_date", header: "Fecha", sortable: true, filterable: true, filterType: "daterange" },
-      {
-        key: "record_type",
-        header: "Tipo",
-        sortable: true,
-        filterable: true,
-        filterType: "select",
-        options: [
-          { value: "alta", label: "Alta" },
-          { value: "anulacion", label: "Anulaci\xF3n" }
-        ]
-      },
-      { key: "invoice_type", header: "F.", sortable: true, filterable: true, filterType: "text" },
-      { key: "issuer_name", header: "Emisor", sortable: true, filterable: true, filterType: "text" },
-      {
-        key: "total_amount",
-        header: "Total",
-        align: "right",
-        sortable: true,
-        filterable: true,
-        filterType: "range",
-        format: (r6) => Number(r6.total_amount).toFixed(2)
-      },
-      {
-        key: "status",
-        header: "Estado",
-        sortable: true,
-        filterable: true,
-        filterType: "select",
-        options: [
-          { value: "pending", label: "Pendiente" },
-          { value: "transmitted", label: "Transmitido" },
-          { value: "accepted", label: "Aceptado" },
-          { value: "rejected", label: "Rechazado" },
-          { value: "error", label: "Error" },
-          { value: "retry", label: "Reintento" }
-        ]
-      }
-    ];
+    // TODO-LIT: componentWillLoad → connectedCallback. Recuerda: connectedCallback se dispara
+    // en CADA reconexión al DOM (no solo en el primer montaje). Si la init debe correr una
+    // sola vez tras el primer render, considera firstUpdated() en su lugar.
+    this.onLocaleChange = () => this.requestUpdate();
   }
   static {
     this.styles = i`
@@ -3059,11 +3212,54 @@ var ErpVerifactuRecords = class extends i3 {
     .err { color:#d9480f; font-weight:600; }
   `;
   }
-  // TODO-LIT: componentWillLoad → connectedCallback. Recuerda: connectedCallback se dispara
-  // en CADA reconexión al DOM (no solo en el primer montaje). Si la init debe correr una
-  // sola vez tras el primer render, considera firstUpdated() en su lugar.
+  get columns() {
+    const t5 = (k2) => erplora3().t(CATALOG3, k2);
+    return [
+      { key: "sequence_number", header: t5("ui.colSeq"), align: "right", sortable: true, filterable: true, filterType: "text" },
+      { key: "invoice_number", header: t5("ui.colInvoice"), sortable: true, filterable: true, filterType: "text" },
+      { key: "invoice_date", header: t5("ui.colDate"), sortable: true, filterable: true, filterType: "daterange" },
+      {
+        key: "record_type",
+        header: t5("ui.colType"),
+        sortable: true,
+        filterable: true,
+        filterType: "select",
+        options: [
+          { value: "alta", label: t5("ui.recTypeAlta") },
+          { value: "anulacion", label: t5("ui.recTypeAnulacion") }
+        ]
+      },
+      { key: "invoice_type", header: t5("ui.colInvoiceType"), sortable: true, filterable: true, filterType: "text" },
+      { key: "issuer_name", header: t5("ui.colIssuer"), sortable: true, filterable: true, filterType: "text" },
+      {
+        key: "total_amount",
+        header: t5("ui.colTotal"),
+        align: "right",
+        sortable: true,
+        filterable: true,
+        filterType: "range",
+        format: (r6) => Number(r6.total_amount).toFixed(2)
+      },
+      {
+        key: "status",
+        header: t5("ui.colStatus"),
+        sortable: true,
+        filterable: true,
+        filterType: "select",
+        options: [
+          { value: "pending", label: t5("ui.statusPending") },
+          { value: "transmitted", label: t5("ui.statusTransmitted") },
+          { value: "accepted", label: t5("ui.statusAccepted") },
+          { value: "rejected", label: t5("ui.statusRejected") },
+          { value: "error", label: t5("ui.statusError") },
+          { value: "retry", label: t5("ui.statusRetry") }
+        ]
+      }
+    ];
+  }
   async connectedCallback() {
     super.connectedCallback();
+    window.addEventListener("erplora:locale-changed", this.onLocaleChange);
     this.ctrl = createListController(erplora3(), "verifactu.records.list", () => this.requestUpdate(), {
       pageSize: 50,
       sort: "id",
@@ -3081,16 +3277,18 @@ var ErpVerifactuRecords = class extends i3 {
     }
   }
   disconnectedCallback() {
+    window.removeEventListener("erplora:locale-changed", this.onLocaleChange);
     super.disconnectedCallback();
     this.unsub?.();
   }
   render() {
+    const t5 = (k2) => erplora3().t(CATALOG3, k2);
     return b2`<div>
         <header>
-          <h2>Registros VeriFactu</h2>
+          <h2>${t5("ui.recordsTitle")}</h2>
         </header>
         ${this.ctrl?.error ? b2`<p class="err">${this.ctrl.error}</p>` : A}
-        <ok-data-table .serverSide=${true} .columns=${this.columns} .rows=${this.ctrl?.rows ?? []} .total=${this.ctrl?.total ?? 0} .page=${this.ctrl?.state.page ?? 0} .pageSize=${this.ctrl?.state.pageSize ?? 50} .sort=${this.ctrl?.state.sort} .sortDir=${this.ctrl?.state.dir ?? "asc"} .searchable=${true} .searchPlaceholder=${"Buscar factura, emisor o NIF\u2026"} .emptyMessage=${this.ctrl?.loading ? "Cargando\u2026" : "Sin registros VeriFactu."} @pageChange=${(e5) => this.ctrl.setPage(e5.detail)} @sortChange=${(e5) => this.ctrl.setSort(e5.detail.sort, e5.detail.dir)} @searchChange=${(e5) => this.ctrl.setSearch(e5.detail)} @filterChange=${(e5) => this.ctrl.setFilter(e5.detail.col, e5.detail.value)}></ok-data-table>
+        <ok-data-table .serverSide=${true} .columns=${this.columns} .rows=${this.ctrl?.rows ?? []} .total=${this.ctrl?.total ?? 0} .page=${this.ctrl?.state.page ?? 0} .pageSize=${this.ctrl?.state.pageSize ?? 50} .sort=${this.ctrl?.state.sort} .sortDir=${this.ctrl?.state.dir ?? "asc"} .searchable=${true} .searchPlaceholder=${t5("ui.recordsSearchPlaceholder")} .emptyMessage=${this.ctrl?.loading ? t5("ui.loading") : t5("ui.recordsEmpty")} @pageChange=${(e5) => this.ctrl.setPage(e5.detail)} @sortChange=${(e5) => this.ctrl.setSort(e5.detail.sort, e5.detail.dir)} @searchChange=${(e5) => this.ctrl.setSearch(e5.detail)} @filterChange=${(e5) => this.ctrl.setFilter(e5.detail.col, e5.detail.value)}></ok-data-table>
       </div>`;
   }
 };
@@ -3099,7 +3297,8 @@ __decorateClass([
 ], ErpVerifactuRecords.prototype, "tick", 2);
 define("erp-verifactu-records", ErpVerifactuRecords);
 
-// ui/components/erp-verifactu-settings/erp-verifactu-settings.ts
+// ../modules-workspace/modules/verifactu/ui/components/erp-verifactu-settings/erp-verifactu-settings.ts
+var CATALOG4 = { es: es_default, en: en_default };
 function erplora4() {
   const c5 = globalThis.erplora;
   if (!c5) throw new Error("erplora SDK no inicializado por el shell");
@@ -3113,6 +3312,10 @@ var ErpVerifactuSettings = class extends i3 {
     this.saving = false;
     this.error = "";
     this.saved = false;
+    // TODO-LIT: componentWillLoad → connectedCallback. Recuerda: connectedCallback se dispara
+    // en CADA reconexión al DOM (no solo en el primer montaje). Si la init debe correr una
+    // sola vez tras el primer render, considera firstUpdated() en su lugar.
+    this.onLocaleChange = () => this.requestUpdate();
   }
   static {
     this.styles = i`
@@ -3127,12 +3330,14 @@ var ErpVerifactuSettings = class extends i3 {
     .ok { color:#2b8a3e; font-weight:600; }
   `;
   }
-  // TODO-LIT: componentWillLoad → connectedCallback. Recuerda: connectedCallback se dispara
-  // en CADA reconexión al DOM (no solo en el primer montaje). Si la init debe correr una
-  // sola vez tras el primer render, considera firstUpdated() en su lugar.
   async connectedCallback() {
     super.connectedCallback();
+    window.addEventListener("erplora:locale-changed", this.onLocaleChange);
     await this.refresh();
+  }
+  disconnectedCallback() {
+    window.removeEventListener("erplora:locale-changed", this.onLocaleChange);
+    super.disconnectedCallback();
   }
   async refresh() {
     this.loading = true;
@@ -3141,7 +3346,7 @@ var ErpVerifactuSettings = class extends i3 {
       const c5 = await erplora4().query("verifactu.config.get");
       this.cfg = c5 ?? {};
     } catch (e5) {
-      this.error = e5 instanceof Error ? e5.message : "Error cargando la configuraci\xF3n";
+      this.error = e5 instanceof Error ? e5.message : erplora4().t(CATALOG4, "ui.errLoadConfig");
     } finally {
       this.loading = false;
     }
@@ -3174,43 +3379,44 @@ var ErpVerifactuSettings = class extends i3 {
       this.saved = true;
       await this.refresh();
     } catch (e5) {
-      this.error = e5 instanceof Error ? e5.message : "No se pudo guardar la configuraci\xF3n";
+      this.error = e5 instanceof Error ? e5.message : erplora4().t(CATALOG4, "ui.errSaveConfig");
     } finally {
       this.saving = false;
     }
   }
   render() {
+    const t5 = (k2) => erplora4().t(CATALOG4, k2);
     return b2`<div>
         <header>
-          <h2>Configuración VeriFactu</h2>
+          <h2>${t5("ui.settingsTitle")}</h2>
         </header>
         ${this.error ? b2`<p class="err">${this.error}</p>` : A}
-        ${this.saved ? b2`<p class="ok">Configuración guardada correctamente.</p>` : A}
+        ${this.saved ? b2`<p class="ok">${t5("ui.settingsSaved")}</p>` : A}
         <form class="form" @submit=${(e5) => this.save(e5)}>
           <div class="row">
             <ion-checkbox ?checked=${!!this.cfg.enabled} @ionChange=${(e5) => this.set("enabled", e5.target.checked)}></ion-checkbox>
-            <label>Activar VeriFactu</label>
+            <label>${t5("ui.enableVerifactu")}</label>
           </div>
-          <label>Entorno AEAT</label>
+          <label>${t5("ui.envAeat")}</label>
           <ion-select .value=${this.cfg.environment || "testing"} @ionChange=${(e5) => this.set("environment", e5.target.value)}>
-            <ion-select-option value="testing">Pruebas (AEAT Test)</ion-select-option>
-            <ion-select-option value="production">Producción</ion-select-option>
+            <ion-select-option value="testing">${t5("ui.envTesting")}</ion-select-option>
+            <ion-select-option value="production">${t5("ui.envProduction")}</ion-select-option>
           </ion-select>
-          <label>NIF del software / emisor</label>
+          <label>${t5("ui.softwareNif")}</label>
           <ion-input .value=${this.cfg.software_nif || ""} placeholder="B12345678" @ionInput=${(e5) => this.set("software_nif", e5.target.value)}></ion-input>
-          <label>Nombre del software</label>
+          <label>${t5("ui.softwareName")}</label>
           <ion-input .value=${this.cfg.software_name || ""} placeholder="ERPlora Hub" @ionInput=${(e5) => this.set("software_name", e5.target.value)}></ion-input>
-          <label>ID del software</label>
+          <label>${t5("ui.softwareId")}</label>
           <ion-input .value=${this.cfg.software_id || ""} placeholder="ERPLORA-001" @ionInput=${(e5) => this.set("software_id", e5.target.value)}></ion-input>
-          <label>Versión del software</label>
+          <label>${t5("ui.softwareVersion")}</label>
           <ion-input .value=${this.cfg.software_version || ""} placeholder="1.0.0" @ionInput=${(e5) => this.set("software_version", e5.target.value)}></ion-input>
-          <label>Ruta del certificado (.p12)</label>
-          <ion-input .value=${this.cfg.certificate_path || ""} placeholder="/ruta/al/certificado.p12" @ionInput=${(e5) => this.set("certificate_path", e5.target.value)}></ion-input>
+          <label>${t5("ui.certificatePath")}</label>
+          <ion-input .value=${this.cfg.certificate_path || ""} placeholder=${t5("ui.certificatePathPlaceholder")} @ionInput=${(e5) => this.set("certificate_path", e5.target.value)}></ion-input>
           <div class="row">
             <ion-checkbox ?checked=${this.cfg.auto_transmit !== false} @ionChange=${(e5) => this.set("auto_transmit", e5.target.checked)}></ion-checkbox>
-            <label>Transmisión automática a AEAT</label>
+            <label>${t5("ui.autoTransmit")}</label>
           </div>
-          <ion-button type="submit" ?disabled=${this.saving || this.loading}>${this.saving ? "Guardando\u2026" : "Guardar configuraci\xF3n"}</ion-button>
+          <ion-button type="submit" ?disabled=${this.saving || this.loading}>${this.saving ? t5("ui.saving") : t5("ui.save")}</ion-button>
         </form>
       </div>`;
   }
