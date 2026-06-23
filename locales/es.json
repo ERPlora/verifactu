@@ -1,0 +1,17 @@
+{
+  "name": "VeriFactu",
+  "navigation": {
+    "records": {
+      "label": "Registros"
+    },
+    "contingency": {
+      "label": "Contingencia"
+    },
+    "events": {
+      "label": "Eventos"
+    },
+    "settings": {
+      "label": "Ajustes"
+    }
+  }
+}
