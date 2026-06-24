@@ -70,6 +70,7 @@
     }
   ],
   "setup": {
+    "required": true,
     "query": "verifactu.config.get",
     "configured_when": [
       { "field": "enabled", "truthy": true },
