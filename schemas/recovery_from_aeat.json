@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "verifactu.recovery.from_aeat",
+  "description": "Recupera la cadena consultando a la AEAT (ConsultaFactuSistemaFacturacion): vuelca el snapshot de los últimos registros confirmados e inserta un ancla con la huella del más reciente. La red TLS-mutua vive en el motor nativo (ADR-0009).",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "issuer_nif": { "type": "string", "default": "", "maxLength": 15 }
+  }
+}

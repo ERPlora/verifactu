@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "verifactu.diagnostics.run",
+  "description": "Ejecuta una prueba en vivo: verifica el certificado + contraseña, genera una huella y QR de muestra y hace un envío de prueba a la AEAT, sin tocar la cadena real. El resultado se persiste como evento diagnostic (ver verifactu.diagnostics.last). invoice_type elige el tipo de prueba.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "invoice_type": {
+      "type": "string",
+      "enum": ["F1", "F2"],
+      "description": "Tipo de factura de la prueba. F2 = tiquet simplificado (sin Destinatarios); F1 = factura completa (la prueba usa un cliente de muestra). Por defecto F2."
+    }
+  }
+}

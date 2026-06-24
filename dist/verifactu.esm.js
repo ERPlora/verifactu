@@ -2,694 +2,29 @@ var __defProp = Object.defineProperty;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __decorateClass = (decorators, target, key, kind) => {
   var result = kind > 1 ? void 0 : kind ? __getOwnPropDesc(target, key) : target;
-  for (var i7 = decorators.length - 1, decorator; i7 >= 0; i7--)
-    if (decorator = decorators[i7])
+  for (var i8 = decorators.length - 1, decorator; i8 >= 0; i8--)
+    if (decorator = decorators[i8])
       result = (kind ? decorator(target, key, result) : decorator(result)) || result;
   if (kind && result) __defProp(target, key, result);
   return result;
 };
 
-// node_modules/@lit-labs/ssr-dom-shim/lib/element-internals.js
-var ElementInternalsShim = class ElementInternals {
-  get shadowRoot() {
-    return this.__host.__shadowRoot;
-  }
-  constructor(_host) {
-    this.ariaActiveDescendantElement = null;
-    this.ariaAtomic = "";
-    this.ariaAutoComplete = "";
-    this.ariaBrailleLabel = "";
-    this.ariaBrailleRoleDescription = "";
-    this.ariaBusy = "";
-    this.ariaChecked = "";
-    this.ariaColCount = "";
-    this.ariaColIndex = "";
-    this.ariaColIndexText = "";
-    this.ariaColSpan = "";
-    this.ariaControlsElements = null;
-    this.ariaCurrent = "";
-    this.ariaDescribedByElements = null;
-    this.ariaDescription = "";
-    this.ariaDetailsElements = null;
-    this.ariaDisabled = "";
-    this.ariaErrorMessageElements = null;
-    this.ariaExpanded = "";
-    this.ariaFlowToElements = null;
-    this.ariaHasPopup = "";
-    this.ariaHidden = "";
-    this.ariaInvalid = "";
-    this.ariaKeyShortcuts = "";
-    this.ariaLabel = "";
-    this.ariaLabelledByElements = null;
-    this.ariaLevel = "";
-    this.ariaLive = "";
-    this.ariaModal = "";
-    this.ariaMultiLine = "";
-    this.ariaMultiSelectable = "";
-    this.ariaOrientation = "";
-    this.ariaOwnsElements = null;
-    this.ariaPlaceholder = "";
-    this.ariaPosInSet = "";
-    this.ariaPressed = "";
-    this.ariaReadOnly = "";
-    this.ariaRelevant = "";
-    this.ariaRequired = "";
-    this.ariaRoleDescription = "";
-    this.ariaRowCount = "";
-    this.ariaRowIndex = "";
-    this.ariaRowIndexText = "";
-    this.ariaRowSpan = "";
-    this.ariaSelected = "";
-    this.ariaSetSize = "";
-    this.ariaSort = "";
-    this.ariaValueMax = "";
-    this.ariaValueMin = "";
-    this.ariaValueNow = "";
-    this.ariaValueText = "";
-    this.role = "";
-    this.form = null;
-    this.labels = [];
-    this.states = /* @__PURE__ */ new Set();
-    this.validationMessage = "";
-    this.validity = {};
-    this.willValidate = true;
-    this.__host = _host;
-  }
-  checkValidity() {
-    console.warn("`ElementInternals.checkValidity()` was called on the server.This method always returns true.");
-    return true;
-  }
-  reportValidity() {
-    return true;
-  }
-  setFormValue() {
-  }
-  setValidity() {
-  }
-};
-
-// node_modules/@lit-labs/ssr-dom-shim/lib/events.js
-var __classPrivateFieldSet = function(receiver, state, value, kind, f3) {
-  if (kind === "m") throw new TypeError("Private method is not writable");
-  if (kind === "a" && !f3) throw new TypeError("Private accessor was defined without a setter");
-  if (typeof state === "function" ? receiver !== state || !f3 : !state.has(receiver)) throw new TypeError("Cannot write private member to an object whose class did not declare it");
-  return kind === "a" ? f3.call(receiver, value) : f3 ? f3.value = value : state.set(receiver, value), value;
-};
-var __classPrivateFieldGet = function(receiver, state, kind, f3) {
-  if (kind === "a" && !f3) throw new TypeError("Private accessor was defined without a getter");
-  if (typeof state === "function" ? receiver !== state || !f3 : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
-  return kind === "m" ? f3 : kind === "a" ? f3.call(receiver) : f3 ? f3.value : state.get(receiver);
-};
-var _Event_cancelable;
-var _Event_bubbles;
-var _Event_composed;
-var _Event_defaultPrevented;
-var _Event_timestamp;
-var _Event_propagationStopped;
-var _Event_type;
-var _Event_target;
-var _Event_isBeingDispatched;
-var _a;
-var _CustomEvent_detail;
-var _b;
-var NONE = 0;
-var CAPTURING_PHASE = 1;
-var AT_TARGET = 2;
-var BUBBLING_PHASE = 3;
-var enumerableProperty = { __proto__: null };
-enumerableProperty.enumerable = true;
-Object.freeze(enumerableProperty);
-var EventShim = (_a = class Event {
-  constructor(type, options = {}) {
-    _Event_cancelable.set(this, false);
-    _Event_bubbles.set(this, false);
-    _Event_composed.set(this, false);
-    _Event_defaultPrevented.set(this, false);
-    _Event_timestamp.set(this, Date.now());
-    _Event_propagationStopped.set(this, false);
-    _Event_type.set(this, void 0);
-    _Event_target.set(this, void 0);
-    _Event_isBeingDispatched.set(this, void 0);
-    this.NONE = NONE;
-    this.CAPTURING_PHASE = CAPTURING_PHASE;
-    this.AT_TARGET = AT_TARGET;
-    this.BUBBLING_PHASE = BUBBLING_PHASE;
-    if (arguments.length === 0)
-      throw new Error(`The type argument must be specified`);
-    if (typeof options !== "object" || !options) {
-      throw new Error(`The "options" argument must be an object`);
-    }
-    const { bubbles, cancelable, composed } = options;
-    __classPrivateFieldSet(this, _Event_cancelable, !!cancelable, "f");
-    __classPrivateFieldSet(this, _Event_bubbles, !!bubbles, "f");
-    __classPrivateFieldSet(this, _Event_composed, !!composed, "f");
-    __classPrivateFieldSet(this, _Event_type, `${type}`, "f");
-    __classPrivateFieldSet(this, _Event_target, null, "f");
-    __classPrivateFieldSet(this, _Event_isBeingDispatched, false, "f");
-  }
-  initEvent(_type, _bubbles, _cancelable) {
-    throw new Error("Method not implemented.");
-  }
-  stopImmediatePropagation() {
-    this.stopPropagation();
-  }
-  preventDefault() {
-    __classPrivateFieldSet(this, _Event_defaultPrevented, true, "f");
-  }
-  get target() {
-    return __classPrivateFieldGet(this, _Event_target, "f");
-  }
-  get currentTarget() {
-    return __classPrivateFieldGet(this, _Event_target, "f");
-  }
-  get srcElement() {
-    return __classPrivateFieldGet(this, _Event_target, "f");
-  }
-  get type() {
-    return __classPrivateFieldGet(this, _Event_type, "f");
-  }
-  get cancelable() {
-    return __classPrivateFieldGet(this, _Event_cancelable, "f");
-  }
-  get defaultPrevented() {
-    return __classPrivateFieldGet(this, _Event_cancelable, "f") && __classPrivateFieldGet(this, _Event_defaultPrevented, "f");
-  }
-  get timeStamp() {
-    return __classPrivateFieldGet(this, _Event_timestamp, "f");
-  }
-  composedPath() {
-    return __classPrivateFieldGet(this, _Event_isBeingDispatched, "f") ? [__classPrivateFieldGet(this, _Event_target, "f")] : [];
-  }
-  get returnValue() {
-    return !__classPrivateFieldGet(this, _Event_cancelable, "f") || !__classPrivateFieldGet(this, _Event_defaultPrevented, "f");
-  }
-  get bubbles() {
-    return __classPrivateFieldGet(this, _Event_bubbles, "f");
-  }
-  get composed() {
-    return __classPrivateFieldGet(this, _Event_composed, "f");
-  }
-  get eventPhase() {
-    return __classPrivateFieldGet(this, _Event_isBeingDispatched, "f") ? _a.AT_TARGET : _a.NONE;
-  }
-  get cancelBubble() {
-    return __classPrivateFieldGet(this, _Event_propagationStopped, "f");
-  }
-  set cancelBubble(value) {
-    if (value) {
-      __classPrivateFieldSet(this, _Event_propagationStopped, true, "f");
-    }
-  }
-  stopPropagation() {
-    __classPrivateFieldSet(this, _Event_propagationStopped, true, "f");
-  }
-  get isTrusted() {
-    return false;
-  }
-}, _Event_cancelable = /* @__PURE__ */ new WeakMap(), _Event_bubbles = /* @__PURE__ */ new WeakMap(), _Event_composed = /* @__PURE__ */ new WeakMap(), _Event_defaultPrevented = /* @__PURE__ */ new WeakMap(), _Event_timestamp = /* @__PURE__ */ new WeakMap(), _Event_propagationStopped = /* @__PURE__ */ new WeakMap(), _Event_type = /* @__PURE__ */ new WeakMap(), _Event_target = /* @__PURE__ */ new WeakMap(), _Event_isBeingDispatched = /* @__PURE__ */ new WeakMap(), _a.NONE = NONE, _a.CAPTURING_PHASE = CAPTURING_PHASE, _a.AT_TARGET = AT_TARGET, _a.BUBBLING_PHASE = BUBBLING_PHASE, _a);
-Object.defineProperties(EventShim.prototype, {
-  initEvent: enumerableProperty,
-  stopImmediatePropagation: enumerableProperty,
-  preventDefault: enumerableProperty,
-  target: enumerableProperty,
-  currentTarget: enumerableProperty,
-  srcElement: enumerableProperty,
-  type: enumerableProperty,
-  cancelable: enumerableProperty,
-  defaultPrevented: enumerableProperty,
-  timeStamp: enumerableProperty,
-  composedPath: enumerableProperty,
-  returnValue: enumerableProperty,
-  bubbles: enumerableProperty,
-  composed: enumerableProperty,
-  eventPhase: enumerableProperty,
-  cancelBubble: enumerableProperty,
-  stopPropagation: enumerableProperty,
-  isTrusted: enumerableProperty
-});
-var CustomEventShim = (_b = class CustomEvent2 extends EventShim {
-  constructor(type, options = {}) {
-    super(type, options);
-    _CustomEvent_detail.set(this, void 0);
-    __classPrivateFieldSet(this, _CustomEvent_detail, options?.detail ?? null, "f");
-  }
-  initCustomEvent(_type, _bubbles, _cancelable, _detail) {
-    throw new Error("Method not implemented.");
-  }
-  get detail() {
-    return __classPrivateFieldGet(this, _CustomEvent_detail, "f");
-  }
-}, _CustomEvent_detail = /* @__PURE__ */ new WeakMap(), _b);
-Object.defineProperties(CustomEventShim.prototype, {
-  detail: enumerableProperty
-});
-var EventShimWithRealType = EventShim;
-var CustomEventShimWithRealType = CustomEventShim;
-
-// node_modules/@lit-labs/ssr-dom-shim/lib/css.js
-var _a2;
-var CSSRuleShim = (_a2 = class CSSRule {
-  constructor() {
-    this.STYLE_RULE = 1;
-    this.CHARSET_RULE = 2;
-    this.IMPORT_RULE = 3;
-    this.MEDIA_RULE = 4;
-    this.FONT_FACE_RULE = 5;
-    this.PAGE_RULE = 6;
-    this.NAMESPACE_RULE = 10;
-    this.KEYFRAMES_RULE = 7;
-    this.KEYFRAME_RULE = 8;
-    this.SUPPORTS_RULE = 12;
-    this.COUNTER_STYLE_RULE = 11;
-    this.FONT_FEATURE_VALUES_RULE = 14;
-    this.MARGIN_RULE = 9;
-    this.__parentStyleSheet = null;
-    this.cssText = "";
-  }
-  get parentRule() {
-    return null;
-  }
-  get parentStyleSheet() {
-    return this.__parentStyleSheet;
-  }
-  get type() {
-    return 0;
-  }
-}, _a2.STYLE_RULE = 1, _a2.CHARSET_RULE = 2, _a2.IMPORT_RULE = 3, _a2.MEDIA_RULE = 4, _a2.FONT_FACE_RULE = 5, _a2.PAGE_RULE = 6, _a2.NAMESPACE_RULE = 10, _a2.KEYFRAMES_RULE = 7, _a2.KEYFRAME_RULE = 8, _a2.SUPPORTS_RULE = 12, _a2.COUNTER_STYLE_RULE = 11, _a2.FONT_FEATURE_VALUES_RULE = 14, _a2.MARGIN_RULE = 9, _a2);
-
-// node_modules/@lit-labs/ssr-dom-shim/index.js
-globalThis.Event ??= EventShimWithRealType;
-globalThis.CustomEvent ??= CustomEventShimWithRealType;
-var constructionToken = Symbol();
-var isCaptureEventListener = (options) => typeof options === "boolean" ? options : options?.capture ?? false;
-var enumerableProperty2 = { __proto__: null };
-enumerableProperty2.enumerable = true;
-Object.freeze(enumerableProperty2);
-var EventTarget = class {
-  constructor() {
-    this.__eventListeners = /* @__PURE__ */ new Map();
-    this.__captureEventListeners = /* @__PURE__ */ new Map();
-  }
-  addEventListener(type, callback, options) {
-    if (callback === void 0 || callback === null) {
-      return;
-    }
-    const eventListenersMap = isCaptureEventListener(options) ? this.__captureEventListeners : this.__eventListeners;
-    let eventListeners = eventListenersMap.get(type);
-    if (eventListeners === void 0) {
-      eventListeners = /* @__PURE__ */ new Map();
-      eventListenersMap.set(type, eventListeners);
-    } else if (eventListeners.has(callback)) {
-      return;
-    }
-    const normalizedOptions = typeof options === "object" && options ? options : {};
-    normalizedOptions.signal?.addEventListener("abort", () => this.removeEventListener(type, callback, options));
-    eventListeners.set(callback, normalizedOptions ?? {});
-  }
-  removeEventListener(type, callback, options) {
-    if (callback === void 0 || callback === null) {
-      return;
-    }
-    const eventListenersMap = isCaptureEventListener(options) ? this.__captureEventListeners : this.__eventListeners;
-    const eventListeners = eventListenersMap.get(type);
-    if (eventListeners !== void 0) {
-      eventListeners.delete(callback);
-      if (!eventListeners.size) {
-        eventListenersMap.delete(type);
-      }
-    }
-  }
-  dispatchEvent(event) {
-    let composedPath = this.__resolveFullEventPath();
-    if (!event.composed && this.__host) {
-      composedPath = composedPath.slice(0, composedPath.indexOf(this.__host));
-    }
-    let stopPropagation = false;
-    let stopImmediatePropagation = false;
-    let eventPhase = EventShimWithRealType.NONE;
-    let target = null;
-    let tmpTarget = null;
-    let currentTarget = null;
-    const originalStopPropagation = event.stopPropagation;
-    const originalStopImmediatePropagation = event.stopImmediatePropagation;
-    Object.defineProperties(event, {
-      target: {
-        get() {
-          return target ?? tmpTarget;
-        },
-        ...enumerableProperty2
-      },
-      srcElement: {
-        get() {
-          return event.target;
-        },
-        ...enumerableProperty2
-      },
-      currentTarget: {
-        get() {
-          return currentTarget;
-        },
-        ...enumerableProperty2
-      },
-      eventPhase: {
-        get() {
-          return eventPhase;
-        },
-        ...enumerableProperty2
-      },
-      composedPath: {
-        value: () => composedPath,
-        ...enumerableProperty2
-      },
-      stopPropagation: {
-        value: () => {
-          stopPropagation = true;
-          originalStopPropagation.call(event);
-        },
-        ...enumerableProperty2
-      },
-      stopImmediatePropagation: {
-        value: () => {
-          stopImmediatePropagation = true;
-          originalStopImmediatePropagation.call(event);
-        },
-        ...enumerableProperty2
-      }
-    });
-    const invokeEventListener = (listener, options, eventListenerMap) => {
-      if (typeof listener === "function") {
-        listener(event);
-      } else if (typeof listener?.handleEvent === "function") {
-        listener.handleEvent(event);
-      }
-      if (options.once) {
-        eventListenerMap.delete(listener);
-      }
-    };
-    const finishDispatch = () => {
-      currentTarget = null;
-      eventPhase = EventShimWithRealType.NONE;
-      return !event.defaultPrevented;
-    };
-    const captureEventPath = composedPath.slice().reverse();
-    target = !this.__host || !event.composed ? this : null;
-    const retarget = (eventTargets) => {
-      tmpTarget = this;
-      while (tmpTarget.__host && eventTargets.includes(tmpTarget.__host)) {
-        tmpTarget = tmpTarget.__host;
-      }
-    };
-    for (const eventTarget of captureEventPath) {
-      if (!target && (!tmpTarget || tmpTarget === eventTarget.__host)) {
-        retarget(captureEventPath.slice(captureEventPath.indexOf(eventTarget)));
-      }
-      currentTarget = eventTarget;
-      eventPhase = eventTarget === event.target ? EventShimWithRealType.AT_TARGET : EventShimWithRealType.CAPTURING_PHASE;
-      const captureEventListeners = eventTarget.__captureEventListeners.get(event.type);
-      if (captureEventListeners) {
-        for (const [listener, options] of captureEventListeners) {
-          invokeEventListener(listener, options, captureEventListeners);
-          if (stopImmediatePropagation) {
-            return finishDispatch();
-          }
-        }
-      }
-      if (stopPropagation) {
-        return finishDispatch();
-      }
-    }
-    const bubbleEventPath = event.bubbles ? composedPath : [this];
-    tmpTarget = null;
-    for (const eventTarget of bubbleEventPath) {
-      if (!target && (!tmpTarget || eventTarget === tmpTarget.__host)) {
-        retarget(bubbleEventPath.slice(0, bubbleEventPath.indexOf(eventTarget) + 1));
-      }
-      currentTarget = eventTarget;
-      eventPhase = eventTarget === event.target ? EventShimWithRealType.AT_TARGET : EventShimWithRealType.BUBBLING_PHASE;
-      const eventListeners = eventTarget.__eventListeners.get(event.type);
-      if (eventListeners) {
-        for (const [listener, options] of eventListeners) {
-          invokeEventListener(listener, options, eventListeners);
-          if (stopImmediatePropagation) {
-            return finishDispatch();
-          }
-        }
-      }
-      if (stopPropagation) {
-        return finishDispatch();
-      }
-    }
-    return finishDispatch();
-  }
-  __resolveFullEventPath() {
-    if (this.__eventPathCache) {
-      return this.__eventPathCache;
-    } else if (!this.__eventTargetParent) {
-      return this.__eventPathCache = [this, documentShim, windowShim];
-    } else {
-      return this.__eventPathCache = [
-        this,
-        ...this.__eventTargetParent.__resolveFullEventPath()
-      ];
-    }
-  }
-};
-var attributes = /* @__PURE__ */ new WeakMap();
-var attributesForElement = (element) => {
-  let attrs = attributes.get(element);
-  if (attrs === void 0) {
-    attributes.set(element, attrs = /* @__PURE__ */ new Map());
-  }
-  return attrs;
-};
-var NodeShim = class Node extends EventTarget {
-  getRootNode(options) {
-    if (options?.composed) {
-      return document2;
-    }
-    const host = this.__host;
-    return host?.__shadowRoot ?? document2;
-  }
-};
-var DocumentShim = class Document2 extends NodeShim {
-  get adoptedStyleSheets() {
-    return [];
-  }
-  createTreeWalker() {
-    return {};
-  }
-  createTextNode() {
-    return {};
-  }
-  createElement() {
-    return {};
-  }
-};
-var documentShim = new DocumentShim();
-var document2 = documentShim;
-var WindowShim = class Window extends NodeShim {
-  constructor(token) {
-    super();
-    if (token !== constructionToken) {
-      throw new TypeError("Illegal constructor");
-    }
-    Object.assign(this, globalThis, {
-      CustomElementRegistry,
-      customElements: customElements2,
-      document: document2,
-      Document: DocumentShim,
-      Element: ElementShim,
-      EventTarget,
-      HTMLElement: HTMLElementShim,
-      Node: NodeShim,
-      ShadowRoot: ShadowRootShim,
-      window: this,
-      Window: WindowShim
-    });
-  }
-};
-var ElementShim = class Element extends NodeShim {
-  constructor() {
-    super(...arguments);
-    this.__shadowRootMode = null;
-    this.__shadowRoot = null;
-    this.__internals = null;
-  }
-  get attributes() {
-    return Array.from(attributesForElement(this)).map(([name, value]) => ({
-      name,
-      value
-    }));
-  }
-  get shadowRoot() {
-    if (this.__shadowRootMode === "closed") {
-      return null;
-    }
-    return this.__shadowRoot;
-  }
-  get localName() {
-    return this.constructor.__localName;
-  }
-  get tagName() {
-    return this.localName?.toUpperCase();
-  }
-  setAttribute(name, value) {
-    attributesForElement(this).set(name, String(value));
-  }
-  removeAttribute(name) {
-    attributesForElement(this).delete(name);
-  }
-  toggleAttribute(name, force) {
-    if (this.hasAttribute(name)) {
-      if (force === void 0 || !force) {
-        this.removeAttribute(name);
-        return false;
-      }
-    } else {
-      if (force === void 0 || force) {
-        this.setAttribute(name, "");
-        return true;
-      } else {
-        return false;
-      }
-    }
-    return true;
-  }
-  hasAttribute(name) {
-    return attributesForElement(this).has(name);
-  }
-  attachShadow(init) {
-    this.__shadowRootMode = init.mode;
-    const shadowRoot = new ShadowRootShim(constructionToken, init);
-    shadowRoot.__eventTargetParent = this;
-    shadowRoot.__host = this;
-    return this.__shadowRoot = shadowRoot;
-  }
-  attachInternals() {
-    if (this.__internals !== null) {
-      throw new Error(`Failed to execute 'attachInternals' on 'HTMLElement': ElementInternals for the specified element was already attached.`);
-    }
-    const internals = new ElementInternalsShim(this);
-    this.__internals = internals;
-    return internals;
-  }
-  getAttribute(name) {
-    const value = attributesForElement(this).get(name);
-    return value ?? null;
-  }
-};
-var HTMLElementShim = class HTMLElement extends ElementShim {
-};
-var HTMLElementShimWithRealType = HTMLElementShim;
-var ShadowRootShim = class ShadowRoot extends NodeShim {
-  get host() {
-    return this.__host;
-  }
-  constructor(constructionToken2, init) {
-    super();
-    if (constructionToken2 !== constructionToken2) {
-      throw new TypeError("Illegal constructor");
-    }
-    this.mode = init.mode;
-  }
-};
-globalThis.litServerRoot ??= Object.defineProperty(new HTMLElementShimWithRealType(), "localName", {
-  // Patch localName (and tagName) to return a unique name.
-  get() {
-    return "lit-server-root";
-  }
-});
-function promiseWithResolvers() {
-  let resolve;
-  let reject;
-  const promise = new Promise((res, rej) => {
-    resolve = res;
-    reject = rej;
-  });
-  return { promise, resolve, reject };
-}
-var CustomElementRegistry = class {
-  constructor() {
-    this.__definitions = /* @__PURE__ */ new Map();
-    this.__reverseDefinitions = /* @__PURE__ */ new Map();
-    this.__pendingWhenDefineds = /* @__PURE__ */ new Map();
-  }
-  define(name, ctor) {
-    if (this.__definitions.has(name)) {
-      if (true) {
-        console.warn(`'CustomElementRegistry' already has "${name}" defined. This may have been caused by live reload or hot module replacement in which case it can be safely ignored.
-Make sure to test your application with a production build as repeat registrations will throw in production.`);
-      } else {
-        throw new Error(`Failed to execute 'define' on 'CustomElementRegistry': the name "${name}" has already been used with this registry`);
-      }
-    }
-    if (this.__reverseDefinitions.has(ctor)) {
-      throw new Error(`Failed to execute 'define' on 'CustomElementRegistry': the constructor has already been used with this registry for the tag name ${this.__reverseDefinitions.get(ctor)}`);
-    }
-    ctor.__localName = name;
-    this.__definitions.set(name, {
-      ctor,
-      // Note it's important we read `observedAttributes` in case it is a getter
-      // with side-effects, as is the case in Lit, where it triggers class
-      // finalization.
-      //
-      // TODO(aomarks) To be spec compliant, we should also capture the
-      // registration-time lifecycle methods like `connectedCallback`. For them
-      // to be actually accessible to e.g. the Lit SSR element renderer, though,
-      // we'd need to introduce a new API for accessing them (since `get` only
-      // returns the constructor).
-      observedAttributes: ctor.observedAttributes ?? []
-    });
-    this.__reverseDefinitions.set(ctor, name);
-    this.__pendingWhenDefineds.get(name)?.resolve(ctor);
-    this.__pendingWhenDefineds.delete(name);
-  }
-  get(name) {
-    const definition = this.__definitions.get(name);
-    return definition?.ctor;
-  }
-  getName(ctor) {
-    return this.__reverseDefinitions.get(ctor) ?? null;
-  }
-  initialize(_root) {
-    throw new Error(`customElements.initialize is not currently supported in SSR. Please file a bug if you need it.`);
-  }
-  upgrade(_element) {
-    throw new Error(`customElements.upgrade is not currently supported in SSR. Please file a bug if you need it.`);
-  }
-  async whenDefined(name) {
-    const definition = this.__definitions.get(name);
-    if (definition) {
-      return definition.ctor;
-    }
-    let withResolvers = this.__pendingWhenDefineds.get(name);
-    if (!withResolvers) {
-      withResolvers = promiseWithResolvers();
-      this.__pendingWhenDefineds.set(name, withResolvers);
-    }
-    return withResolvers.promise;
-  }
-};
-var CustomElementRegistryShimWithRealType = CustomElementRegistry;
-var customElements2 = new CustomElementRegistryShimWithRealType();
-var windowShim = new WindowShim(constructionToken);
-
-// node_modules/@lit/reactive-element/node/css-tag.js
+// ../modules-workspace/node_modules/.pnpm/@lit+reactive-element@2.1.2/node_modules/@lit/reactive-element/css-tag.js
 var t = globalThis;
 var e = t.ShadowRoot && (void 0 === t.ShadyCSS || t.ShadyCSS.nativeShadow) && "adoptedStyleSheets" in Document.prototype && "replace" in CSSStyleSheet.prototype;
 var s = Symbol();
 var o = /* @__PURE__ */ new WeakMap();
 var n = class {
-  constructor(t5, e5, o7) {
+  constructor(t5, e6, o7) {
     if (this._$cssResult$ = true, o7 !== s) throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");
-    this.cssText = t5, this.t = e5;
+    this.cssText = t5, this.t = e6;
   }
   get styleSheet() {
     let t5 = this.o;
     const s5 = this.t;
     if (e && void 0 === t5) {
-      const e5 = void 0 !== s5 && 1 === s5.length;
-      e5 && (t5 = o.get(s5)), void 0 === t5 && ((this.o = t5 = new CSSStyleSheet()).replaceSync(this.cssText), e5 && o.set(s5, t5));
+      const e6 = void 0 !== s5 && 1 === s5.length;
+      e6 && (t5 = o.get(s5)), void 0 === t5 && ((this.o = t5 = new CSSStyleSheet()).replaceSync(this.cssText), e6 && o.set(s5, t5));
     }
     return t5;
   }
@@ -698,8 +33,8 @@ var n = class {
   }
 };
 var r = (t5) => new n("string" == typeof t5 ? t5 : t5 + "", void 0, s);
-var i = (t5, ...e5) => {
-  const o7 = 1 === t5.length ? t5[0] : e5.reduce((e6, s5, o8) => e6 + ((t6) => {
+var i = (t5, ...e6) => {
+  const o7 = 1 === t5.length ? t5[0] : e6.reduce((e7, s5, o8) => e7 + ((t6) => {
     if (true === t6._$cssResult$) return t6.cssText;
     if ("number" == typeof t6) return t6;
     throw Error("Value passed to 'css' function must be a 'css' function result: " + t6 + ". Use 'unsafeCSS' to pass non-literal values, but take care to ensure page security.");
@@ -708,29 +43,28 @@ var i = (t5, ...e5) => {
 };
 var S = (s5, o7) => {
   if (e) s5.adoptedStyleSheets = o7.map((t5) => t5 instanceof CSSStyleSheet ? t5 : t5.styleSheet);
-  else for (const e5 of o7) {
+  else for (const e6 of o7) {
     const o8 = document.createElement("style"), n6 = t.litNonce;
-    void 0 !== n6 && o8.setAttribute("nonce", n6), o8.textContent = e5.cssText, s5.appendChild(o8);
+    void 0 !== n6 && o8.setAttribute("nonce", n6), o8.textContent = e6.cssText, s5.appendChild(o8);
   }
 };
-var c = e || void 0 === t.CSSStyleSheet ? (t5) => t5 : (t5) => t5 instanceof CSSStyleSheet ? ((t6) => {
-  let e5 = "";
-  for (const s5 of t6.cssRules) e5 += s5.cssText;
-  return r(e5);
+var c = e ? (t5) => t5 : (t5) => t5 instanceof CSSStyleSheet ? ((t6) => {
+  let e6 = "";
+  for (const s5 of t6.cssRules) e6 += s5.cssText;
+  return r(e6);
 })(t5) : t5;
 
-// node_modules/@lit/reactive-element/node/reactive-element.js
-var { is: h, defineProperty: r2, getOwnPropertyDescriptor: o2, getOwnPropertyNames: n2, getOwnPropertySymbols: a, getPrototypeOf: c2 } = Object;
-var l = globalThis;
-l.customElements ??= customElements2;
-var p = l.trustedTypes;
-var d = p ? p.emptyScript : "";
-var u = l.reactiveElementPolyfillSupport;
-var f = (t5, s5) => t5;
-var b = { toAttribute(t5, s5) {
+// ../modules-workspace/node_modules/.pnpm/@lit+reactive-element@2.1.2/node_modules/@lit/reactive-element/reactive-element.js
+var { is: i2, defineProperty: e2, getOwnPropertyDescriptor: h, getOwnPropertyNames: r2, getOwnPropertySymbols: o2, getPrototypeOf: n2 } = Object;
+var a = globalThis;
+var c2 = a.trustedTypes;
+var l = c2 ? c2.emptyScript : "";
+var p = a.reactiveElementPolyfillSupport;
+var d = (t5, s5) => t5;
+var u = { toAttribute(t5, s5) {
   switch (s5) {
     case Boolean:
-      t5 = t5 ? d : null;
+      t5 = t5 ? l : null;
       break;
     case Object:
     case Array:
@@ -738,88 +72,88 @@ var b = { toAttribute(t5, s5) {
   }
   return t5;
 }, fromAttribute(t5, s5) {
-  let i7 = t5;
+  let i8 = t5;
   switch (s5) {
     case Boolean:
-      i7 = null !== t5;
+      i8 = null !== t5;
       break;
     case Number:
-      i7 = null === t5 ? null : Number(t5);
+      i8 = null === t5 ? null : Number(t5);
       break;
     case Object:
     case Array:
       try {
-        i7 = JSON.parse(t5);
+        i8 = JSON.parse(t5);
       } catch (t6) {
-        i7 = null;
+        i8 = null;
       }
   }
-  return i7;
+  return i8;
 } };
-var m = (t5, s5) => !h(t5, s5);
-var y = { attribute: true, type: String, converter: b, reflect: false, useDefault: false, hasChanged: m };
-Symbol.metadata ??= Symbol("metadata"), l.litPropertyMetadata ??= /* @__PURE__ */ new WeakMap();
-var g = class extends (globalThis.HTMLElement ?? HTMLElementShimWithRealType) {
+var f = (t5, s5) => !i2(t5, s5);
+var b = { attribute: true, type: String, converter: u, reflect: false, useDefault: false, hasChanged: f };
+Symbol.metadata ??= Symbol("metadata"), a.litPropertyMetadata ??= /* @__PURE__ */ new WeakMap();
+var y = class extends HTMLElement {
   static addInitializer(t5) {
     this._$Ei(), (this.l ??= []).push(t5);
   }
   static get observedAttributes() {
     return this.finalize(), this._$Eh && [...this._$Eh.keys()];
   }
-  static createProperty(t5, s5 = y) {
+  static createProperty(t5, s5 = b) {
     if (s5.state && (s5.attribute = false), this._$Ei(), this.prototype.hasOwnProperty(t5) && ((s5 = Object.create(s5)).wrapped = true), this.elementProperties.set(t5, s5), !s5.noAccessor) {
-      const i7 = Symbol(), e5 = this.getPropertyDescriptor(t5, i7, s5);
-      void 0 !== e5 && r2(this.prototype, t5, e5);
+      const i8 = Symbol(), h4 = this.getPropertyDescriptor(t5, i8, s5);
+      void 0 !== h4 && e2(this.prototype, t5, h4);
     }
   }
-  static getPropertyDescriptor(t5, s5, i7) {
-    const { get: e5, set: h4 } = o2(this.prototype, t5) ?? { get() {
+  static getPropertyDescriptor(t5, s5, i8) {
+    const { get: e6, set: r6 } = h(this.prototype, t5) ?? { get() {
       return this[s5];
     }, set(t6) {
       this[s5] = t6;
     } };
-    return { get: e5, set(s6) {
-      const r6 = e5?.call(this);
-      h4?.call(this, s6), this.requestUpdate(t5, r6, i7);
+    return { get: e6, set(s6) {
+      const h4 = e6?.call(this);
+      r6?.call(this, s6), this.requestUpdate(t5, h4, i8);
     }, configurable: true, enumerable: true };
   }
   static getPropertyOptions(t5) {
-    return this.elementProperties.get(t5) ?? y;
+    return this.elementProperties.get(t5) ?? b;
   }
   static _$Ei() {
-    if (this.hasOwnProperty(f("elementProperties"))) return;
-    const t5 = c2(this);
+    if (this.hasOwnProperty(d("elementProperties"))) return;
+    const t5 = n2(this);
     t5.finalize(), void 0 !== t5.l && (this.l = [...t5.l]), this.elementProperties = new Map(t5.elementProperties);
   }
   static finalize() {
-    if (this.hasOwnProperty(f("finalized"))) return;
-    if (this.finalized = true, this._$Ei(), this.hasOwnProperty(f("properties"))) {
-      const t6 = this.properties, s5 = [...n2(t6), ...a(t6)];
-      for (const i7 of s5) this.createProperty(i7, t6[i7]);
+    if (this.hasOwnProperty(d("finalized"))) return;
+    if (this.finalized = true, this._$Ei(), this.hasOwnProperty(d("properties"))) {
+      const t6 = this.properties, s5 = [...r2(t6), ...o2(t6)];
+      for (const i8 of s5) this.createProperty(i8, t6[i8]);
     }
     const t5 = this[Symbol.metadata];
     if (null !== t5) {
       const s5 = litPropertyMetadata.get(t5);
-      if (void 0 !== s5) for (const [t6, i7] of s5) this.elementProperties.set(t6, i7);
+      if (void 0 !== s5) for (const [t6, i8] of s5) this.elementProperties.set(t6, i8);
     }
     this._$Eh = /* @__PURE__ */ new Map();
     for (const [t6, s5] of this.elementProperties) {
-      const i7 = this._$Eu(t6, s5);
-      void 0 !== i7 && this._$Eh.set(i7, t6);
+      const i8 = this._$Eu(t6, s5);
+      void 0 !== i8 && this._$Eh.set(i8, t6);
     }
     this.elementStyles = this.finalizeStyles(this.styles);
   }
-  static finalizeStyles(t5) {
-    const s5 = [];
-    if (Array.isArray(t5)) {
-      const e5 = new Set(t5.flat(1 / 0).reverse());
-      for (const t6 of e5) s5.unshift(c(t6));
-    } else void 0 !== t5 && s5.push(c(t5));
-    return s5;
+  static finalizeStyles(s5) {
+    const i8 = [];
+    if (Array.isArray(s5)) {
+      const e6 = new Set(s5.flat(1 / 0).reverse());
+      for (const s6 of e6) i8.unshift(c(s6));
+    } else void 0 !== s5 && i8.push(c(s5));
+    return i8;
   }
   static _$Eu(t5, s5) {
-    const i7 = s5.attribute;
-    return false === i7 ? void 0 : "string" == typeof i7 ? i7 : "string" == typeof t5 ? t5.toLowerCase() : void 0;
+    const i8 = s5.attribute;
+    return false === i8 ? void 0 : "string" == typeof i8 ? i8 : "string" == typeof t5 ? t5.toLowerCase() : void 0;
   }
   constructor() {
     super(), this._$Ep = void 0, this.isUpdatePending = false, this.hasUpdated = false, this._$Em = null, this._$Ev();
@@ -835,7 +169,7 @@ var g = class extends (globalThis.HTMLElement ?? HTMLElementShimWithRealType) {
   }
   _$E_() {
     const t5 = /* @__PURE__ */ new Map(), s5 = this.constructor.elementProperties;
-    for (const i7 of s5.keys()) this.hasOwnProperty(i7) && (t5.set(i7, this[i7]), delete this[i7]);
+    for (const i8 of s5.keys()) this.hasOwnProperty(i8) && (t5.set(i8, this[i8]), delete this[i8]);
     t5.size > 0 && (this._$Ep = t5);
   }
   createRenderRoot() {
@@ -850,35 +184,35 @@ var g = class extends (globalThis.HTMLElement ?? HTMLElementShimWithRealType) {
   disconnectedCallback() {
     this._$EO?.forEach((t5) => t5.hostDisconnected?.());
   }
-  attributeChangedCallback(t5, s5, i7) {
-    this._$AK(t5, i7);
+  attributeChangedCallback(t5, s5, i8) {
+    this._$AK(t5, i8);
   }
   _$ET(t5, s5) {
-    const i7 = this.constructor.elementProperties.get(t5), e5 = this.constructor._$Eu(t5, i7);
-    if (void 0 !== e5 && true === i7.reflect) {
-      const h4 = (void 0 !== i7.converter?.toAttribute ? i7.converter : b).toAttribute(s5, i7.type);
-      this._$Em = t5, null == h4 ? this.removeAttribute(e5) : this.setAttribute(e5, h4), this._$Em = null;
+    const i8 = this.constructor.elementProperties.get(t5), e6 = this.constructor._$Eu(t5, i8);
+    if (void 0 !== e6 && true === i8.reflect) {
+      const h4 = (void 0 !== i8.converter?.toAttribute ? i8.converter : u).toAttribute(s5, i8.type);
+      this._$Em = t5, null == h4 ? this.removeAttribute(e6) : this.setAttribute(e6, h4), this._$Em = null;
     }
   }
   _$AK(t5, s5) {
-    const i7 = this.constructor, e5 = i7._$Eh.get(t5);
-    if (void 0 !== e5 && this._$Em !== e5) {
-      const t6 = i7.getPropertyOptions(e5), h4 = "function" == typeof t6.converter ? { fromAttribute: t6.converter } : void 0 !== t6.converter?.fromAttribute ? t6.converter : b;
-      this._$Em = e5;
+    const i8 = this.constructor, e6 = i8._$Eh.get(t5);
+    if (void 0 !== e6 && this._$Em !== e6) {
+      const t6 = i8.getPropertyOptions(e6), h4 = "function" == typeof t6.converter ? { fromAttribute: t6.converter } : void 0 !== t6.converter?.fromAttribute ? t6.converter : u;
+      this._$Em = e6;
       const r6 = h4.fromAttribute(s5, t6.type);
-      this[e5] = r6 ?? this._$Ej?.get(e5) ?? r6, this._$Em = null;
+      this[e6] = r6 ?? this._$Ej?.get(e6) ?? r6, this._$Em = null;
     }
   }
-  requestUpdate(t5, s5, i7, e5 = false, h4) {
+  requestUpdate(t5, s5, i8, e6 = false, h4) {
     if (void 0 !== t5) {
       const r6 = this.constructor;
-      if (false === e5 && (h4 = this[t5]), i7 ??= r6.getPropertyOptions(t5), !((i7.hasChanged ?? m)(h4, s5) || i7.useDefault && i7.reflect && h4 === this._$Ej?.get(t5) && !this.hasAttribute(r6._$Eu(t5, i7)))) return;
-      this.C(t5, s5, i7);
+      if (false === e6 && (h4 = this[t5]), i8 ??= r6.getPropertyOptions(t5), !((i8.hasChanged ?? f)(h4, s5) || i8.useDefault && i8.reflect && h4 === this._$Ej?.get(t5) && !this.hasAttribute(r6._$Eu(t5, i8)))) return;
+      this.C(t5, s5, i8);
     }
     false === this.isUpdatePending && (this._$ES = this._$EP());
   }
-  C(t5, s5, { useDefault: i7, reflect: e5, wrapped: h4 }, r6) {
-    i7 && !(this._$Ej ??= /* @__PURE__ */ new Map()).has(t5) && (this._$Ej.set(t5, r6 ?? s5 ?? this[t5]), true !== h4 || void 0 !== r6) || (this._$AL.has(t5) || (this.hasUpdated || i7 || (s5 = void 0), this._$AL.set(t5, s5)), true === e5 && this._$Em !== t5 && (this._$Eq ??= /* @__PURE__ */ new Set()).add(t5));
+  C(t5, s5, { useDefault: i8, reflect: e6, wrapped: h4 }, r6) {
+    i8 && !(this._$Ej ??= /* @__PURE__ */ new Map()).has(t5) && (this._$Ej.set(t5, r6 ?? s5 ?? this[t5]), true !== h4 || void 0 !== r6) || (this._$AL.has(t5) || (this.hasUpdated || i8 || (s5 = void 0), this._$AL.set(t5, s5)), true === e6 && this._$Em !== t5 && (this._$Eq ??= /* @__PURE__ */ new Set()).add(t5));
   }
   async _$EP() {
     this.isUpdatePending = true;
@@ -901,9 +235,9 @@ var g = class extends (globalThis.HTMLElement ?? HTMLElementShimWithRealType) {
         this._$Ep = void 0;
       }
       const t6 = this.constructor.elementProperties;
-      if (t6.size > 0) for (const [s6, i7] of t6) {
-        const { wrapped: t7 } = i7, e5 = this[s6];
-        true !== t7 || this._$AL.has(s6) || void 0 === e5 || this.C(s6, void 0, i7, e5);
+      if (t6.size > 0) for (const [s6, i8] of t6) {
+        const { wrapped: t7 } = i8, e6 = this[s6];
+        true !== t7 || this._$AL.has(s6) || void 0 === e6 || this.C(s6, void 0, i8, e6);
       }
     }
     let t5 = false;
@@ -940,13 +274,13 @@ var g = class extends (globalThis.HTMLElement ?? HTMLElementShimWithRealType) {
   firstUpdated(t5) {
   }
 };
-g.elementStyles = [], g.shadowRootOptions = { mode: "open" }, g[f("elementProperties")] = /* @__PURE__ */ new Map(), g[f("finalized")] = /* @__PURE__ */ new Map(), u?.({ ReactiveElement: g }), (l.reactiveElementVersions ??= []).push("2.1.2");
+y.elementStyles = [], y.shadowRootOptions = { mode: "open" }, y[d("elementProperties")] = /* @__PURE__ */ new Map(), y[d("finalized")] = /* @__PURE__ */ new Map(), p?.({ ReactiveElement: y }), (a.reactiveElementVersions ??= []).push("2.1.2");
 
-// node_modules/lit-html/lit-html.js
+// ../modules-workspace/node_modules/.pnpm/lit-html@3.3.3/node_modules/lit-html/lit-html.js
 var t2 = globalThis;
-var i2 = (t5) => t5;
+var i3 = (t5) => t5;
 var s2 = t2.trustedTypes;
-var e2 = s2 ? s2.createPolicy("lit-html", { createHTML: (t5) => t5 }) : void 0;
+var e3 = s2 ? s2.createPolicy("lit-html", { createHTML: (t5) => t5 }) : void 0;
 var h2 = "$lit$";
 var o3 = `lit$${Math.random().toFixed(9).slice(2)}$`;
 var n3 = "?" + o3;
@@ -959,13 +293,13 @@ var d2 = (t5) => u2(t5) || "function" == typeof t5?.[Symbol.iterator];
 var f2 = "[ 	\n\f\r]";
 var v = /<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g;
 var _ = /-->/g;
-var m2 = />/g;
+var m = />/g;
 var p2 = RegExp(`>|${f2}(?:([^\\s"'>=/]+)(${f2}*=${f2}*(?:[^ 	
 \f\r"'\`<>=]|("|')|))|$)`, "g");
-var g2 = /'/g;
+var g = /'/g;
 var $ = /"/g;
 var y2 = /^(?:script|style|textarea|title)$/i;
-var x = (t5) => (i7, ...s5) => ({ _$litType$: t5, strings: i7, values: s5 });
+var x = (t5) => (i8, ...s5) => ({ _$litType$: t5, strings: i8, values: s5 });
 var b2 = x(1);
 var w = x(2);
 var T = x(3);
@@ -973,44 +307,44 @@ var E = Symbol.for("lit-noChange");
 var A = Symbol.for("lit-nothing");
 var C = /* @__PURE__ */ new WeakMap();
 var P = l2.createTreeWalker(l2, 129);
-function V(t5, i7) {
+function V(t5, i8) {
   if (!u2(t5) || !t5.hasOwnProperty("raw")) throw Error("invalid template strings array");
-  return void 0 !== e2 ? e2.createHTML(i7) : i7;
+  return void 0 !== e3 ? e3.createHTML(i8) : i8;
 }
-var N = (t5, i7) => {
-  const s5 = t5.length - 1, e5 = [];
-  let n6, l3 = 2 === i7 ? "<svg>" : 3 === i7 ? "<math>" : "", c5 = v;
-  for (let i8 = 0; i8 < s5; i8++) {
-    const s6 = t5[i8];
+var N = (t5, i8) => {
+  const s5 = t5.length - 1, e6 = [];
+  let n6, l3 = 2 === i8 ? "<svg>" : 3 === i8 ? "<math>" : "", c5 = v;
+  for (let i9 = 0; i9 < s5; i9++) {
+    const s6 = t5[i9];
     let a3, u5, d3 = -1, f3 = 0;
-    for (; f3 < s6.length && (c5.lastIndex = f3, u5 = c5.exec(s6), null !== u5); ) f3 = c5.lastIndex, c5 === v ? "!--" === u5[1] ? c5 = _ : void 0 !== u5[1] ? c5 = m2 : void 0 !== u5[2] ? (y2.test(u5[2]) && (n6 = RegExp("</" + u5[2], "g")), c5 = p2) : void 0 !== u5[3] && (c5 = p2) : c5 === p2 ? ">" === u5[0] ? (c5 = n6 ?? v, d3 = -1) : void 0 === u5[1] ? d3 = -2 : (d3 = c5.lastIndex - u5[2].length, a3 = u5[1], c5 = void 0 === u5[3] ? p2 : '"' === u5[3] ? $ : g2) : c5 === $ || c5 === g2 ? c5 = p2 : c5 === _ || c5 === m2 ? c5 = v : (c5 = p2, n6 = void 0);
-    const x2 = c5 === p2 && t5[i8 + 1].startsWith("/>") ? " " : "";
-    l3 += c5 === v ? s6 + r3 : d3 >= 0 ? (e5.push(a3), s6.slice(0, d3) + h2 + s6.slice(d3) + o3 + x2) : s6 + o3 + (-2 === d3 ? i8 : x2);
+    for (; f3 < s6.length && (c5.lastIndex = f3, u5 = c5.exec(s6), null !== u5); ) f3 = c5.lastIndex, c5 === v ? "!--" === u5[1] ? c5 = _ : void 0 !== u5[1] ? c5 = m : void 0 !== u5[2] ? (y2.test(u5[2]) && (n6 = RegExp("</" + u5[2], "g")), c5 = p2) : void 0 !== u5[3] && (c5 = p2) : c5 === p2 ? ">" === u5[0] ? (c5 = n6 ?? v, d3 = -1) : void 0 === u5[1] ? d3 = -2 : (d3 = c5.lastIndex - u5[2].length, a3 = u5[1], c5 = void 0 === u5[3] ? p2 : '"' === u5[3] ? $ : g) : c5 === $ || c5 === g ? c5 = p2 : c5 === _ || c5 === m ? c5 = v : (c5 = p2, n6 = void 0);
+    const x2 = c5 === p2 && t5[i9 + 1].startsWith("/>") ? " " : "";
+    l3 += c5 === v ? s6 + r3 : d3 >= 0 ? (e6.push(a3), s6.slice(0, d3) + h2 + s6.slice(d3) + o3 + x2) : s6 + o3 + (-2 === d3 ? i9 : x2);
   }
-  return [V(t5, l3 + (t5[s5] || "<?>") + (2 === i7 ? "</svg>" : 3 === i7 ? "</math>" : "")), e5];
+  return [V(t5, l3 + (t5[s5] || "<?>") + (2 === i8 ? "</svg>" : 3 === i8 ? "</math>" : "")), e6];
 };
 var S2 = class _S {
-  constructor({ strings: t5, _$litType$: i7 }, e5) {
+  constructor({ strings: t5, _$litType$: i8 }, e6) {
     let r6;
     this.parts = [];
     let l3 = 0, a3 = 0;
-    const u5 = t5.length - 1, d3 = this.parts, [f3, v3] = N(t5, i7);
-    if (this.el = _S.createElement(f3, e5), P.currentNode = this.el.content, 2 === i7 || 3 === i7) {
+    const u5 = t5.length - 1, d3 = this.parts, [f3, v3] = N(t5, i8);
+    if (this.el = _S.createElement(f3, e6), P.currentNode = this.el.content, 2 === i8 || 3 === i8) {
       const t6 = this.el.content.firstChild;
       t6.replaceWith(...t6.childNodes);
     }
     for (; null !== (r6 = P.nextNode()) && d3.length < u5; ) {
       if (1 === r6.nodeType) {
         if (r6.hasAttributes()) for (const t6 of r6.getAttributeNames()) if (t6.endsWith(h2)) {
-          const i8 = v3[a3++], s5 = r6.getAttribute(t6).split(o3), e6 = /([.?@])?(.*)/.exec(i8);
-          d3.push({ type: 1, index: l3, name: e6[2], strings: s5, ctor: "." === e6[1] ? I : "?" === e6[1] ? L : "@" === e6[1] ? z : H }), r6.removeAttribute(t6);
+          const i9 = v3[a3++], s5 = r6.getAttribute(t6).split(o3), e7 = /([.?@])?(.*)/.exec(i9);
+          d3.push({ type: 1, index: l3, name: e7[2], strings: s5, ctor: "." === e7[1] ? I : "?" === e7[1] ? L : "@" === e7[1] ? z : H }), r6.removeAttribute(t6);
         } else t6.startsWith(o3) && (d3.push({ type: 6, index: l3 }), r6.removeAttribute(t6));
         if (y2.test(r6.tagName)) {
-          const t6 = r6.textContent.split(o3), i8 = t6.length - 1;
-          if (i8 > 0) {
+          const t6 = r6.textContent.split(o3), i9 = t6.length - 1;
+          if (i9 > 0) {
             r6.textContent = s2 ? s2.emptyScript : "";
-            for (let s5 = 0; s5 < i8; s5++) r6.append(t6[s5], c3()), P.nextNode(), d3.push({ type: 2, index: ++l3 });
-            r6.append(t6[i8], c3());
+            for (let s5 = 0; s5 < i9; s5++) r6.append(t6[s5], c3()), P.nextNode(), d3.push({ type: 2, index: ++l3 });
+            r6.append(t6[i9], c3());
           }
         }
       } else if (8 === r6.nodeType) if (r6.data === n3) d3.push({ type: 2, index: l3 });
@@ -1021,20 +355,20 @@ var S2 = class _S {
       l3++;
     }
   }
-  static createElement(t5, i7) {
+  static createElement(t5, i8) {
     const s5 = l2.createElement("template");
     return s5.innerHTML = t5, s5;
   }
 };
-function M(t5, i7, s5 = t5, e5) {
-  if (i7 === E) return i7;
-  let h4 = void 0 !== e5 ? s5._$Co?.[e5] : s5._$Cl;
-  const o7 = a2(i7) ? void 0 : i7._$litDirective$;
-  return h4?.constructor !== o7 && (h4?._$AO?.(false), void 0 === o7 ? h4 = void 0 : (h4 = new o7(t5), h4._$AT(t5, s5, e5)), void 0 !== e5 ? (s5._$Co ??= [])[e5] = h4 : s5._$Cl = h4), void 0 !== h4 && (i7 = M(t5, h4._$AS(t5, i7.values), h4, e5)), i7;
+function M(t5, i8, s5 = t5, e6) {
+  if (i8 === E) return i8;
+  let h4 = void 0 !== e6 ? s5._$Co?.[e6] : s5._$Cl;
+  const o7 = a2(i8) ? void 0 : i8._$litDirective$;
+  return h4?.constructor !== o7 && (h4?._$AO?.(false), void 0 === o7 ? h4 = void 0 : (h4 = new o7(t5), h4._$AT(t5, s5, e6)), void 0 !== e6 ? (s5._$Co ??= [])[e6] = h4 : s5._$Cl = h4), void 0 !== h4 && (i8 = M(t5, h4._$AS(t5, i8.values), h4, e6)), i8;
 }
 var R = class {
-  constructor(t5, i7) {
-    this._$AV = [], this._$AN = void 0, this._$AD = t5, this._$AM = i7;
+  constructor(t5, i8) {
+    this._$AV = [], this._$AN = void 0, this._$AD = t5, this._$AM = i8;
   }
   get parentNode() {
     return this._$AM.parentNode;
@@ -1043,34 +377,34 @@ var R = class {
     return this._$AM._$AU;
   }
   u(t5) {
-    const { el: { content: i7 }, parts: s5 } = this._$AD, e5 = (t5?.creationScope ?? l2).importNode(i7, true);
-    P.currentNode = e5;
+    const { el: { content: i8 }, parts: s5 } = this._$AD, e6 = (t5?.creationScope ?? l2).importNode(i8, true);
+    P.currentNode = e6;
     let h4 = P.nextNode(), o7 = 0, n6 = 0, r6 = s5[0];
     for (; void 0 !== r6; ) {
       if (o7 === r6.index) {
-        let i8;
-        2 === r6.type ? i8 = new k(h4, h4.nextSibling, this, t5) : 1 === r6.type ? i8 = new r6.ctor(h4, r6.name, r6.strings, this, t5) : 6 === r6.type && (i8 = new Z(h4, this, t5)), this._$AV.push(i8), r6 = s5[++n6];
+        let i9;
+        2 === r6.type ? i9 = new k(h4, h4.nextSibling, this, t5) : 1 === r6.type ? i9 = new r6.ctor(h4, r6.name, r6.strings, this, t5) : 6 === r6.type && (i9 = new Z(h4, this, t5)), this._$AV.push(i9), r6 = s5[++n6];
       }
       o7 !== r6?.index && (h4 = P.nextNode(), o7++);
     }
-    return P.currentNode = l2, e5;
+    return P.currentNode = l2, e6;
   }
   p(t5) {
-    let i7 = 0;
-    for (const s5 of this._$AV) void 0 !== s5 && (void 0 !== s5.strings ? (s5._$AI(t5, s5, i7), i7 += s5.strings.length - 2) : s5._$AI(t5[i7])), i7++;
+    let i8 = 0;
+    for (const s5 of this._$AV) void 0 !== s5 && (void 0 !== s5.strings ? (s5._$AI(t5, s5, i8), i8 += s5.strings.length - 2) : s5._$AI(t5[i8])), i8++;
   }
 };
 var k = class _k {
   get _$AU() {
     return this._$AM?._$AU ?? this._$Cv;
   }
-  constructor(t5, i7, s5, e5) {
-    this.type = 2, this._$AH = A, this._$AN = void 0, this._$AA = t5, this._$AB = i7, this._$AM = s5, this.options = e5, this._$Cv = e5?.isConnected ?? true;
+  constructor(t5, i8, s5, e6) {
+    this.type = 2, this._$AH = A, this._$AN = void 0, this._$AA = t5, this._$AB = i8, this._$AM = s5, this.options = e6, this._$Cv = e6?.isConnected ?? true;
   }
   get parentNode() {
     let t5 = this._$AA.parentNode;
-    const i7 = this._$AM;
-    return void 0 !== i7 && 11 === t5?.nodeType && (t5 = i7.parentNode), t5;
+    const i8 = this._$AM;
+    return void 0 !== i8 && 11 === t5?.nodeType && (t5 = i8.parentNode), t5;
   }
   get startNode() {
     return this._$AA;
@@ -1078,8 +412,8 @@ var k = class _k {
   get endNode() {
     return this._$AB;
   }
-  _$AI(t5, i7 = this) {
-    t5 = M(this, t5, i7), a2(t5) ? t5 === A || null == t5 || "" === t5 ? (this._$AH !== A && this._$AR(), this._$AH = A) : t5 !== this._$AH && t5 !== E && this._(t5) : void 0 !== t5._$litType$ ? this.$(t5) : void 0 !== t5.nodeType ? this.T(t5) : d2(t5) ? this.k(t5) : this._(t5);
+  _$AI(t5, i8 = this) {
+    t5 = M(this, t5, i8), a2(t5) ? t5 === A || null == t5 || "" === t5 ? (this._$AH !== A && this._$AR(), this._$AH = A) : t5 !== this._$AH && t5 !== E && this._(t5) : void 0 !== t5._$litType$ ? this.$(t5) : void 0 !== t5.nodeType ? this.T(t5) : d2(t5) ? this.k(t5) : this._(t5);
   }
   O(t5) {
     return this._$AA.parentNode.insertBefore(t5, this._$AB);
@@ -1091,28 +425,28 @@ var k = class _k {
     this._$AH !== A && a2(this._$AH) ? this._$AA.nextSibling.data = t5 : this.T(l2.createTextNode(t5)), this._$AH = t5;
   }
   $(t5) {
-    const { values: i7, _$litType$: s5 } = t5, e5 = "number" == typeof s5 ? this._$AC(t5) : (void 0 === s5.el && (s5.el = S2.createElement(V(s5.h, s5.h[0]), this.options)), s5);
-    if (this._$AH?._$AD === e5) this._$AH.p(i7);
+    const { values: i8, _$litType$: s5 } = t5, e6 = "number" == typeof s5 ? this._$AC(t5) : (void 0 === s5.el && (s5.el = S2.createElement(V(s5.h, s5.h[0]), this.options)), s5);
+    if (this._$AH?._$AD === e6) this._$AH.p(i8);
     else {
-      const t6 = new R(e5, this), s6 = t6.u(this.options);
-      t6.p(i7), this.T(s6), this._$AH = t6;
+      const t6 = new R(e6, this), s6 = t6.u(this.options);
+      t6.p(i8), this.T(s6), this._$AH = t6;
     }
   }
   _$AC(t5) {
-    let i7 = C.get(t5.strings);
-    return void 0 === i7 && C.set(t5.strings, i7 = new S2(t5)), i7;
+    let i8 = C.get(t5.strings);
+    return void 0 === i8 && C.set(t5.strings, i8 = new S2(t5)), i8;
   }
   k(t5) {
     u2(this._$AH) || (this._$AH = [], this._$AR());
-    const i7 = this._$AH;
-    let s5, e5 = 0;
-    for (const h4 of t5) e5 === i7.length ? i7.push(s5 = new _k(this.O(c3()), this.O(c3()), this, this.options)) : s5 = i7[e5], s5._$AI(h4), e5++;
-    e5 < i7.length && (this._$AR(s5 && s5._$AB.nextSibling, e5), i7.length = e5);
+    const i8 = this._$AH;
+    let s5, e6 = 0;
+    for (const h4 of t5) e6 === i8.length ? i8.push(s5 = new _k(this.O(c3()), this.O(c3()), this, this.options)) : s5 = i8[e6], s5._$AI(h4), e6++;
+    e6 < i8.length && (this._$AR(s5 && s5._$AB.nextSibling, e6), i8.length = e6);
   }
   _$AR(t5 = this._$AA.nextSibling, s5) {
     for (this._$AP?.(false, true, s5); t5 !== this._$AB; ) {
-      const s6 = i2(t5).nextSibling;
-      i2(t5).remove(), t5 = s6;
+      const s6 = i3(t5).nextSibling;
+      i3(t5).remove(), t5 = s6;
     }
   }
   setConnected(t5) {
@@ -1126,19 +460,19 @@ var H = class {
   get _$AU() {
     return this._$AM._$AU;
   }
-  constructor(t5, i7, s5, e5, h4) {
-    this.type = 1, this._$AH = A, this._$AN = void 0, this.element = t5, this.name = i7, this._$AM = e5, this.options = h4, s5.length > 2 || "" !== s5[0] || "" !== s5[1] ? (this._$AH = Array(s5.length - 1).fill(new String()), this.strings = s5) : this._$AH = A;
+  constructor(t5, i8, s5, e6, h4) {
+    this.type = 1, this._$AH = A, this._$AN = void 0, this.element = t5, this.name = i8, this._$AM = e6, this.options = h4, s5.length > 2 || "" !== s5[0] || "" !== s5[1] ? (this._$AH = Array(s5.length - 1).fill(new String()), this.strings = s5) : this._$AH = A;
   }
-  _$AI(t5, i7 = this, s5, e5) {
+  _$AI(t5, i8 = this, s5, e6) {
     const h4 = this.strings;
     let o7 = false;
-    if (void 0 === h4) t5 = M(this, t5, i7, 0), o7 = !a2(t5) || t5 !== this._$AH && t5 !== E, o7 && (this._$AH = t5);
+    if (void 0 === h4) t5 = M(this, t5, i8, 0), o7 = !a2(t5) || t5 !== this._$AH && t5 !== E, o7 && (this._$AH = t5);
     else {
-      const e6 = t5;
+      const e7 = t5;
       let n6, r6;
-      for (t5 = h4[0], n6 = 0; n6 < h4.length - 1; n6++) r6 = M(this, e6[s5 + n6], i7, n6), r6 === E && (r6 = this._$AH[n6]), o7 ||= !a2(r6) || r6 !== this._$AH[n6], r6 === A ? t5 = A : t5 !== A && (t5 += (r6 ?? "") + h4[n6 + 1]), this._$AH[n6] = r6;
+      for (t5 = h4[0], n6 = 0; n6 < h4.length - 1; n6++) r6 = M(this, e7[s5 + n6], i8, n6), r6 === E && (r6 = this._$AH[n6]), o7 ||= !a2(r6) || r6 !== this._$AH[n6], r6 === A ? t5 = A : t5 !== A && (t5 += (r6 ?? "") + h4[n6 + 1]), this._$AH[n6] = r6;
     }
-    o7 && !e5 && this.j(t5);
+    o7 && !e6 && this.j(t5);
   }
   j(t5) {
     t5 === A ? this.element.removeAttribute(this.name) : this.element.setAttribute(this.name, t5 ?? "");
@@ -1161,21 +495,21 @@ var L = class extends H {
   }
 };
 var z = class extends H {
-  constructor(t5, i7, s5, e5, h4) {
-    super(t5, i7, s5, e5, h4), this.type = 5;
+  constructor(t5, i8, s5, e6, h4) {
+    super(t5, i8, s5, e6, h4), this.type = 5;
   }
-  _$AI(t5, i7 = this) {
-    if ((t5 = M(this, t5, i7, 0) ?? A) === E) return;
-    const s5 = this._$AH, e5 = t5 === A && s5 !== A || t5.capture !== s5.capture || t5.once !== s5.once || t5.passive !== s5.passive, h4 = t5 !== A && (s5 === A || e5);
-    e5 && this.element.removeEventListener(this.name, this, s5), h4 && this.element.addEventListener(this.name, this, t5), this._$AH = t5;
+  _$AI(t5, i8 = this) {
+    if ((t5 = M(this, t5, i8, 0) ?? A) === E) return;
+    const s5 = this._$AH, e6 = t5 === A && s5 !== A || t5.capture !== s5.capture || t5.once !== s5.once || t5.passive !== s5.passive, h4 = t5 !== A && (s5 === A || e6);
+    e6 && this.element.removeEventListener(this.name, this, s5), h4 && this.element.addEventListener(this.name, this, t5), this._$AH = t5;
   }
   handleEvent(t5) {
     "function" == typeof this._$AH ? this._$AH.call(this.options?.host ?? this.element, t5) : this._$AH.handleEvent(t5);
   }
 };
 var Z = class {
-  constructor(t5, i7, s5) {
-    this.element = t5, this.type = 6, this._$AN = void 0, this._$AM = i7, this.options = s5;
+  constructor(t5, i8, s5) {
+    this.element = t5, this.type = 6, this._$AN = void 0, this._$AM = i8, this.options = s5;
   }
   get _$AU() {
     return this._$AM._$AU;
@@ -1187,19 +521,19 @@ var Z = class {
 var j = { M: h2, P: o3, A: n3, C: 1, L: N, R, D: d2, V: M, I: k, H, N: L, U: z, B: I, F: Z };
 var B = t2.litHtmlPolyfillSupport;
 B?.(S2, k), (t2.litHtmlVersions ??= []).push("3.3.3");
-var D = (t5, i7, s5) => {
-  const e5 = s5?.renderBefore ?? i7;
-  let h4 = e5._$litPart$;
+var D = (t5, i8, s5) => {
+  const e6 = s5?.renderBefore ?? i8;
+  let h4 = e6._$litPart$;
   if (void 0 === h4) {
     const t6 = s5?.renderBefore ?? null;
-    e5._$litPart$ = h4 = new k(i7.insertBefore(c3(), t6), t6, void 0, s5 ?? {});
+    e6._$litPart$ = h4 = new k(i8.insertBefore(c3(), t6), t6, void 0, s5 ?? {});
   }
   return h4._$AI(t5), h4;
 };
 
-// node_modules/lit-element/lit-element.js
+// ../modules-workspace/node_modules/.pnpm/lit-element@4.2.2/node_modules/lit-element/lit-element.js
 var s3 = globalThis;
-var i3 = class extends g {
+var i4 = class extends y {
   constructor() {
     super(...arguments), this.renderOptions = { host: this }, this._$Do = void 0;
   }
@@ -1221,194 +555,194 @@ var i3 = class extends g {
     return E;
   }
 };
-i3._$litElement$ = true, i3["finalized"] = true, s3.litElementHydrateSupport?.({ LitElement: i3 });
+i4._$litElement$ = true, i4["finalized"] = true, s3.litElementHydrateSupport?.({ LitElement: i4 });
 var o4 = s3.litElementPolyfillSupport;
-o4?.({ LitElement: i3 });
+o4?.({ LitElement: i4 });
 (s3.litElementVersions ??= []).push("4.2.2");
 
-// node_modules/@lit/reactive-element/node/decorators/property.js
-var o5 = { attribute: true, type: String, converter: b, reflect: false, hasChanged: m };
-var r4 = (t5 = o5, e5, r6) => {
-  const { kind: n6, metadata: i7 } = r6;
-  let s5 = globalThis.litPropertyMetadata.get(i7);
-  if (void 0 === s5 && globalThis.litPropertyMetadata.set(i7, s5 = /* @__PURE__ */ new Map()), "setter" === n6 && ((t5 = Object.create(t5)).wrapped = true), s5.set(r6.name, t5), "accessor" === n6) {
+// ../modules-workspace/node_modules/.pnpm/@lit+reactive-element@2.1.2/node_modules/@lit/reactive-element/decorators/property.js
+var o5 = { attribute: true, type: String, converter: u, reflect: false, hasChanged: f };
+var r4 = (t5 = o5, e6, r6) => {
+  const { kind: n6, metadata: i8 } = r6;
+  let s5 = globalThis.litPropertyMetadata.get(i8);
+  if (void 0 === s5 && globalThis.litPropertyMetadata.set(i8, s5 = /* @__PURE__ */ new Map()), "setter" === n6 && ((t5 = Object.create(t5)).wrapped = true), s5.set(r6.name, t5), "accessor" === n6) {
     const { name: o7 } = r6;
     return { set(r7) {
-      const n7 = e5.get.call(this);
-      e5.set.call(this, r7), this.requestUpdate(o7, n7, t5, true, r7);
-    }, init(e6) {
-      return void 0 !== e6 && this.C(o7, void 0, t5, e6), e6;
+      const n7 = e6.get.call(this);
+      e6.set.call(this, r7), this.requestUpdate(o7, n7, t5, true, r7);
+    }, init(e7) {
+      return void 0 !== e7 && this.C(o7, void 0, t5, e7), e7;
     } };
   }
   if ("setter" === n6) {
     const { name: o7 } = r6;
     return function(r7) {
       const n7 = this[o7];
-      e5.call(this, r7), this.requestUpdate(o7, n7, t5, true, r7);
+      e6.call(this, r7), this.requestUpdate(o7, n7, t5, true, r7);
     };
   }
   throw Error("Unsupported decorator location: " + n6);
 };
 function n4(t5) {
-  return (e5, o7) => "object" == typeof o7 ? r4(t5, e5, o7) : ((t6, e6, o8) => {
-    const r6 = e6.hasOwnProperty(o8);
-    return e6.constructor.createProperty(o8, t6), r6 ? Object.getOwnPropertyDescriptor(e6, o8) : void 0;
-  })(t5, e5, o7);
+  return (e6, o7) => "object" == typeof o7 ? r4(t5, e6, o7) : ((t6, e7, o8) => {
+    const r6 = e7.hasOwnProperty(o8);
+    return e7.constructor.createProperty(o8, t6), r6 ? Object.getOwnPropertyDescriptor(e7, o8) : void 0;
+  })(t5, e6, o7);
 }
 
-// node_modules/@lit/reactive-element/node/decorators/state.js
+// ../modules-workspace/node_modules/.pnpm/@lit+reactive-element@2.1.2/node_modules/@lit/reactive-element/decorators/state.js
 function r5(r6) {
   return n4({ ...r6, state: true, attribute: false });
 }
 
-// ../outfitkit/dist/define.js
+// ../modules-workspace/node_modules/.pnpm/@outfitkit+core@file+..+outfitkit/node_modules/@outfitkit/core/dist/define.js
 function define(tag, ctor) {
   if (typeof customElements !== "undefined" && !customElements.get(tag)) {
     customElements.define(tag, ctor);
   }
 }
 
-// node_modules/lit-html/directive.js
+// ../modules-workspace/node_modules/.pnpm/lit-html@3.3.3/node_modules/lit-html/directive.js
 var t3 = { ATTRIBUTE: 1, CHILD: 2, PROPERTY: 3, BOOLEAN_ATTRIBUTE: 4, EVENT: 5, ELEMENT: 6 };
-var e4 = (t5) => (...e5) => ({ _$litDirective$: t5, values: e5 });
-var i4 = class {
+var e5 = (t5) => (...e6) => ({ _$litDirective$: t5, values: e6 });
+var i5 = class {
   constructor(t5) {
   }
   get _$AU() {
     return this._$AM._$AU;
   }
-  _$AT(t5, e5, i7) {
-    this._$Ct = t5, this._$AM = e5, this._$Ci = i7;
+  _$AT(t5, e6, i8) {
+    this._$Ct = t5, this._$AM = e6, this._$Ci = i8;
   }
-  _$AS(t5, e5) {
-    return this.update(t5, e5);
+  _$AS(t5, e6) {
+    return this.update(t5, e6);
   }
-  update(t5, e5) {
-    return this.render(...e5);
+  update(t5, e6) {
+    return this.render(...e6);
   }
 };
 
-// node_modules/lit-html/directive-helpers.js
+// ../modules-workspace/node_modules/.pnpm/lit-html@3.3.3/node_modules/lit-html/directive-helpers.js
 var { I: t4 } = j;
-var i5 = (o7) => o7;
+var i6 = (o7) => o7;
 var s4 = () => document.createComment("");
-var v2 = (o7, n6, e5) => {
+var v2 = (o7, n6, e6) => {
   const l3 = o7._$AA.parentNode, d3 = void 0 === n6 ? o7._$AB : n6._$AA;
-  if (void 0 === e5) {
-    const i7 = l3.insertBefore(s4(), d3), n7 = l3.insertBefore(s4(), d3);
-    e5 = new t4(i7, n7, o7, o7.options);
+  if (void 0 === e6) {
+    const i8 = l3.insertBefore(s4(), d3), n7 = l3.insertBefore(s4(), d3);
+    e6 = new t4(i8, n7, o7, o7.options);
   } else {
-    const t5 = e5._$AB.nextSibling, n7 = e5._$AM, c5 = n7 !== o7;
+    const t5 = e6._$AB.nextSibling, n7 = e6._$AM, c5 = n7 !== o7;
     if (c5) {
       let t6;
-      e5._$AQ?.(o7), e5._$AM = o7, void 0 !== e5._$AP && (t6 = o7._$AU) !== n7._$AU && e5._$AP(t6);
+      e6._$AQ?.(o7), e6._$AM = o7, void 0 !== e6._$AP && (t6 = o7._$AU) !== n7._$AU && e6._$AP(t6);
     }
     if (t5 !== d3 || c5) {
-      let o8 = e5._$AA;
+      let o8 = e6._$AA;
       for (; o8 !== t5; ) {
-        const t6 = i5(o8).nextSibling;
-        i5(l3).insertBefore(o8, d3), o8 = t6;
+        const t6 = i6(o8).nextSibling;
+        i6(l3).insertBefore(o8, d3), o8 = t6;
       }
     }
   }
-  return e5;
+  return e6;
 };
-var u3 = (o7, t5, i7 = o7) => (o7._$AI(t5, i7), o7);
-var m3 = {};
-var p3 = (o7, t5 = m3) => o7._$AH = t5;
+var u3 = (o7, t5, i8 = o7) => (o7._$AI(t5, i8), o7);
+var m2 = {};
+var p3 = (o7, t5 = m2) => o7._$AH = t5;
 var M2 = (o7) => o7._$AH;
 var h3 = (o7) => {
   o7._$AR(), o7._$AA.remove();
 };
 
-// node_modules/lit-html/directives/repeat.js
-var u4 = (e5, s5, t5) => {
+// ../modules-workspace/node_modules/.pnpm/lit-html@3.3.3/node_modules/lit-html/directives/repeat.js
+var u4 = (e6, s5, t5) => {
   const r6 = /* @__PURE__ */ new Map();
-  for (let l3 = s5; l3 <= t5; l3++) r6.set(e5[l3], l3);
+  for (let l3 = s5; l3 <= t5; l3++) r6.set(e6[l3], l3);
   return r6;
 };
-var c4 = e4(class extends i4 {
-  constructor(e5) {
-    if (super(e5), e5.type !== t3.CHILD) throw Error("repeat() can only be used in text expressions");
+var c4 = e5(class extends i5 {
+  constructor(e6) {
+    if (super(e6), e6.type !== t3.CHILD) throw Error("repeat() can only be used in text expressions");
   }
-  dt(e5, s5, t5) {
+  dt(e6, s5, t5) {
     let r6;
     void 0 === t5 ? t5 = s5 : void 0 !== s5 && (r6 = s5);
     const l3 = [], o7 = [];
-    let i7 = 0;
-    for (const s6 of e5) l3[i7] = r6 ? r6(s6, i7) : i7, o7[i7] = t5(s6, i7), i7++;
+    let i8 = 0;
+    for (const s6 of e6) l3[i8] = r6 ? r6(s6, i8) : i8, o7[i8] = t5(s6, i8), i8++;
     return { values: o7, keys: l3 };
   }
-  render(e5, s5, t5) {
-    return this.dt(e5, s5, t5).values;
+  render(e6, s5, t5) {
+    return this.dt(e6, s5, t5).values;
   }
   update(s5, [t5, r6, c5]) {
     const d3 = M2(s5), { values: p4, keys: a3 } = this.dt(t5, r6, c5);
     if (!Array.isArray(d3)) return this.ut = a3, p4;
     const h4 = this.ut ??= [], v3 = [];
-    let m4, y3, x2 = 0, j2 = d3.length - 1, k2 = 0, w2 = p4.length - 1;
+    let m3, y3, x2 = 0, j2 = d3.length - 1, k2 = 0, w2 = p4.length - 1;
     for (; x2 <= j2 && k2 <= w2; ) if (null === d3[x2]) x2++;
     else if (null === d3[j2]) j2--;
     else if (h4[x2] === a3[k2]) v3[k2] = u3(d3[x2], p4[k2]), x2++, k2++;
     else if (h4[j2] === a3[w2]) v3[w2] = u3(d3[j2], p4[w2]), j2--, w2--;
     else if (h4[x2] === a3[w2]) v3[w2] = u3(d3[x2], p4[w2]), v2(s5, v3[w2 + 1], d3[x2]), x2++, w2--;
     else if (h4[j2] === a3[k2]) v3[k2] = u3(d3[j2], p4[k2]), v2(s5, d3[x2], d3[j2]), j2--, k2++;
-    else if (void 0 === m4 && (m4 = u4(a3, k2, w2), y3 = u4(h4, x2, j2)), m4.has(h4[x2])) if (m4.has(h4[j2])) {
-      const e5 = y3.get(a3[k2]), t6 = void 0 !== e5 ? d3[e5] : null;
+    else if (void 0 === m3 && (m3 = u4(a3, k2, w2), y3 = u4(h4, x2, j2)), m3.has(h4[x2])) if (m3.has(h4[j2])) {
+      const e6 = y3.get(a3[k2]), t6 = void 0 !== e6 ? d3[e6] : null;
       if (null === t6) {
-        const e6 = v2(s5, d3[x2]);
-        u3(e6, p4[k2]), v3[k2] = e6;
-      } else v3[k2] = u3(t6, p4[k2]), v2(s5, d3[x2], t6), d3[e5] = null;
+        const e7 = v2(s5, d3[x2]);
+        u3(e7, p4[k2]), v3[k2] = e7;
+      } else v3[k2] = u3(t6, p4[k2]), v2(s5, d3[x2], t6), d3[e6] = null;
       k2++;
     } else h3(d3[j2]), j2--;
     else h3(d3[x2]), x2++;
     for (; k2 <= w2; ) {
-      const e5 = v2(s5, v3[w2 + 1]);
-      u3(e5, p4[k2]), v3[k2++] = e5;
+      const e6 = v2(s5, v3[w2 + 1]);
+      u3(e6, p4[k2]), v3[k2++] = e6;
     }
     for (; x2 <= j2; ) {
-      const e5 = d3[x2++];
-      null !== e5 && h3(e5);
+      const e6 = d3[x2++];
+      null !== e6 && h3(e6);
     }
     return this.ut = a3, p3(s5, v3), E;
   }
 });
 
-// node_modules/lit-html/directives/style-map.js
+// ../modules-workspace/node_modules/.pnpm/lit-html@3.3.3/node_modules/lit-html/directives/style-map.js
 var n5 = "important";
-var i6 = " !" + n5;
-var o6 = e4(class extends i4 {
+var i7 = " !" + n5;
+var o6 = e5(class extends i5 {
   constructor(t5) {
     if (super(t5), t5.type !== t3.ATTRIBUTE || "style" !== t5.name || t5.strings?.length > 2) throw Error("The `styleMap` directive must be used in the `style` attribute and must be the only part in the attribute.");
   }
   render(t5) {
-    return Object.keys(t5).reduce((e5, r6) => {
+    return Object.keys(t5).reduce((e6, r6) => {
       const s5 = t5[r6];
-      return null == s5 ? e5 : e5 + `${r6 = r6.includes("-") ? r6 : r6.replace(/(?:^(webkit|moz|ms|o)|)(?=[A-Z])/g, "-$&").toLowerCase()}:${s5};`;
+      return null == s5 ? e6 : e6 + `${r6 = r6.includes("-") ? r6 : r6.replace(/(?:^(webkit|moz|ms|o)|)(?=[A-Z])/g, "-$&").toLowerCase()}:${s5};`;
     }, "");
   }
-  update(e5, [r6]) {
-    const { style: s5 } = e5.element;
+  update(e6, [r6]) {
+    const { style: s5 } = e6.element;
     if (void 0 === this.ft) return this.ft = new Set(Object.keys(r6)), this.render(r6);
     for (const t5 of this.ft) null == r6[t5] && (this.ft.delete(t5), t5.includes("-") ? s5.removeProperty(t5) : s5[t5] = null);
     for (const t5 in r6) {
-      const e6 = r6[t5];
-      if (null != e6) {
+      const e7 = r6[t5];
+      if (null != e7) {
         this.ft.add(t5);
-        const r7 = "string" == typeof e6 && e6.endsWith(i6);
-        t5.includes("-") || r7 ? s5.setProperty(t5, r7 ? e6.slice(0, -11) : e6, r7 ? n5 : "") : s5[t5] = e6;
+        const r7 = "string" == typeof e7 && e7.endsWith(i7);
+        t5.includes("-") || r7 ? s5.setProperty(t5, r7 ? e7.slice(0, -11) : e7, r7 ? n5 : "") : s5[t5] = e7;
       }
     }
     return E;
   }
 });
 
-// ../outfitkit/dist/ok-data-table.js
+// ../modules-workspace/node_modules/.pnpm/@outfitkit+core@file+..+outfitkit/node_modules/@outfitkit/core/dist/ok-data-table.js
 var __defProp2 = Object.defineProperty;
 var __decorateClass2 = (decorators, target, key, kind) => {
   var result = void 0;
-  for (var i7 = decorators.length - 1, decorator; i7 >= 0; i7--)
-    if (decorator = decorators[i7])
+  for (var i8 = decorators.length - 1, decorator; i8 >= 0; i8--)
+    if (decorator = decorators[i8])
       result = decorator(target, key, result) || result;
   if (result) __defProp2(target, key, result);
   return result;
@@ -1449,7 +783,7 @@ var DEFAULT_LABELS = {
   recordSingular: "record",
   recordPlural: "records"
 };
-var OkDataTable = class extends i3 {
+var OkDataTable = class extends i4 {
   constructor() {
     super(...arguments);
     this.columns = [];
@@ -1813,13 +1147,13 @@ var OkDataTable = class extends i3 {
     let row = [];
     let field = "";
     let q = false;
-    for (let i7 = 0; i7 < text.length; i7++) {
-      const c5 = text[i7];
+    for (let i8 = 0; i8 < text.length; i8++) {
+      const c5 = text[i8];
       if (q) {
         if (c5 === '"') {
-          if (text[i7 + 1] === '"') {
+          if (text[i8 + 1] === '"') {
             field += '"';
-            i7++;
+            i8++;
           } else q = false;
         } else field += c5;
       } else if (c5 === '"') q = true;
@@ -1827,7 +1161,7 @@ var OkDataTable = class extends i3 {
         row.push(field);
         field = "";
       } else if (c5 === "\n" || c5 === "\r") {
-        if (c5 === "\r" && text[i7 + 1] === "\n") i7++;
+        if (c5 === "\r" && text[i8 + 1] === "\n") i8++;
         row.push(field);
         field = "";
         if (row.length > 1 || row[0] !== "") out.push(row);
@@ -1839,7 +1173,7 @@ var OkDataTable = class extends i3 {
       out.push(row);
     }
     const headers = out.shift() ?? [];
-    const rows = out.map((r6) => Object.fromEntries(headers.map((h4, i7) => [h4, r6[i7] ?? ""])));
+    const rows = out.map((r6) => Object.fromEntries(headers.map((h4, i8) => [h4, r6[i8] ?? ""])));
     return { headers, rows };
   }
   async onImportFile(ev) {
@@ -2086,7 +1420,7 @@ var OkDataTable = class extends i3 {
           interface="modal"
           .interfaceOptions=${{ cssClass: "ok-overlay" }}
           placeholder=${col.header}
-          @ionChange=${(e5) => this.onFilterSelect(col, e5.detail.value, multi)}
+          @ionChange=${(e6) => this.onFilterSelect(col, e6.detail.value, multi)}
         >
           ${multi ? A : b2`<ion-select-option value="">${col.header}</ion-select-option>`}
           ${opts.map((o7) => b2`<ion-select-option value=${o7.value}>${o7.label}</ion-select-option>`)}
@@ -2101,9 +1435,9 @@ var OkDataTable = class extends i3 {
           <span class="flabel">${col.header}</span>
           <div class="frange">
             <ion-input type=${t5} fill="outline" placeholder=${type === "daterange" ? this.t.from : this.t.gte}
-              @ionInput=${(e5) => onEdge(col, "from", e5)}></ion-input>
+              @ionInput=${(e6) => onEdge(col, "from", e6)}></ion-input>
             <ion-input type=${t5} fill="outline" placeholder=${type === "daterange" ? this.t.to : this.t.lte}
-              @ionInput=${(e5) => onEdge(col, "to", e5)}></ion-input>
+              @ionInput=${(e6) => onEdge(col, "to", e6)}></ion-input>
           </div>
         </div>
       `;
@@ -2116,7 +1450,7 @@ var OkDataTable = class extends i3 {
         label=${col.header}
         label-placement="stacked"
         placeholder=${this.t.filterPlaceholder}
-        @ionInput=${(e5) => this.onFilterInput(col, e5)}
+        @ionInput=${(e6) => this.onFilterInput(col, e6)}
       ></ion-input>
     `;
   }
@@ -2147,7 +1481,7 @@ var OkDataTable = class extends i3 {
           aria-label=${col.header}
           placeholder=${col.header}
           .value=${current}
-          @ionChange=${(e5) => this.onFilterSelect(col, e5.detail.value, multi)}
+          @ionChange=${(e6) => this.onFilterSelect(col, e6.detail.value, multi)}
         >
           ${multi ? A : b2`<ion-select-option value="">${col.header}</ion-select-option>`}
           ${opts.map((o7) => b2`<ion-select-option value=${o7.value}>${o7.label}</ion-select-option>`)}
@@ -2157,9 +1491,9 @@ var OkDataTable = class extends i3 {
     return b2`
       <span class="tk-daterange" role="group" aria-label=${col.header}>
         <ion-icon name="calendar-outline"></ion-icon>
-        <ion-input type="date" aria-label=${this.t.fromOf.replace("{label}", col.header)} .value=${f3?.from ?? ""} @ionChange=${(e5) => this.onInlineRange(col, "from", e5)}></ion-input>
+        <ion-input type="date" aria-label=${this.t.fromOf.replace("{label}", col.header)} .value=${f3?.from ?? ""} @ionChange=${(e6) => this.onInlineRange(col, "from", e6)}></ion-input>
         <span class="arr">→</span>
-        <ion-input type="date" aria-label=${this.t.toOf.replace("{label}", col.header)} .value=${f3?.to ?? ""} @ionChange=${(e5) => this.onInlineRange(col, "to", e5)}></ion-input>
+        <ion-input type="date" aria-label=${this.t.toOf.replace("{label}", col.header)} .value=${f3?.to ?? ""} @ionChange=${(e6) => this.onInlineRange(col, "to", e6)}></ion-input>
       </span>
     `;
   }
@@ -2167,7 +1501,7 @@ var OkDataTable = class extends i3 {
   renderOverflowMenu() {
     if (!this.menuActions.length) return A;
     return b2`
-      <ion-button class="toolbtn" fill="clear" aria-label=${this.t.moreActions} @click=${(e5) => this.openMenu(e5)}>
+      <ion-button class="toolbtn" fill="clear" aria-label=${this.t.moreActions} @click=${(e6) => this.openMenu(e6)}>
         <ion-icon slot="icon-only" name="ellipsis-vertical"></ion-icon>
       </ion-button>
       <ion-popover
@@ -2235,7 +1569,7 @@ var OkDataTable = class extends i3 {
   /** Lista de páginas a mostrar en el pager numerado (1-based): primera, última, vecinas de la
    *  actual y «…» donde haya saltos. P.ej. en página 1 de 52 → [1,2,3,'…',52]. */
   pageList(cur1, total) {
-    if (total <= 7) return Array.from({ length: total }, (_2, i7) => i7 + 1);
+    if (total <= 7) return Array.from({ length: total }, (_2, i8) => i8 + 1);
     const want = /* @__PURE__ */ new Set([1, total, cur1, cur1 - 1, cur1 + 1]);
     if (cur1 <= 3) [2, 3].forEach((p4) => want.add(p4));
     if (cur1 >= total - 2) [total - 1, total - 2].forEach((p4) => want.add(p4));
@@ -2298,7 +1632,7 @@ var OkDataTable = class extends i3 {
                             aria-label=${this.t.columnsVisible}
                             .value=${this.visibleColumns.map((c5) => c5.key)}
                             .selectedText=${this.t.columns}
-                            @ionChange=${(e5) => this.setVisibleColumns(e5.detail.value)}
+                            @ionChange=${(e6) => this.setVisibleColumns(e6.detail.value)}
                           >
                             ${this.columns.map((c5) => b2`<ion-select-option value=${c5.key}>${c5.header}</ion-select-option>`)}
                           </ion-select>
@@ -2309,7 +1643,7 @@ var OkDataTable = class extends i3 {
                             interface="popover"
                             aria-label=${this.t.rowsPerPage}
                             .value=${ps}
-                            @ionChange=${(e5) => setPageSize(Number(e5.detail.value))}
+                            @ionChange=${(e6) => setPageSize(Number(e6.detail.value))}
                           >
                             ${this.effPageSizes.map((n6) => b2`<ion-select-option .value=${n6}>${n6}</ion-select-option>`)}
                           </ion-select>
@@ -2323,7 +1657,7 @@ var OkDataTable = class extends i3 {
                     ${this.hasFilterRow && !this.inlineFilters ? this.toolButton("funnel-outline", this.panel === "filters" || this.activeFilterCount > 0, () => this.toggle("filters"), this.t.filters, this.serverSide ? void 0 : this.activeFilterCount) : A}
                     ${this.effImport ? b2`
                           ${this.toolButton("cloud-upload-outline", false, () => this.renderRoot.querySelector(".tk-file")?.click(), this.t.importCsv)}
-                          <input class="tk-file" type="file" accept=".csv,text/csv" hidden @change=${(e5) => this.onImportFile(e5)} />
+                          <input class="tk-file" type="file" accept=".csv,text/csv" hidden @change=${(e6) => this.onImportFile(e6)} />
                         ` : A}
                     ${this.effExport ? this.toolButton("download-outline", false, () => this.exportCsv(), this.t.exportCsv) : A}
                     ${this.addable ? this.toolButton("add", this.panel === "create", () => this.toggle("create"), this.t.add) : A}
@@ -2361,7 +1695,7 @@ var OkDataTable = class extends i3 {
                     <span class="strong">${count}</span> ${count === 1 ? this.t.recordSingular : this.t.recordPlural}
                   </span>
                   ${!showTopbar && this.effPageSizes.length ? b2`
-                        <select class="psize" @change=${(e5) => setPageSize(Number(e5.target.value))}>
+                        <select class="psize" @change=${(e6) => setPageSize(Number(e6.target.value))}>
                           ${this.effPageSizes.map((n6) => b2`<option value=${n6} ?selected=${n6 === ps}>${this.t.perPageShort.replace("{n}", String(n6))}</option>`)}
                         </select>
                       ` : A}
@@ -2414,8 +1748,8 @@ var OkDataTable = class extends i3 {
         <div class="fblock">
           <span class="flabel">${label}</span>
           <div class="daterange">
-            <ion-input type="date" label=${this.t.from} label-placement="stacked" fill="outline" .value=${f3.from ?? ""} @ionChange=${(e5) => this.setFilterRange(col.key, "from", e5.detail.value ?? "")}></ion-input>
-            <ion-input type="date" label=${this.t.to} label-placement="stacked" fill="outline" .value=${f3.to ?? ""} @ionChange=${(e5) => this.setFilterRange(col.key, "to", e5.detail.value ?? "")}></ion-input>
+            <ion-input type="date" label=${this.t.from} label-placement="stacked" fill="outline" .value=${f3.from ?? ""} @ionChange=${(e6) => this.setFilterRange(col.key, "from", e6.detail.value ?? "")}></ion-input>
+            <ion-input type="date" label=${this.t.to} label-placement="stacked" fill="outline" .value=${f3.to ?? ""} @ionChange=${(e6) => this.setFilterRange(col.key, "to", e6.detail.value ?? "")}></ion-input>
           </div>
         </div>
       `;
@@ -2681,7 +2015,7 @@ __decorateClass2([
 ], OkDataTable.prototype, "menuOpen");
 define("ok-data-table", OkDataTable);
 
-// ../hub/packages/module-sdk/src/index.ts
+// ../modules-workspace/node_modules/.pnpm/@erplora+module-sdk@file+..+hub+packages+module-sdk/node_modules/@erplora/module-sdk/src/index.ts
 function isEmpty(v3) {
   return v3 === null || v3 === void 0 || v3 === "";
 }
@@ -2731,11 +2065,11 @@ var ListController = class {
       if (mySeq !== this.seq) return;
       this.rows = page.rows ?? [];
       this.total = page.total ?? this.rows.length;
-    } catch (e5) {
+    } catch (e6) {
       if (mySeq !== this.seq) return;
       this.rows = [];
       this.total = 0;
-      this.error = e5 instanceof Error ? e5.message : "Error cargando datos";
+      this.error = e6 instanceof Error ? e6.message : "Error cargando datos";
     } finally {
       if (mySeq === this.seq) {
         this.loading = false;
@@ -2812,6 +2146,9 @@ var es_default = {
     events: {
       label: "Eventos"
     },
+    recovery: {
+      label: "Recuperaci\xF3n"
+    },
     settings: {
       label: "Ajustes"
     }
@@ -2879,7 +2216,80 @@ var es_default = {
     certificatePathPlaceholder: "/ruta/al/certificado.p12",
     autoTransmit: "Transmisi\xF3n autom\xE1tica a AEAT",
     save: "Guardar configuraci\xF3n",
-    saving: "Guardando\u2026"
+    saving: "Guardando\u2026",
+    certPkcs12: "Certificado PKCS#12 (.p12 / .pfx)",
+    certChoose: "Elegir archivo\u2026",
+    testTitle: "Prueba en vivo",
+    testHint: "Verifica el certificado y hace un env\xEDo de PRUEBA a la AEAT. No afecta a la cadena real ni a tus facturas.",
+    testRun: "Enviar prueba",
+    testRunning: "Enviando\u2026",
+    testCreateInvoice: "Crear factura de prueba",
+    testCreateInvoiceRunning: "Creando\u2026",
+    testInvoiceCreated: "Factura de prueba creada \u2014 verla en Facturaci\xF3n.",
+    testInvoiceTestingOnly: "Solo disponible en el entorno de pruebas y con el NIF del emisor configurado.",
+    testType: "Tipo de prueba",
+    testTypeTicket: "Tiquet simplificado (F2)",
+    testTypeInvoice: "Factura completa (F1, cliente de prueba)",
+    certExpiry: "Caducidad del certificado",
+    certExpiryHint: "Se extrae autom\xE1ticamente del certificado al guardarlo.",
+    certDaysRemaining: "d\xEDas restantes",
+    certExpired: "El certificado ha caducado. Renu\xE9valo para poder enviar a la AEAT.",
+    testNoRun: "A\xFAn no has ejecutado ninguna prueba. Guarda el certificado y pulsa \xABEnviar prueba\xBB.",
+    testCert: "Certificado",
+    testHuella: "Huella de muestra (SHA-256)",
+    testAeatLink: "Enlace de verificaci\xF3n en la AEAT",
+    testAeatLinkGo: "Validar en la Agencia Tributaria \u2197",
+    testQrNote: "Escanea para validar la factura en la AEAT",
+    testAeatResp: "Respuesta de la AEAT",
+    testAeatAccepted: "Aceptado por la AEAT",
+    testAeatNotSent: "No se intent\xF3 el env\xEDo (revisa el certificado).",
+    testAeatError: "Error de env\xEDo a la AEAT",
+    testEnv: "Entorno",
+    producerTitle: "Identificaci\xF3n del software",
+    producerInfo: "Datos del fabricante del software, fijos y declarados a la AEAT en cada registro.",
+    producerNif: "NIF del productor",
+    producerName: "Nombre / Raz\xF3n social del productor",
+    obligadoNif: "NIF del obligado tributario (emisor)",
+    obligadoName: "Nombre / raz\xF3n social del emisor",
+    obligadoHint: "Empresa/aut\xF3nomo que emite las facturas. La AEAT lo valida y debe coincidir con el titular del certificado.",
+    certLoaded: "cargado \u2713",
+    certNotConfigured: "no configurado",
+    certDbHint: "El .p12 se guarda en la base de datos del hub (robusto en cloud). Deja el selector vac\xEDo para mantener el actual.",
+    certPickedPrefix: "Nuevo: ",
+    certPickedSuffix: " (se guardar\xE1 al pulsar Guardar)",
+    certPassword: "Contrase\xF1a del certificado",
+    pwdConfigured: "configurada \u2713",
+    pwdNone: "sin contrase\xF1a",
+    pwdPlaceholderKeep: "\u2022\u2022\u2022\u2022\u2022\u2022 (vac\xEDo = no cambiarla)",
+    pwdPlaceholder: "Contrase\xF1a del .p12",
+    recoveryTitle: "Recuperaci\xF3n de cadena",
+    recChainStatus: "Integridad de la cadena",
+    recValidate: "Validar cadena",
+    recValidating: "Validando\u2026",
+    recChainValid: "Cadena \xEDntegra \u2713",
+    recChainBroken: "Cadena ROTA \u2717",
+    recChainUnknown: "Sin validar todav\xEDa",
+    recAeatTitle: "\xDAltimos registros en la AEAT",
+    recConsultAeat: "Consultar AEAT",
+    recConsulting: "Consultando\u2026",
+    recAeatEmpty: "Sin datos de la AEAT. Pulsa \xABConsultar AEAT\xBB.",
+    recColHuella: "Huella",
+    recColCsv: "CSV",
+    recColEstado: "Estado",
+    recRecoverFromAeat: "Recuperar cadena desde la AEAT",
+    recRecovering: "Recuperando\u2026",
+    recManualTitle: "Continuar cadena manualmente (migraci\xF3n)",
+    recManualHint: "Pega la \xFAltima huella (64 hex) de tu aplicaci\xF3n anterior para continuar la misma concatenaci\xF3n.",
+    recManualNif: "NIF del emisor",
+    recManualHash: "\xDAltima huella (64 hex)",
+    recManualInvoice: "N\xBA de factura (opcional)",
+    recManualDate: "Fecha (YYYY-MM-DD, opcional)",
+    recRecoverManual: "Continuar desde esta huella",
+    recDone: "Operaci\xF3n completada.",
+    recErrValidate: "No se pudo validar la cadena",
+    recErrConsult: "No se pudo consultar a la AEAT",
+    recErrRecover: "No se pudo recuperar la cadena",
+    recErrHash: "La huella debe tener 64 caracteres hexadecimales"
   }
 };
 
@@ -2895,6 +2305,9 @@ var en_default = {
     },
     events: {
       label: "Events"
+    },
+    recovery: {
+      label: "Recovery"
     },
     settings: {
       label: "Settings"
@@ -2963,7 +2376,80 @@ var en_default = {
     certificatePathPlaceholder: "/path/to/certificate.p12",
     autoTransmit: "Automatic transmission to AEAT",
     save: "Save configuration",
-    saving: "Saving\u2026"
+    saving: "Saving\u2026",
+    certPkcs12: "PKCS#12 certificate (.p12 / .pfx)",
+    certChoose: "Choose file\u2026",
+    testTitle: "Live test",
+    testHint: "Validates the certificate and sends a TEST record to the AEAT. Does not affect the real chain or your invoices.",
+    testRun: "Send test",
+    testRunning: "Sending\u2026",
+    testCreateInvoice: "Create test invoice",
+    testCreateInvoiceRunning: "Creating\u2026",
+    testInvoiceCreated: "Test invoice created \u2014 view it in Invoicing.",
+    testInvoiceTestingOnly: "Only available in the testing environment and with the issuer tax ID configured.",
+    testType: "Test type",
+    testTypeTicket: "Simplified ticket (F2)",
+    testTypeInvoice: "Full invoice (F1, sample customer)",
+    certExpiry: "Certificate expiry",
+    certExpiryHint: "Extracted automatically from the certificate when you save it.",
+    certDaysRemaining: "days remaining",
+    certExpired: "The certificate has expired. Renew it to send to the AEAT.",
+    testNoRun: "No test run yet. Save the certificate and press \u201CSend test\u201D.",
+    testCert: "Certificate",
+    testHuella: "Sample fingerprint (SHA-256)",
+    testAeatLink: "AEAT verification link",
+    testAeatLinkGo: "Verify at the tax agency \u2197",
+    testQrNote: "Scan to validate the invoice at the AEAT",
+    testAeatResp: "AEAT response",
+    testAeatAccepted: "Accepted by the AEAT",
+    testAeatNotSent: "Send not attempted (check the certificate).",
+    testAeatError: "AEAT send error",
+    testEnv: "Environment",
+    producerTitle: "Software identification",
+    producerInfo: "Software manufacturer details, fixed and declared to the AEAT on every record.",
+    producerNif: "Producer tax ID",
+    producerName: "Producer name / company",
+    obligadoNif: "Taxpayer (issuer) tax ID",
+    obligadoName: "Issuer name / company",
+    obligadoHint: "Business issuing the invoices. The AEAT validates it; it must match the certificate holder.",
+    certLoaded: "loaded \u2713",
+    certNotConfigured: "not configured",
+    certDbHint: "The .p12 is stored in the hub database (robust on cloud). Leave the picker empty to keep the current one.",
+    certPickedPrefix: "New: ",
+    certPickedSuffix: " (will be saved on Save)",
+    certPassword: "Certificate password",
+    pwdConfigured: "configured \u2713",
+    pwdNone: "no password",
+    pwdPlaceholderKeep: "\u2022\u2022\u2022\u2022\u2022\u2022 (empty = keep current)",
+    pwdPlaceholder: "Certificate password",
+    recoveryTitle: "Chain recovery",
+    recChainStatus: "Chain integrity",
+    recValidate: "Validate chain",
+    recValidating: "Validating\u2026",
+    recChainValid: "Chain intact \u2713",
+    recChainBroken: "Chain BROKEN \u2717",
+    recChainUnknown: "Not validated yet",
+    recAeatTitle: "Latest records at the AEAT",
+    recConsultAeat: "Query AEAT",
+    recConsulting: "Querying\u2026",
+    recAeatEmpty: "No AEAT data. Press \u201CQuery AEAT\u201D.",
+    recColHuella: "Hash",
+    recColCsv: "CSV",
+    recColEstado: "Status",
+    recRecoverFromAeat: "Recover chain from AEAT",
+    recRecovering: "Recovering\u2026",
+    recManualTitle: "Continue chain manually (migration)",
+    recManualHint: "Paste the last hash (64 hex) from your previous application to continue the same chain.",
+    recManualNif: "Issuer tax ID",
+    recManualHash: "Last hash (64 hex)",
+    recManualInvoice: "Invoice number (optional)",
+    recManualDate: "Date (YYYY-MM-DD, optional)",
+    recRecoverManual: "Continue from this hash",
+    recDone: "Operation completed.",
+    recErrValidate: "Could not validate the chain",
+    recErrConsult: "Could not query the AEAT",
+    recErrRecover: "Could not recover the chain",
+    recErrHash: "The hash must be 64 hexadecimal characters"
   }
 };
 
@@ -2974,7 +2460,7 @@ function erplora() {
   if (!c5) throw new Error("erplora SDK no inicializado por el shell");
   return c5;
 }
-var ErpVerifactuContingency = class extends i3 {
+var ErpVerifactuContingency = class extends i4 {
   constructor() {
     super(...arguments);
     this.error = "";
@@ -2987,7 +2473,7 @@ var ErpVerifactuContingency = class extends i3 {
   }
   static {
     this.styles = i`
-    :host { display:block; font-family: system-ui, sans-serif; color: var(--ink, #1c1b18); }
+    :host { display:block; font-family: system-ui, sans-serif; color: var(--ion-text-color, #1c1b18); }
     header { display:flex; gap:.5rem; align-items:center; margin-bottom:.75rem; }
     h2 { margin:0; font-size:1.15rem; flex:1; }
     .err { color:#d9480f; font-weight:600; }
@@ -3051,8 +2537,8 @@ var ErpVerifactuContingency = class extends i3 {
     try {
       await erplora().command("verifactu.contingency.process", { limit: 100 });
       await this.ctrl.load();
-    } catch (e5) {
-      this.error = e5 instanceof Error ? e5.message : erplora().t(CATALOG, "ui.errProcessQueue");
+    } catch (e6) {
+      this.error = e6 instanceof Error ? e6.message : erplora().t(CATALOG, "ui.errProcessQueue");
     } finally {
       this.busy = false;
     }
@@ -3063,8 +2549,8 @@ var ErpVerifactuContingency = class extends i3 {
     try {
       await erplora().command("verifactu.contingency.retry", { queue_id: queueId });
       await this.ctrl.load();
-    } catch (e5) {
-      this.error = e5 instanceof Error ? e5.message : erplora().t(CATALOG, "ui.errRetry");
+    } catch (e6) {
+      this.error = e6 instanceof Error ? e6.message : erplora().t(CATALOG, "ui.errRetry");
     } finally {
       this.busy = false;
     }
@@ -3075,8 +2561,8 @@ var ErpVerifactuContingency = class extends i3 {
     try {
       await erplora().command("verifactu.contingency.cancel", { queue_id: queueId });
       await this.ctrl.load();
-    } catch (e5) {
-      this.error = e5 instanceof Error ? e5.message : erplora().t(CATALOG, "ui.errCancel");
+    } catch (e6) {
+      this.error = e6 instanceof Error ? e6.message : erplora().t(CATALOG, "ui.errCancel");
     } finally {
       this.busy = false;
     }
@@ -3093,11 +2579,11 @@ var ErpVerifactuContingency = class extends i3 {
         <ok-data-table .serverSide=${true} .columns=${this.columns} .rows=${this.ctrl?.rows ?? []} .total=${this.ctrl?.total ?? 0} .page=${this.ctrl?.state.page ?? 0} .pageSize=${this.ctrl?.state.pageSize ?? 50} .sort=${this.ctrl?.state.sort} .sortDir=${this.ctrl?.state.dir ?? "asc"} .searchable=${true} .searchPlaceholder=${t5("ui.contingencySearchPlaceholder")} .emptyMessage=${this.ctrl?.loading ? t5("ui.loading") : t5("ui.contingencyEmpty")} .actions=${[
       { id: "retry", label: t5("ui.actionRetry") },
       { id: "cancel", label: t5("ui.actionCancel"), color: "danger" }
-    ]} @rowAction=${(e5) => {
-      const { actionId, row } = e5.detail;
+    ]} @rowAction=${(e6) => {
+      const { actionId, row } = e6.detail;
       if (actionId === "retry") this.retry(row.id);
       else if (actionId === "cancel") this.cancel(row.id);
-    }} @pageChange=${(e5) => this.ctrl.setPage(e5.detail)} @sortChange=${(e5) => this.ctrl.setSort(e5.detail.sort, e5.detail.dir)} @searchChange=${(e5) => this.ctrl.setSearch(e5.detail)} @filterChange=${(e5) => this.ctrl.setFilter(e5.detail.col, e5.detail.value)}></ok-data-table>
+    }} @pageChange=${(e6) => this.ctrl.setPage(e6.detail)} @sortChange=${(e6) => this.ctrl.setSort(e6.detail.sort, e6.detail.dir)} @searchChange=${(e6) => this.ctrl.setSearch(e6.detail)} @filterChange=${(e6) => this.ctrl.setFilter(e6.detail.col, e6.detail.value)}></ok-data-table>
       </div>`;
   }
 };
@@ -3119,7 +2605,7 @@ function erplora2() {
   if (!c5) throw new Error("erplora SDK no inicializado por el shell");
   return c5;
 }
-var ErpVerifactuEvents = class extends i3 {
+var ErpVerifactuEvents = class extends i4 {
   constructor() {
     super(...arguments);
     this.tick = 0;
@@ -3130,7 +2616,7 @@ var ErpVerifactuEvents = class extends i3 {
   }
   static {
     this.styles = i`
-    :host { display:block; font-family: system-ui, sans-serif; color: var(--ink, #1c1b18); }
+    :host { display:block; font-family: system-ui, sans-serif; color: var(--ion-text-color, #1c1b18); }
     header { display:flex; gap:.5rem; align-items:center; margin-bottom:.75rem; }
     h2 { margin:0; font-size:1.15rem; flex:1; }
     .err { color:#d9480f; font-weight:600; }
@@ -3179,7 +2665,7 @@ var ErpVerifactuEvents = class extends i3 {
           <h2>${t5("ui.eventsTitle")}</h2>
         </header>
         ${this.ctrl?.error ? b2`<p class="err">${this.ctrl.error}</p>` : A}
-        <ok-data-table .serverSide=${true} .columns=${this.columns} .rows=${this.ctrl?.rows ?? []} .total=${this.ctrl?.total ?? 0} .page=${this.ctrl?.state.page ?? 0} .pageSize=${this.ctrl?.state.pageSize ?? 50} .sort=${this.ctrl?.state.sort} .sortDir=${this.ctrl?.state.dir ?? "asc"} .searchable=${true} .searchPlaceholder=${t5("ui.eventsSearchPlaceholder")} .emptyMessage=${this.ctrl?.loading ? t5("ui.loading") : t5("ui.eventsEmpty")} @pageChange=${(e5) => this.ctrl.setPage(e5.detail)} @sortChange=${(e5) => this.ctrl.setSort(e5.detail.sort, e5.detail.dir)} @searchChange=${(e5) => this.ctrl.setSearch(e5.detail)} @filterChange=${(e5) => this.ctrl.setFilter(e5.detail.col, e5.detail.value)}></ok-data-table>
+        <ok-data-table .serverSide=${true} .columns=${this.columns} .rows=${this.ctrl?.rows ?? []} .total=${this.ctrl?.total ?? 0} .page=${this.ctrl?.state.page ?? 0} .pageSize=${this.ctrl?.state.pageSize ?? 50} .sort=${this.ctrl?.state.sort} .sortDir=${this.ctrl?.state.dir ?? "asc"} .searchable=${true} .searchPlaceholder=${t5("ui.eventsSearchPlaceholder")} .emptyMessage=${this.ctrl?.loading ? t5("ui.loading") : t5("ui.eventsEmpty")} @pageChange=${(e6) => this.ctrl.setPage(e6.detail)} @sortChange=${(e6) => this.ctrl.setSort(e6.detail.sort, e6.detail.dir)} @searchChange=${(e6) => this.ctrl.setSearch(e6.detail)} @filterChange=${(e6) => this.ctrl.setFilter(e6.detail.col, e6.detail.value)}></ok-data-table>
       </div>`;
   }
 };
@@ -3195,7 +2681,15 @@ function erplora3() {
   if (!c5) throw new Error("erplora SDK no inicializado por el shell");
   return c5;
 }
-var ErpVerifactuRecords = class extends i3 {
+var STATUS_COLOR = {
+  pending: "warning",
+  retry: "warning",
+  transmitted: "primary",
+  accepted: "success",
+  rejected: "danger",
+  error: "danger"
+};
+var ErpVerifactuRecords = class extends i4 {
   constructor() {
     super(...arguments);
     this.tick = 0;
@@ -3206,7 +2700,7 @@ var ErpVerifactuRecords = class extends i3 {
   }
   static {
     this.styles = i`
-    :host { display:block; font-family: system-ui, sans-serif; color: var(--ink, #1c1b18); }
+    :host { display:block; font-family: system-ui, sans-serif; color: var(--ion-text-color, #1c1b18); }
     header { display:flex; gap:.5rem; align-items:center; margin-bottom:.75rem; }
     h2 { margin:0; font-size:1.15rem; flex:1; }
     .err { color:#d9480f; font-weight:600; }
@@ -3214,6 +2708,14 @@ var ErpVerifactuRecords = class extends i3 {
   }
   get columns() {
     const t5 = (k2) => erplora3().t(CATALOG3, k2);
+    const statusLabels = {
+      pending: t5("ui.statusPending"),
+      transmitted: t5("ui.statusTransmitted"),
+      accepted: t5("ui.statusAccepted"),
+      rejected: t5("ui.statusRejected"),
+      error: t5("ui.statusError"),
+      retry: t5("ui.statusRetry")
+    };
     return [
       { key: "sequence_number", header: t5("ui.colSeq"), align: "right", sortable: true, filterable: true, filterType: "text" },
       { key: "invoice_number", header: t5("ui.colInvoice"), sortable: true, filterable: true, filterType: "text" },
@@ -3253,7 +2755,11 @@ var ErpVerifactuRecords = class extends i3 {
           { value: "rejected", label: t5("ui.statusRejected") },
           { value: "error", label: t5("ui.statusError") },
           { value: "retry", label: t5("ui.statusRetry") }
-        ]
+        ],
+        render: (r6) => {
+          const s5 = r6.status;
+          return b2`<ion-badge color=${STATUS_COLOR[s5] ?? "medium"}>${statusLabels[s5] ?? s5}</ion-badge>`;
+        }
       }
     ];
   }
@@ -3288,7 +2794,7 @@ var ErpVerifactuRecords = class extends i3 {
           <h2>${t5("ui.recordsTitle")}</h2>
         </header>
         ${this.ctrl?.error ? b2`<p class="err">${this.ctrl.error}</p>` : A}
-        <ok-data-table .serverSide=${true} .columns=${this.columns} .rows=${this.ctrl?.rows ?? []} .total=${this.ctrl?.total ?? 0} .page=${this.ctrl?.state.page ?? 0} .pageSize=${this.ctrl?.state.pageSize ?? 50} .sort=${this.ctrl?.state.sort} .sortDir=${this.ctrl?.state.dir ?? "asc"} .searchable=${true} .searchPlaceholder=${t5("ui.recordsSearchPlaceholder")} .emptyMessage=${this.ctrl?.loading ? t5("ui.loading") : t5("ui.recordsEmpty")} @pageChange=${(e5) => this.ctrl.setPage(e5.detail)} @sortChange=${(e5) => this.ctrl.setSort(e5.detail.sort, e5.detail.dir)} @searchChange=${(e5) => this.ctrl.setSearch(e5.detail)} @filterChange=${(e5) => this.ctrl.setFilter(e5.detail.col, e5.detail.value)}></ok-data-table>
+        <ok-data-table .serverSide=${true} .columns=${this.columns} .rows=${this.ctrl?.rows ?? []} .total=${this.ctrl?.total ?? 0} .page=${this.ctrl?.state.page ?? 0} .pageSize=${this.ctrl?.state.pageSize ?? 50} .sort=${this.ctrl?.state.sort} .sortDir=${this.ctrl?.state.dir ?? "asc"} .searchable=${true} .searchPlaceholder=${t5("ui.recordsSearchPlaceholder")} .emptyMessage=${this.ctrl?.loading ? t5("ui.loading") : t5("ui.recordsEmpty")} @pageChange=${(e6) => this.ctrl.setPage(e6.detail)} @sortChange=${(e6) => this.ctrl.setSort(e6.detail.sort, e6.detail.dir)} @searchChange=${(e6) => this.ctrl.setSearch(e6.detail)} @filterChange=${(e6) => this.ctrl.setFilter(e6.detail.col, e6.detail.value)}></ok-data-table>
       </div>`;
   }
 };
@@ -3297,14 +2803,582 @@ __decorateClass([
 ], ErpVerifactuRecords.prototype, "tick", 2);
 define("erp-verifactu-records", ErpVerifactuRecords);
 
-// ../modules-workspace/modules/verifactu/ui/components/erp-verifactu-settings/erp-verifactu-settings.ts
+// ../modules-workspace/node_modules/.pnpm/@outfitkit+core@file+..+outfitkit/node_modules/@outfitkit/core/dist/ok-inline-feedback.js
+var __defProp3 = Object.defineProperty;
+var __decorateClass3 = (decorators, target, key, kind) => {
+  var result = void 0;
+  for (var i8 = decorators.length - 1, decorator; i8 >= 0; i8--)
+    if (decorator = decorators[i8])
+      result = decorator(target, key, result) || result;
+  if (result) __defProp3(target, key, result);
+  return result;
+};
+var DEFAULT_LABELS2 = {
+  dismiss: "Dismiss"
+};
+var OkInlineFeedback = class extends i4 {
+  constructor() {
+    super(...arguments);
+    this.tone = "info";
+    this.dismissible = false;
+    this.hidden = false;
+    this.labels = {};
+    this.hasActions = false;
+    this.onActionsSlotChange = (e6) => {
+      const slot = e6.target;
+      this.hasActions = slot.assignedNodes({ flatten: true }).length > 0;
+    };
+  }
+  static {
+    this.styles = i`
+    :host {
+      /* Vars overridable (estilo Ionic), default = cadena --ok-* → --ion-* → hex.
+         --tone-color y --tone-icon se reasignan por tone abajo. */
+      --tone-color: var(--ok-primary, var(--ion-color-primary, #3880ff));
+      --background-opacity: 0.1;
+      --color: var(--ok-text, var(--ion-text-color, #1c1b17));
+      --border-radius: var(--ok-radius, var(--ion-border-radius, 8px));
+      --padding: var(--ok-spacing, var(--ion-padding, 16px));
+      --accent-width: 4px;
+      --font: var(--ok-font, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif);
+
+      /* Responsive: el banner ocupa el ancho del contenedor. */
+      display: block;
+      width: 100%;
+      font-family: var(--font);
+      box-sizing: border-box;
+    }
+    :host([hidden]) { display: none; }
+
+    /* Mapa de tonos → color Ionic + icono por defecto. */
+    :host([tone='success']) { --tone-color: var(--ok-success, var(--ion-color-success, #2dd55b)); }
+    :host([tone='warning']) { --tone-color: var(--ok-warning, var(--ion-color-warning, #ffc409)); }
+    :host([tone='danger'])  { --tone-color: var(--ok-danger, var(--ion-color-danger, #c5000f)); }
+    :host([tone='neutral']) { --tone-color: var(--ok-medium, var(--ion-color-medium, #5f5f5f)); }
+    /* info / sin tono → primary (default ya aplicado en :host). */
+
+    .box {
+      position: relative;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: var(--padding);
+      border-radius: var(--border-radius);
+      border-inline-start: var(--accent-width) solid var(--tone-color);
+      /* Fondo tonal: el color del tono con baja opacidad (color-mix con fallback al borde fino). */
+      background: color-mix(in srgb, var(--tone-color) calc(var(--background-opacity) * 100%), transparent);
+      color: var(--color);
+    }
+
+    .icon {
+      flex: 0 0 auto;
+      font-size: 1.4rem;
+      line-height: 1;
+      color: var(--tone-color);
+      margin-top: 0.05rem;
+    }
+
+    .content {
+      flex: 1 1 auto;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .row {
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+    .text {
+      flex: 1 1 auto;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+    .heading {
+      font-weight: 700;
+      font-size: 0.98rem;
+      line-height: 1.3;
+    }
+    .body {
+      font-size: 0.92rem;
+      line-height: 1.45;
+    }
+    .actions {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    /* Si no hay actions, el slot queda vacío y no ocupa espacio. */
+    .actions.empty { display: none; }
+
+    .close {
+      flex: 0 0 auto;
+      background: none;
+      border: 0;
+      cursor: pointer;
+      padding: 0.15rem;
+      margin: -0.15rem -0.15rem 0 0;
+      color: inherit;
+      opacity: 0.6;
+      font-size: 1.2rem;
+      line-height: 1;
+      border-radius: 4px;
+      transition: background-color var(--ok-transition, 150ms ease), color var(--ok-transition, 150ms ease),
+        border-color var(--ok-transition, 150ms ease), box-shadow var(--ok-transition, 150ms ease),
+        opacity 0.15s ease, transform 120ms ease;
+    }
+    @media (hover: hover) {
+      .close:hover { opacity: 1; background: rgba(var(--ion-text-color-rgb, 24, 24, 27), 0.07); }
+    }
+    .close:active { transform: scale(var(--ok-press-scale, 0.97)); }
+
+    /* Móvil: las actions bajan bajo el texto (apiladas a ancho completo). */
+    @media (max-width: 640px) {
+      .row { flex-direction: column; align-items: stretch; }
+      .actions { width: 100%; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .close:hover,
+      .close:active { transform: none; }
+    }
+  `;
+  }
+  // Textos efectivos: defaults en inglés + overrides del consumidor.
+  get t() {
+    return { ...DEFAULT_LABELS2, ...this.labels };
+  }
+  // Icono por defecto según el tono (overridable por la prop `icon`).
+  defaultIcon() {
+    switch (this.tone) {
+      case "success":
+        return "checkmark-circle";
+      case "warning":
+        return "warning";
+      case "danger":
+        return "alert-circle";
+      case "neutral":
+        return "information-circle";
+      case "info":
+      default:
+        return "information-circle";
+    }
+  }
+  // Oculta el banner y avisa al consumidor; éste puede revertir restaurando `hidden=false`.
+  dismiss() {
+    this.hidden = true;
+    this.dispatchEvent(new CustomEvent("ok-dismiss", { bubbles: true, composed: true }));
+  }
+  render() {
+    const iconName = this.icon ?? this.defaultIcon();
+    return b2`
+      <div class="box" role="status">
+        <ion-icon class="icon" name=${iconName} aria-hidden="true"></ion-icon>
+        <div class="content">
+          <div class="row">
+            <div class="text">
+              ${this.heading ? b2`<div class="heading">${this.heading}</div>` : null}
+              <div class="body"><slot></slot></div>
+            </div>
+            <div class="actions ${this.hasActions ? "" : "empty"}">
+              <slot name="actions" @slotchange=${this.onActionsSlotChange}></slot>
+            </div>
+          </div>
+        </div>
+        ${this.dismissible ? b2`
+              <button class="close" aria-label=${this.t.dismiss} @click=${this.dismiss}>
+                <ion-icon name="close" aria-hidden="true"></ion-icon>
+              </button>
+            ` : null}
+      </div>
+    `;
+  }
+};
+__decorateClass3([
+  n4({ type: String, reflect: true })
+], OkInlineFeedback.prototype, "tone");
+__decorateClass3([
+  n4({ type: String })
+], OkInlineFeedback.prototype, "heading");
+__decorateClass3([
+  n4({ type: String })
+], OkInlineFeedback.prototype, "icon");
+__decorateClass3([
+  n4({ type: Boolean, reflect: true })
+], OkInlineFeedback.prototype, "dismissible");
+__decorateClass3([
+  n4({ type: Boolean, reflect: true })
+], OkInlineFeedback.prototype, "hidden");
+__decorateClass3([
+  n4({ attribute: false })
+], OkInlineFeedback.prototype, "labels");
+__decorateClass3([
+  r5()
+], OkInlineFeedback.prototype, "hasActions");
+define("ok-inline-feedback", OkInlineFeedback);
+
+// ../modules-workspace/modules/verifactu/ui/components/erp-verifactu-recovery/erp-verifactu-recovery.ts
 var CATALOG4 = { es: es_default, en: en_default };
 function erplora4() {
   const c5 = globalThis.erplora;
   if (!c5) throw new Error("erplora SDK no inicializado por el shell");
   return c5;
 }
-var ErpVerifactuSettings = class extends i3 {
+var HEX64 = /^[0-9a-fA-F]{64}$/;
+var ErpVerifactuRecovery = class extends i4 {
+  constructor() {
+    super(...arguments);
+    this.nif = "";
+    this.status = null;
+    this.manualHash = "";
+    this.manualInvoice = "";
+    this.manualDate = "";
+    this.busy = "";
+    this.error = "";
+    this.done = "";
+    this.onLocaleChange = () => this.requestUpdate();
+  }
+  static {
+    this.styles = i`
+    :host { display:block; height:100%; overflow:auto; font-family: system-ui, sans-serif; color: var(--ion-text-color, #1c1b18); }
+    h2 { font-size:1.1rem; margin:0 0 .75rem; }
+    h3 { font-size:.95rem; margin:1.4rem 0 .55rem; color: var(--ion-text-color, #1c1b18); }
+    .card { background: var(--ion-card-background, #fff); border:1px solid var(--ion-border-color, #e6e2d8); border-radius:12px; overflow:hidden; max-width:40rem; }
+    .toolbar { display:flex; gap:.5rem; align-items:center; flex-wrap:wrap; margin:.5rem 0; }
+    .actions { display:flex; justify-content:flex-end; margin:.85rem 0; max-width:40rem; }
+    ok-inline-feedback { display:block; margin-bottom:.5rem; max-width:40rem; }
+  `;
+  }
+  get columns() {
+    const t5 = (k2) => erplora4().t(CATALOG4, k2);
+    return [
+      { key: "invoice_number", header: t5("ui.colInvoice"), sortable: true, filterable: true, filterType: "text" },
+      { key: "invoice_date", header: t5("ui.colDate"), sortable: true, filterable: true, filterType: "text" },
+      {
+        key: "record_hash",
+        header: t5("ui.recColHuella"),
+        sortable: true,
+        format: (r6) => r6.record_hash ? `${String(r6.record_hash).slice(0, 16)}\u2026` : ""
+      },
+      { key: "estado", header: t5("ui.recColEstado"), sortable: true, filterable: true, filterType: "text" },
+      { key: "aeat_csv", header: t5("ui.recColCsv"), sortable: true },
+      { key: "query_timestamp", header: t5("ui.colWhen"), sortable: true }
+    ];
+  }
+  async connectedCallback() {
+    super.connectedCallback();
+    window.addEventListener("erplora:locale-changed", this.onLocaleChange);
+    this.ctrl = createListController(erplora4(), "verifactu.aeat.records.list", () => this.requestUpdate(), {
+      pageSize: 50,
+      sort: "query_timestamp",
+      dir: "desc"
+    });
+    await this.loadMeta();
+    await this.ctrl.load();
+  }
+  disconnectedCallback() {
+    window.removeEventListener("erplora:locale-changed", this.onLocaleChange);
+    super.disconnectedCallback();
+  }
+  /** NIF por defecto (config) + último estado de validación de la cadena. */
+  async loadMeta() {
+    try {
+      const cfgRows = await erplora4().query("verifactu.config.get");
+      const cfg = Array.isArray(cfgRows) ? cfgRows[0] : cfgRows;
+      const nif = cfg?.issuer_nif || cfg?.software_nif;
+      if (nif && !this.nif) this.nif = nif;
+      const st = await erplora4().query("verifactu.chain.status");
+      this.status = Array.isArray(st) ? st[0] ?? null : st ?? null;
+    } catch (e6) {
+      this.error = e6 instanceof Error ? e6.message : "";
+    }
+  }
+  async run(action, fn, errKey) {
+    this.busy = action;
+    this.error = "";
+    this.done = "";
+    try {
+      await fn();
+      this.done = erplora4().t(CATALOG4, "ui.recDone");
+      await this.loadMeta();
+      await this.ctrl.load();
+    } catch (e6) {
+      this.error = e6 instanceof Error ? e6.message : erplora4().t(CATALOG4, errKey);
+    } finally {
+      this.busy = "";
+    }
+  }
+  validate() {
+    return this.run("validate", () => erplora4().command("verifactu.chain.validate", { issuer_nif: this.nif }), "ui.recErrValidate");
+  }
+  consult() {
+    return this.run("consult", () => erplora4().command("verifactu.aeat.query_recent", { issuer_nif: this.nif }), "ui.recErrConsult");
+  }
+  recoverAeat() {
+    return this.run("recoverAeat", () => erplora4().command("verifactu.recovery.from_aeat", { issuer_nif: this.nif }), "ui.recErrRecover");
+  }
+  recoverManual() {
+    const hash = this.manualHash.trim();
+    if (!HEX64.test(hash)) {
+      this.error = erplora4().t(CATALOG4, "ui.recErrHash");
+      return void 0;
+    }
+    return this.run("recoverManual", () => erplora4().command("verifactu.recovery.manual", {
+      issuer_nif: this.nif,
+      record_hash: hash,
+      invoice_number: this.manualInvoice || "",
+      invoice_date: this.manualDate || ""
+    }), "ui.recErrRecover");
+  }
+  statusTone() {
+    if (!this.status?.event_type) return "neutral";
+    return this.status.event_type === "chain_validated" ? "success" : "danger";
+  }
+  statusLabel(t5) {
+    if (!this.status?.event_type) return t5("ui.recChainUnknown");
+    return this.status.event_type === "chain_validated" ? t5("ui.recChainValid") : t5("ui.recChainBroken");
+  }
+  render() {
+    const t5 = (k2) => erplora4().t(CATALOG4, k2);
+    const blocked = this.busy !== "" || !this.nif;
+    return b2`
+      <h2>${t5("ui.recoveryTitle")}</h2>
+      ${this.error ? b2`<ok-inline-feedback tone="danger" icon="alert-circle-outline">${this.error}</ok-inline-feedback>` : A}
+      ${this.done ? b2`<ok-inline-feedback tone="success" icon="checkmark-circle-outline">${this.done}</ok-inline-feedback>` : A}
+
+      <div class="card">
+        <ion-list>
+          <ion-item lines="none">
+            <ion-input label=${t5("ui.recManualNif")} label-placement="stacked" .value=${this.nif} placeholder="B12345678" @ionInput=${(e6) => {
+      this.nif = e6.target.value;
+    }}></ion-input>
+          </ion-item>
+        </ion-list>
+      </div>
+
+      <h3>${t5("ui.recChainStatus")}</h3>
+      <ok-inline-feedback tone=${this.statusTone()} heading=${this.statusLabel(t5)} icon="shield-checkmark-outline">${this.status?.message ?? ""}</ok-inline-feedback>
+      <div class="toolbar">
+        <ion-button size="small" ?disabled=${blocked} @click=${() => this.validate()}>${this.busy === "validate" ? t5("ui.recValidating") : t5("ui.recValidate")}</ion-button>
+        <ion-button size="small" fill="outline" ?disabled=${blocked} @click=${() => this.consult()}>${this.busy === "consult" ? t5("ui.recConsulting") : t5("ui.recConsultAeat")}</ion-button>
+        <ion-button size="small" fill="outline" color="warning" ?disabled=${blocked} @click=${() => this.recoverAeat()}>${this.busy === "recoverAeat" ? t5("ui.recRecovering") : t5("ui.recRecoverFromAeat")}</ion-button>
+      </div>
+
+      <h3>${t5("ui.recAeatTitle")}</h3>
+      <ok-data-table
+        .serverSide=${true}
+        .columns=${this.columns}
+        .rows=${this.ctrl?.rows ?? []}
+        .total=${this.ctrl?.total ?? 0}
+        .page=${this.ctrl?.state.page ?? 0}
+        .pageSize=${this.ctrl?.state.pageSize ?? 50}
+        .sort=${this.ctrl?.state.sort}
+        .sortDir=${this.ctrl?.state.dir ?? "desc"}
+        .searchable=${true}
+        .emptyMessage=${this.ctrl?.loading ? t5("ui.loading") : t5("ui.recAeatEmpty")}
+        @pageChange=${(e6) => this.ctrl.setPage(e6.detail)}
+        @sortChange=${(e6) => this.ctrl.setSort(e6.detail.sort, e6.detail.dir)}
+        @searchChange=${(e6) => this.ctrl.setSearch(e6.detail)}
+        @filterChange=${(e6) => this.ctrl.setFilter(e6.detail.col, e6.detail.value)}
+      ></ok-data-table>
+
+      <h3>${t5("ui.recManualTitle")}</h3>
+      <ok-inline-feedback tone="info" icon="information-circle-outline">${t5("ui.recManualHint")}</ok-inline-feedback>
+      <div class="card">
+        <ion-list>
+          <ion-item>
+            <ion-input label=${t5("ui.recManualHash")} label-placement="stacked" .value=${this.manualHash} placeholder="A1B2…(64)" @ionInput=${(e6) => {
+      this.manualHash = e6.target.value;
+    }}></ion-input>
+          </ion-item>
+          <ion-item>
+            <ion-input label=${t5("ui.recManualInvoice")} label-placement="stacked" .value=${this.manualInvoice} placeholder="2024/001" @ionInput=${(e6) => {
+      this.manualInvoice = e6.target.value;
+    }}></ion-input>
+          </ion-item>
+          <ion-item lines="none">
+            <ion-input label=${t5("ui.recManualDate")} label-placement="stacked" .value=${this.manualDate} placeholder="2024-12-31" @ionInput=${(e6) => {
+      this.manualDate = e6.target.value;
+    }}></ion-input>
+          </ion-item>
+        </ion-list>
+      </div>
+      <div class="actions">
+        <ion-button color="warning" ?disabled=${blocked} @click=${() => this.recoverManual()}>${this.busy === "recoverManual" ? t5("ui.recRecovering") : t5("ui.recRecoverManual")}</ion-button>
+      </div>
+    `;
+  }
+};
+__decorateClass([
+  r5()
+], ErpVerifactuRecovery.prototype, "nif", 2);
+__decorateClass([
+  r5()
+], ErpVerifactuRecovery.prototype, "status", 2);
+__decorateClass([
+  r5()
+], ErpVerifactuRecovery.prototype, "manualHash", 2);
+__decorateClass([
+  r5()
+], ErpVerifactuRecovery.prototype, "manualInvoice", 2);
+__decorateClass([
+  r5()
+], ErpVerifactuRecovery.prototype, "manualDate", 2);
+__decorateClass([
+  r5()
+], ErpVerifactuRecovery.prototype, "busy", 2);
+__decorateClass([
+  r5()
+], ErpVerifactuRecovery.prototype, "error", 2);
+__decorateClass([
+  r5()
+], ErpVerifactuRecovery.prototype, "done", 2);
+define("erp-verifactu-recovery", ErpVerifactuRecovery);
+
+// ../modules-workspace/node_modules/.pnpm/@outfitkit+core@file+..+outfitkit/node_modules/@outfitkit/core/dist/ok-status-pill.js
+var __defProp4 = Object.defineProperty;
+var __decorateClass4 = (decorators, target, key, kind) => {
+  var result = void 0;
+  for (var i8 = decorators.length - 1, decorator; i8 >= 0; i8--)
+    if (decorator = decorators[i8])
+      result = decorator(target, key, result) || result;
+  if (result) __defProp4(target, key, result);
+  return result;
+};
+var OkStatusPill = class extends i4 {
+  constructor() {
+    super(...arguments);
+    this.tone = "neutral";
+    this.dot = false;
+    this.size = "md";
+  }
+  static {
+    this.styles = i`
+    :host {
+      /* Vars overridable (estilo Ionic), default = cadena --ok-* → --ion-* → hex.
+         --tone-color (base: fondo/punto/icono) y --tone-shade (texto) se reasignan por tone abajo. */
+      --tone-color: var(--ok-medium, var(--ion-color-medium, #5f5f5f));
+      --tone-shade: var(--ok-medium, var(--ion-color-medium-shade, #545454));
+      --background-opacity: var(--ok-pill-bg-opacity, 0.14);
+      --border-radius: var(--ok-pill-radius, 999px);
+      --font: var(--ok-font, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif);
+
+      /* Inline: el pill vive en celdas de tabla, cabeceras y listados. */
+      display: inline-flex;
+      vertical-align: middle;
+      font-family: var(--font);
+      box-sizing: border-box;
+    }
+
+    /* Mapa de tonos → color Ionic (base + shade para el texto). */
+    :host([tone='success']) {
+      --tone-color: var(--ok-success, var(--ion-color-success, #2dd55b));
+      --tone-shade: var(--ok-success, var(--ion-color-success-shade, #28bb50));
+    }
+    :host([tone='warning']) {
+      --tone-color: var(--ok-warning, var(--ion-color-warning, #ffc409));
+      --tone-shade: var(--ok-warning-shade, var(--ion-color-warning-shade, #e0ac08));
+    }
+    :host([tone='danger']) {
+      --tone-color: var(--ok-danger, var(--ion-color-danger, #c5000f));
+      --tone-shade: var(--ok-danger, var(--ion-color-danger-shade, #ad000d));
+    }
+    :host([tone='info']) {
+      --tone-color: var(--ok-info, var(--ion-color-secondary, #0163aa));
+      --tone-shade: var(--ok-info, var(--ion-color-secondary-shade, #015896));
+    }
+    :host([tone='primary']) {
+      --tone-color: var(--ok-primary, var(--ion-color-primary, #3880ff));
+      --tone-shade: var(--ok-primary, var(--ion-color-primary-shade, #3171e0));
+    }
+    /* neutral / sin tono → medium (default ya aplicado en :host). */
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4em;
+      padding: 0.25em 0.7em;
+      border-radius: var(--border-radius);
+      /* Fondo tonal: el color del tono con baja opacidad. */
+      background: color-mix(in srgb, var(--tone-color) calc(var(--background-opacity) * 100%), transparent);
+      color: var(--ok-pill-color, var(--tone-shade));
+      font-size: 0.8125rem;
+      font-weight: 600;
+      line-height: 1.4;
+      white-space: nowrap;
+    }
+    :host([size='sm']) .pill {
+      font-size: 0.72rem;
+      padding: 0.2em 0.6em;
+    }
+
+    ion-icon {
+      flex: 0 0 auto;
+      font-size: 1.05em;
+      pointer-events: none;
+    }
+
+    /* Punto de color (estilo Linear) en vez de icono. */
+    .dot {
+      flex: 0 0 auto;
+      width: 0.5em;
+      height: 0.5em;
+      border-radius: 50%;
+      background: var(--tone-color);
+    }
+  `;
+  }
+  render() {
+    return b2`
+      <span class="pill" part="pill">
+        ${this.dot ? b2`<span class="dot" part="dot" aria-hidden="true"></span>` : this.icon ? b2`<ion-icon name=${this.icon} aria-hidden="true"></ion-icon>` : null}
+        <slot>${this.label ?? ""}</slot>
+      </span>
+    `;
+  }
+};
+__decorateClass4([
+  n4({ type: String, reflect: true })
+], OkStatusPill.prototype, "tone");
+__decorateClass4([
+  n4({ type: String })
+], OkStatusPill.prototype, "label");
+__decorateClass4([
+  n4({ type: String })
+], OkStatusPill.prototype, "icon");
+__decorateClass4([
+  n4({ type: Boolean, reflect: true })
+], OkStatusPill.prototype, "dot");
+__decorateClass4([
+  n4({ type: String, reflect: true })
+], OkStatusPill.prototype, "size");
+define("ok-status-pill", OkStatusPill);
+
+// ../modules-workspace/modules/verifactu/ui/components/erp-verifactu-settings/erp-verifactu-settings.ts
+var CATALOG5 = { es: es_default, en: en_default };
+function erplora5() {
+  const c5 = globalThis.erplora;
+  if (!c5) throw new Error("erplora SDK no inicializado por el shell");
+  return c5;
+}
+function toBase64(buf) {
+  const bytes = new Uint8Array(buf);
+  let bin = "";
+  for (let i8 = 0; i8 < bytes.length; i8 += 1) bin += String.fromCharCode(bytes[i8]);
+  return btoa(bin);
+}
+var GREEN = "--track-background-checked: rgba(var(--ion-color-success-rgb, 45,211,111), 0.5); --handle-background-checked: var(--ion-color-success, #2dd36f);";
+var PRODUCER = {
+  // IdSistemaInformatico: la AEAT lo limita a 2 caracteres (validación del XSD VeriFactu).
+  software_id: "EC",
+  software_version: "1.0.0",
+  software_nif: "B27593136",
+  software_name: "ERPLORA CLOUD SL"
+};
+var ErpVerifactuSettings = class extends i4 {
   constructor() {
     super(...arguments);
     this.cfg = {};
@@ -3312,28 +3386,49 @@ var ErpVerifactuSettings = class extends i3 {
     this.saving = false;
     this.error = "";
     this.saved = false;
-    // TODO-LIT: componentWillLoad → connectedCallback. Recuerda: connectedCallback se dispara
-    // en CADA reconexión al DOM (no solo en el primer montaje). Si la init debe correr una
-    // sola vez tras el primer render, considera firstUpdated() en su lugar.
+    this.certPassword = "";
+    this.pkcs12Base64 = "";
+    this.certFileName = "";
+    this.diag = null;
+    this.testing = false;
+    this.testType = "F2";
+    this.showProducer = false;
+    this.creatingInvoice = false;
+    this.invoiceCreated = false;
     this.onLocaleChange = () => this.requestUpdate();
   }
   static {
     this.styles = i`
-    :host { display:block; font-family: system-ui, sans-serif; color: var(--ink, #1c1b18); }
-    header { display:flex; gap:.5rem; align-items:center; margin-bottom:.75rem; }
-    h2 { margin:0; font-size:1.15rem; flex:1; }
-    .form { display:flex; flex-direction:column; gap:.6rem; max-width:32rem; }
-    .form ion-input, .form ion-select { --background:var(--surface-2,#f7f4ec); border:1px solid var(--line,#e7e2d6); border-radius:8px; }
-    .row { display:flex; gap:.5rem; align-items:center; }
-    label { font-size:.85rem; color:var(--muted,#8b897f); }
-    .err { color:#d9480f; font-weight:600; }
-    .ok { color:#2b8a3e; font-weight:600; }
+    :host { display:block; height:100%; overflow:auto; font-family: system-ui, sans-serif; color: var(--ion-text-color, #1c1b18); }
+    h2 { font-size:1.1rem; margin:0 0 .75rem; }
+    h3 { font-size:1rem; margin:0 0 .35rem; }
+    .cols { display:grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap:1rem; align-items:start; }
+    @media (max-width: 980px) { .cols { grid-template-columns:1fr; } }
+    .card { background: var(--ion-card-background, #fff); border:1px solid var(--ion-border-color, #e6e2d8); border-radius:12px; overflow:hidden; }
+    .card-actions { display:flex; justify-content:flex-end; padding:.75rem 1rem; }
+    .test-body { display:flex; flex-direction:column; gap:.7rem; padding:1rem 1.1rem 1.2rem; }
+    .test-actions { display:flex; gap:.5rem; flex-wrap:wrap; }
+    .cert { display:flex; flex-direction:column; gap:.4rem; width:100%; padding:.25rem 0; }
+    .cert-head { display:flex; gap:.5rem; align-items:center; flex-wrap:wrap; }
+    .cert-head ion-label { margin:0; }
+    .hint { font-size:.78rem; color: var(--ion-color-medium, #6b7280); margin:0; }
+    .kv { display:flex; flex-direction:column; gap:.15rem; }
+    .kv .k { font-size:.75rem; color: var(--ion-color-medium, #6b7280); }
+    .kv code { font-family: ui-monospace, monospace; font-size:.8rem; word-break:break-all; }
+    .link { color: var(--ion-color-primary, #3880ff); font-weight:600; text-decoration:none; }
+    .prod { display:flex; flex-direction:column; gap:.5rem; width:100%; padding:.25rem 0; }
+    .prod-head { display:flex; gap:.35rem; align-items:center; }
+    .prod-head .t { font-size:.9rem; }
+    .prod-head ion-button { --padding-start:.35rem; --padding-end:.35rem; --color: var(--ion-color-primary, #3880ff); margin:0; height:1.6rem; font-size:1.25rem; font-weight:700; }
+    .info { display:flex; flex-direction:column; gap:.45rem; padding:.5rem .75rem; border-radius:8px; background: var(--ion-color-light, #f4f5f8); }
+    ok-inline-feedback { display:block; }
   `;
   }
   async connectedCallback() {
     super.connectedCallback();
     window.addEventListener("erplora:locale-changed", this.onLocaleChange);
     await this.refresh();
+    await this.loadDiag();
   }
   disconnectedCallback() {
     window.removeEventListener("erplora:locale-changed", this.onLocaleChange);
@@ -3343,17 +3438,42 @@ var ErpVerifactuSettings = class extends i3 {
     this.loading = true;
     this.error = "";
     try {
-      const c5 = await erplora4().query("verifactu.config.get");
+      const rows = await erplora5().query("verifactu.config.get");
+      const c5 = Array.isArray(rows) ? rows[0] : rows;
       this.cfg = c5 ?? {};
-    } catch (e5) {
-      this.error = e5 instanceof Error ? e5.message : erplora4().t(CATALOG4, "ui.errLoadConfig");
+    } catch (e6) {
+      this.error = e6 instanceof Error ? e6.message : erplora5().t(CATALOG5, "ui.errLoadConfig");
     } finally {
       this.loading = false;
+    }
+  }
+  async loadDiag() {
+    try {
+      const rows = await erplora5().query("verifactu.diagnostics.last");
+      const row = Array.isArray(rows) ? rows[0] : rows;
+      this.diag = row?.details ? JSON.parse(row.details) : null;
+    } catch {
+      this.diag = null;
     }
   }
   set(key, value) {
     this.cfg = { ...this.cfg, [key]: value };
     this.saved = false;
+  }
+  pickCert() {
+    this.renderRoot.querySelector("#cert-file")?.click();
+  }
+  async onCertFile(ev) {
+    const input = ev.target;
+    const file = input.files?.[0];
+    if (!file) return;
+    try {
+      this.pkcs12Base64 = toBase64(await file.arrayBuffer());
+      this.certFileName = file.name;
+      this.saved = false;
+    } catch (e6) {
+      this.error = e6 instanceof Error ? e6.message : erplora5().t(CATALOG5, "ui.errLoadConfig");
+    }
   }
   async save(ev) {
     ev.preventDefault();
@@ -3361,64 +3481,241 @@ var ErpVerifactuSettings = class extends i3 {
     this.error = "";
     this.saved = false;
     try {
-      await erplora4().command("verifactu.config.save", {
+      await erplora5().command("verifactu.config.save", {
         enabled: !!this.cfg.enabled,
         mode: this.cfg.mode || "verifactu",
         environment: this.cfg.environment || "testing",
-        software_name: this.cfg.software_name || "ERPlora Hub",
-        software_version: this.cfg.software_version || "1.0.0",
-        software_id: this.cfg.software_id || "ERPLORA-001",
-        software_nif: this.cfg.software_nif || "",
+        // Identificación del productor: SIEMPRE fija (no editable por el cliente).
+        software_name: PRODUCER.software_name,
+        software_version: PRODUCER.software_version,
+        software_id: PRODUCER.software_id,
+        software_nif: PRODUCER.software_nif,
+        // Obligado tributario (emisor) — editable por el cliente.
+        issuer_nif: (this.cfg.issuer_nif || "").trim().toUpperCase(),
+        issuer_name: this.cfg.issuer_name || "",
         certificate_path: this.cfg.certificate_path || "",
-        certificate_password: "",
+        certificate_password: this.certPassword || "",
+        // vacío = no cambiar (lo preserva el command)
+        certificate_pkcs12: this.pkcs12Base64 || "",
         certificate_expiry: null,
         auto_transmit: this.cfg.auto_transmit !== false,
         retry_interval_minutes: Number(this.cfg.retry_interval_minutes) || 5,
         max_retries: Number(this.cfg.max_retries) || 10
       });
       this.saved = true;
+      this.certPassword = "";
+      this.pkcs12Base64 = "";
+      this.certFileName = "";
+      try {
+        await erplora5().command("verifactu.certificate.inspect");
+      } catch {
+      }
       await this.refresh();
-    } catch (e5) {
-      this.error = e5 instanceof Error ? e5.message : erplora4().t(CATALOG4, "ui.errSaveConfig");
+    } catch (e6) {
+      this.error = e6 instanceof Error ? e6.message : erplora5().t(CATALOG5, "ui.errSaveConfig");
     } finally {
       this.saving = false;
     }
   }
-  render() {
-    const t5 = (k2) => erplora4().t(CATALOG4, k2);
-    return b2`<div>
-        <header>
-          <h2>${t5("ui.settingsTitle")}</h2>
-        </header>
-        ${this.error ? b2`<p class="err">${this.error}</p>` : A}
-        ${this.saved ? b2`<p class="ok">${t5("ui.settingsSaved")}</p>` : A}
-        <form class="form" @submit=${(e5) => this.save(e5)}>
-          <div class="row">
-            <ion-checkbox ?checked=${!!this.cfg.enabled} @ionChange=${(e5) => this.set("enabled", e5.target.checked)}></ion-checkbox>
-            <label>${t5("ui.enableVerifactu")}</label>
-          </div>
-          <label>${t5("ui.envAeat")}</label>
-          <ion-select .value=${this.cfg.environment || "testing"} @ionChange=${(e5) => this.set("environment", e5.target.value)}>
-            <ion-select-option value="testing">${t5("ui.envTesting")}</ion-select-option>
-            <ion-select-option value="production">${t5("ui.envProduction")}</ion-select-option>
+  async runTest() {
+    this.testing = true;
+    this.error = "";
+    try {
+      await erplora5().command("verifactu.diagnostics.run", { invoice_type: this.testType });
+      await this.loadDiag();
+    } catch (e6) {
+      this.error = e6 instanceof Error ? e6.message : "No se pudo ejecutar la prueba";
+    } finally {
+      this.testing = false;
+    }
+  }
+  /**
+   * Crea una factura de prueba (tiquet F2) vía el comando cross-módulo `invoice.create`.
+   * F2 NO necesita el bloque Destinatarios → evita el error AEAT 1189. El Hub auto-transmite
+   * al crearla (auto_transmit), así que se envía sola a la AEAT y aparece en /m/invoice.
+   * GUARDA: solo en entorno de pruebas y con NIF del emisor configurado.
+   */
+  async createTestInvoice() {
+    this.creatingInvoice = true;
+    this.invoiceCreated = false;
+    this.error = "";
+    try {
+      await erplora5().command("invoice.create", {
+        series_code: "TICKET",
+        invoice_type: "F2",
+        source_type: "test",
+        notes: "Prueba VeriFactu",
+        items: [{ description: "Factura de PRUEBA VeriFactu (entorno de pruebas)", quantity: 1, unit_price: 100, tax_rate: 21, product_id: null }]
+      });
+      this.invoiceCreated = true;
+    } catch (e6) {
+      this.error = e6 instanceof Error ? e6.message : "No se pudo crear la factura de prueba";
+    } finally {
+      this.creatingInvoice = false;
+    }
+  }
+  /** Días que faltan para la caducidad del certificado (negativo si ya caducó). */
+  daysRemaining(iso) {
+    if (!iso) return null;
+    const exp = /* @__PURE__ */ new Date(`${iso}T23:59:59`);
+    if (Number.isNaN(exp.getTime())) return null;
+    return Math.ceil((exp.getTime() - Date.now()) / 864e5);
+  }
+  /** ISO `YYYY-MM-DD` → `DD/MM/YYYY` para mostrar. */
+  fmtDate(iso) {
+    if (!iso) return "\u2014";
+    const [y3, m3, d3] = iso.split("-");
+    return d3 && m3 && y3 ? `${d3}/${m3}/${y3}` : iso;
+  }
+  renderCertStatus(t5) {
+    const days = this.daysRemaining(this.cfg.certificate_expiry);
+    if (days === null) return A;
+    if (days <= 0) {
+      return b2`<ok-inline-feedback tone="danger" icon="alert-circle-outline">${t5("ui.certExpired")}</ok-inline-feedback>`;
+    }
+    const tone = days <= 60 ? "warning" : "success";
+    return b2`<ok-status-pill dot tone=${tone} label=${`${days} ${t5("ui.certDaysRemaining")}`}></ok-status-pill>`;
+  }
+  renderAeat(t5) {
+    const a3 = this.diag?.aeat;
+    if (!a3) {
+      return b2`<ok-inline-feedback tone="neutral" icon="information-circle-outline">${t5("ui.testAeatNotSent")}</ok-inline-feedback>`;
+    }
+    if (a3.error) {
+      return b2`<ok-inline-feedback tone="danger" heading=${t5("ui.testAeatError")} icon="alert-circle-outline">${a3.error}</ok-inline-feedback>`;
+    }
+    if (a3.ok) {
+      const csv = a3.csv ? ` \xB7 CSV ${a3.csv}` : "";
+      return b2`<ok-inline-feedback tone="success" heading=${t5("ui.testAeatAccepted")} icon="checkmark-circle-outline">${a3.estado_registro || a3.estado_envio || ""}${csv}</ok-inline-feedback>`;
+    }
+    return b2`<ok-inline-feedback tone="danger" heading=${a3.estado_registro || a3.estado_envio || "\u2014"} icon="alert-circle-outline">${[a3.codigo_error, a3.descripcion_error].filter(Boolean).join(": ")}</ok-inline-feedback>`;
+  }
+  renderTestCard(t5) {
+    const d3 = this.diag;
+    const isTesting = this.cfg.environment === "testing";
+    const hasIssuer = !!(this.cfg.issuer_nif || "").trim();
+    const canCreateInvoice = isTesting && hasIssuer;
+    return b2`<div class="card">
+      <div class="test-body">
+        <h3>${t5("ui.testTitle")}</h3>
+        <p class="hint">${t5("ui.testHint")}</p>
+        <ion-item lines="none">
+          <ion-select label=${t5("ui.testType")} label-placement="stacked" .value=${this.testType} @ionChange=${(e6) => {
+      this.testType = e6.target.value;
+    }}>
+            <ion-select-option value="F2">${t5("ui.testTypeTicket")}</ion-select-option>
+            <ion-select-option value="F1">${t5("ui.testTypeInvoice")}</ion-select-option>
           </ion-select>
-          <label>${t5("ui.softwareNif")}</label>
-          <ion-input .value=${this.cfg.software_nif || ""} placeholder="B12345678" @ionInput=${(e5) => this.set("software_nif", e5.target.value)}></ion-input>
-          <label>${t5("ui.softwareName")}</label>
-          <ion-input .value=${this.cfg.software_name || ""} placeholder="ERPlora Hub" @ionInput=${(e5) => this.set("software_name", e5.target.value)}></ion-input>
-          <label>${t5("ui.softwareId")}</label>
-          <ion-input .value=${this.cfg.software_id || ""} placeholder="ERPLORA-001" @ionInput=${(e5) => this.set("software_id", e5.target.value)}></ion-input>
-          <label>${t5("ui.softwareVersion")}</label>
-          <ion-input .value=${this.cfg.software_version || ""} placeholder="1.0.0" @ionInput=${(e5) => this.set("software_version", e5.target.value)}></ion-input>
-          <label>${t5("ui.certificatePath")}</label>
-          <ion-input .value=${this.cfg.certificate_path || ""} placeholder=${t5("ui.certificatePathPlaceholder")} @ionInput=${(e5) => this.set("certificate_path", e5.target.value)}></ion-input>
-          <div class="row">
-            <ion-checkbox ?checked=${this.cfg.auto_transmit !== false} @ionChange=${(e5) => this.set("auto_transmit", e5.target.checked)}></ion-checkbox>
-            <label>${t5("ui.autoTransmit")}</label>
+        </ion-item>
+        <div class="test-actions">
+          <ion-button @click=${() => this.runTest()} ?disabled=${this.testing || !this.cfg.has_certificate}>${this.testing ? t5("ui.testRunning") : t5("ui.testRun")}</ion-button>
+          <ion-button fill="outline" @click=${() => this.createTestInvoice()} ?disabled=${this.creatingInvoice || !canCreateInvoice}>${this.creatingInvoice ? t5("ui.testCreateInvoiceRunning") : t5("ui.testCreateInvoice")}</ion-button>
+        </div>
+        ${!isTesting ? b2`<p class="hint">${t5("ui.testInvoiceTestingOnly")}</p>` : A}
+        ${this.invoiceCreated ? b2`<ok-inline-feedback tone="success" icon="checkmark-circle-outline">${t5("ui.testInvoiceCreated")}</ok-inline-feedback>` : A}
+        ${!this.cfg.has_certificate ? b2`<p class="hint">${t5("ui.certNotConfigured")} — ${t5("ui.certChoose")}</p>` : A}
+        ${d3 ? b2`
+              <ok-inline-feedback tone=${d3.cert_ok ? "success" : "danger"} heading=${t5("ui.testCert")} icon="ribbon-outline">${d3.cert_message ?? ""}</ok-inline-feedback>
+              <div class="kv"><span class="k">${t5("ui.testEnv")}</span><code>${d3.environment ?? ""}</code></div>
+              <div class="kv"><span class="k">${t5("ui.testHuella")}</span><code>${d3.huella ?? ""}</code></div>
+              <div class="kv">
+                <span class="k">${t5("ui.testAeatLink")}</span>
+                ${d3.qr_url ? b2`<a class="link" href=${d3.qr_url} target="_blank" rel="noopener noreferrer">${t5("ui.testAeatLinkGo")}</a>` : A}
+              </div>
+              <div class="kv"><span class="k">${t5("ui.testAeatResp")}</span>${this.renderAeat(t5)}</div>
+            ` : b2`<p class="hint">${t5("ui.testNoRun")}</p>`}
+      </div>
+    </div>`;
+  }
+  render() {
+    const t5 = (k2) => erplora5().t(CATALOG5, k2);
+    return b2`
+      <h2>${t5("ui.settingsTitle")}</h2>
+      ${this.error ? b2`<ok-inline-feedback tone="danger" icon="alert-circle-outline">${this.error}</ok-inline-feedback>` : A}
+      ${this.saved ? b2`<ok-inline-feedback tone="success" icon="checkmark-circle-outline">${t5("ui.settingsSaved")}</ok-inline-feedback>` : A}
+      <div class="cols">
+        <form class="card" @submit=${(e6) => this.save(e6)}>
+          <ion-list>
+            <ion-item>
+              <ion-toggle style=${GREEN} ?checked=${!!this.cfg.enabled} @ionChange=${(e6) => this.set("enabled", e6.target.checked)}>${t5("ui.enableVerifactu")}</ion-toggle>
+            </ion-item>
+            <ion-item>
+              <ion-select label=${t5("ui.envAeat")} label-placement="stacked" .value=${this.cfg.environment || "testing"} @ionChange=${(e6) => this.set("environment", e6.target.value)}>
+                <ion-select-option value="testing">${t5("ui.envTesting")}</ion-select-option>
+                <ion-select-option value="production">${t5("ui.envProduction")}</ion-select-option>
+              </ion-select>
+            </ion-item>
+            <ion-item>
+              <ion-input label=${t5("ui.obligadoNif")} label-placement="stacked" .value=${this.cfg.issuer_nif || ""} placeholder="B12345678" @ionInput=${(e6) => this.set("issuer_nif", e6.target.value)}></ion-input>
+            </ion-item>
+            <ion-item>
+              <ion-input label=${t5("ui.obligadoName")} label-placement="stacked" .value=${this.cfg.issuer_name || ""} placeholder="Mi Empresa SL" @ionInput=${(e6) => this.set("issuer_name", e6.target.value)}></ion-input>
+            </ion-item>
+            <ion-item lines="none">
+              <p class="hint">${t5("ui.obligadoHint")}</p>
+            </ion-item>
+            <ion-item>
+              <div class="prod">
+                <div class="prod-head">
+                  <span class="t">${t5("ui.producerTitle")}</span>
+                  <ion-button fill="clear" size="small" aria-label=${t5("ui.producerInfo")} @click=${() => {
+      this.showProducer = !this.showProducer;
+    }}>ⓘ</ion-button>
+                </div>
+                ${this.showProducer ? b2`<div class="info">
+                      <p class="hint">${t5("ui.producerInfo")}</p>
+                      <div class="kv"><span class="k">${t5("ui.softwareId")}</span><code>${PRODUCER.software_id}</code></div>
+                      <div class="kv"><span class="k">${t5("ui.softwareVersion")}</span><code>${PRODUCER.software_version}</code></div>
+                      <div class="kv"><span class="k">${t5("ui.producerNif")}</span><code>${PRODUCER.software_nif}</code></div>
+                      <div class="kv"><span class="k">${t5("ui.producerName")}</span><code>${PRODUCER.software_name}</code></div>
+                    </div>` : A}
+              </div>
+            </ion-item>
+            <ion-item>
+              <div class="cert">
+                <div class="cert-head">
+                  <ion-label>${t5("ui.certPkcs12")}</ion-label>
+                  <ok-status-pill dot tone=${this.cfg.has_certificate ? "success" : "neutral"} label=${this.cfg.has_certificate ? t5("ui.certLoaded") : t5("ui.certNotConfigured")}></ok-status-pill>
+                </div>
+                <ion-button size="small" fill="outline" @click=${() => this.pickCert()}>${t5("ui.certChoose")}</ion-button>
+                <input id="cert-file" type="file" accept=".p12,.pfx,application/x-pkcs12" hidden @change=${(e6) => this.onCertFile(e6)} />
+                <p class="hint">${this.certFileName ? `${t5("ui.certPickedPrefix")}${this.certFileName}${t5("ui.certPickedSuffix")}` : t5("ui.certDbHint")}</p>
+              </div>
+            </ion-item>
+            <ion-item>
+              <ion-input type="password" label=${t5("ui.certPassword")} label-placement="stacked" .value=${this.certPassword} placeholder=${this.cfg.has_password ? t5("ui.pwdPlaceholderKeep") : t5("ui.pwdPlaceholder")} @ionInput=${(e6) => {
+      this.certPassword = e6.target.value;
+      this.saved = false;
+    }}>
+                <ion-input-password-toggle slot="end"></ion-input-password-toggle>
+              </ion-input>
+              <ok-status-pill slot="end" dot tone=${this.cfg.has_password ? "success" : "neutral"} label=${this.cfg.has_password ? t5("ui.pwdConfigured") : t5("ui.pwdNone")}></ok-status-pill>
+            </ion-item>
+            ${this.cfg.has_certificate ? b2`<ion-item lines="none">
+                  <div class="cert">
+                    <div class="cert-head">
+                      <span class="k">${t5("ui.certExpiry")}</span>
+                      <code>${this.fmtDate(this.cfg.certificate_expiry)}</code>
+                      ${this.renderCertStatus(t5)}
+                    </div>
+                    <p class="hint">${t5("ui.certExpiryHint")}</p>
+                  </div>
+                </ion-item>` : A}
+            <ion-item>
+              <ion-input label=${t5("ui.certificatePath")} label-placement="stacked" .value=${this.cfg.certificate_path || ""} placeholder=${t5("ui.certificatePathPlaceholder")} @ionInput=${(e6) => this.set("certificate_path", e6.target.value)}></ion-input>
+            </ion-item>
+            <ion-item lines="none">
+              <ion-toggle style=${GREEN} ?checked=${this.cfg.auto_transmit !== false} @ionChange=${(e6) => this.set("auto_transmit", e6.target.checked)}>${t5("ui.autoTransmit")}</ion-toggle>
+            </ion-item>
+          </ion-list>
+          <div class="card-actions">
+            <ion-button type="submit" ?disabled=${this.saving || this.loading}>${this.saving ? t5("ui.saving") : t5("ui.save")}</ion-button>
           </div>
-          <ion-button type="submit" ?disabled=${this.saving || this.loading}>${this.saving ? t5("ui.saving") : t5("ui.save")}</ion-button>
         </form>
-      </div>`;
+
+        ${this.renderTestCard(t5)}
+      </div>
+    `;
   }
 };
 __decorateClass([
@@ -3436,4 +3733,31 @@ __decorateClass([
 __decorateClass([
   r5()
 ], ErpVerifactuSettings.prototype, "saved", 2);
+__decorateClass([
+  r5()
+], ErpVerifactuSettings.prototype, "certPassword", 2);
+__decorateClass([
+  r5()
+], ErpVerifactuSettings.prototype, "pkcs12Base64", 2);
+__decorateClass([
+  r5()
+], ErpVerifactuSettings.prototype, "certFileName", 2);
+__decorateClass([
+  r5()
+], ErpVerifactuSettings.prototype, "diag", 2);
+__decorateClass([
+  r5()
+], ErpVerifactuSettings.prototype, "testing", 2);
+__decorateClass([
+  r5()
+], ErpVerifactuSettings.prototype, "testType", 2);
+__decorateClass([
+  r5()
+], ErpVerifactuSettings.prototype, "showProducer", 2);
+__decorateClass([
+  r5()
+], ErpVerifactuSettings.prototype, "creatingInvoice", 2);
+__decorateClass([
+  r5()
+], ErpVerifactuSettings.prototype, "invoiceCreated", 2);
 define("erp-verifactu-settings", ErpVerifactuSettings);

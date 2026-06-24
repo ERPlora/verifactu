@@ -146,17 +146,24 @@ Origen: `scheduled_tasks.check_certificate_expiry` + `VerifactuConfig.days_until
  (severity `warning` si <30, `critical` si <=7 o ya caducado).
 - Cálculo de fechas puro → WASM; el reloj es capacidad de host.
 
-## 9. Recuperación de la cadena de hash (NO migrado como command — pendiente de decisión)
+## 9. Recuperación de la cadena de hash — ✅ IMPLEMENTADO (2026-06-23, ADR-0056)
 Origen: `recovery_service.ChainRecoveryService` (`get_chain_status`, `recover_from_aeat`,
 `recover_manual`) + routes `/recovery/aeat`, `/recovery/manual`.
 - Reconstruye el ancla de la cadena consultando a la AEAT (red + cert, como pieza 6) o
- inyectando un hash manual validado (`validate_hash_format`: 64 hex).
-- **No se ha añadido command ni vista** en esta migración porque depende íntegramente de la
- conectividad AEAT (plugin nativo) y de una decisión de producto sobre exponer la
- recuperación manual de cadena (operación sensible de compliance). Documentado aquí para
- cuando se implemente el plugin nativo: funciones `recover_from_aeat(issuer_nif)` y
- `recover_manual(issuer_nif, hash)` devolviendo `{status, recovered_hash, recovered_invoice,
- message}`. Si se implementa, añadir su command + schema + (opcional) vista `erp-verifactu-recovery`.
+ inyectando un hash manual validado (64 hex).
+- **Implementado** en el motor nativo (`hub/crates/verifactu`):
+  - `validate_chain` (`verifactu.chain.validate`) — recomputa y verifica el encadenamiento;
+    las filas `record_type='recovery'` son anclas de confianza. Persiste el resultado como evento
+    `chain_validated`/`chain_error` (la UI lo lee vía `verifactu.chain.status`).
+  - `query_aeat_records` (`verifactu.aeat.query_recent`) — consulta `ConsultaFactuSistemaFacturacion`
+    (`aeat::{consult_endpoint,build_consult_soap,parse_consult_response}`) y vuelca el snapshot en
+    `verifactu_aeat_record` (intenciones `_clear_aeat_records` + `_insert_aeat_record`).
+  - `recover_from_aeat` (`verifactu.recovery.from_aeat`) y `recover_manual`
+    (`verifactu.recovery.manual`) — insertan un **ancla de recuperación** (`_insert_recovery`,
+    `record_type='recovery'`, `status='accepted'`) con la huella recuperada; el siguiente
+    `create_record` encadena desde ella. Vista `erp-verifactu-recovery` (admin).
+- **Pendiente de verificación del humano**: endpoints/XSD reales de la consulta AEAT (best-effort,
+  validar contra WSDL vigente) y certificado admitido; cifrado at-rest del secreto (ADR-0016).
 
 ## 10. Vista dashboard (NO migrada como component)
 Origen: `routes.dashboard`. Eran agregados (counts: total/hoy/mes/pendientes + eventos

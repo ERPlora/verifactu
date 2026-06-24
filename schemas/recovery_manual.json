@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "verifactu.recovery.manual",
+  "description": "Continúa la cadena VeriFactu a partir de una huella aportada manualmente (migración desde otra aplicación). Inserta un ancla de recuperación con esa huella; el siguiente registro encadenará desde ella. La lógica vive en el motor nativo (ADR-0009).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["issuer_nif", "record_hash"],
+  "properties": {
+    "issuer_nif": { "type": "string", "minLength": 1, "maxLength": 15 },
+    "record_hash": { "type": "string", "pattern": "^[0-9a-fA-F]{64}$" },
+    "invoice_number": { "type": "string", "default": "", "maxLength": 60 },
+    "invoice_date": { "type": "string", "default": "" }
+  }
+}

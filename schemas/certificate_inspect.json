@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "verifactu.certificate.inspect",
+  "description": "Lee el certificado almacenado, extrae su caducidad (notAfter) y la persiste en la configuración (certificate_expiry). Idempotente; no toca la cadena. La UI lo llama tras guardar la configuración.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {}
+}

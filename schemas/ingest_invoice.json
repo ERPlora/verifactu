@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "verifactu.records.ingest_invoice",
+  "description": "Payload del evento invoice.created / invoice.rectified. El handler nativo resuelve el id de factura (invoice_id|new_id|id), lee la factura y crea un RegistroAlta encadenado.",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "invoice_id": { "type": ["string", "null"] },
+    "new_id": { "type": ["string", "null"] },
+    "id": { "type": ["string", "null"] }
+  }
+}

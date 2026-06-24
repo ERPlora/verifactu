@@ -39,6 +39,17 @@ function erplora(): ErploraClientLike {
   return c;
 }
 
+// Estado del registro → color de badge Ionic. Los fallos de envío a la AEAT se ven a simple vista:
+// rechazado/error = danger, pendiente/reintento = warning/medium (mismo patrón que STATUS_COLOR del módulo invoice).
+const STATUS_COLOR: Record<string, string> = {
+  pending: 'warning',
+  retry: 'warning',
+  transmitted: 'primary',
+  accepted: 'success',
+  rejected: 'danger',
+  error: 'danger',
+};
+
 export class ErpVerifactuRecords extends LitElement {
   static styles = css`
     :host { display:block; font-family: system-ui, sans-serif; color: var(--ion-text-color, #1c1b18); }
@@ -55,6 +66,14 @@ export class ErpVerifactuRecords extends LitElement {
 
   private get columns(): DataTableColumn[] {
     const t = (k: string): string => erplora().t(CATALOG, k);
+    const statusLabels: Record<string, string> = {
+      pending: t('ui.statusPending'),
+      transmitted: t('ui.statusTransmitted'),
+      accepted: t('ui.statusAccepted'),
+      rejected: t('ui.statusRejected'),
+      error: t('ui.statusError'),
+      retry: t('ui.statusRetry'),
+    };
     return [
     { key: 'sequence_number', header: t('ui.colSeq'), align: 'right', sortable: true, filterable: true, filterType: 'text' },
     { key: 'invoice_number', header: t('ui.colInvoice'), sortable: true, filterable: true, filterType: 'text' },
@@ -95,6 +114,10 @@ export class ErpVerifactuRecords extends LitElement {
         { value: 'error', label: t('ui.statusError') },
         { value: 'retry', label: t('ui.statusRetry') },
       ],
+      render: (r) => {
+        const s = r.status as string;
+        return html`<ion-badge color=${STATUS_COLOR[s] ?? 'medium'}>${statusLabels[s] ?? s}</ion-badge>`;
+      },
     },
     ];
   }

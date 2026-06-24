@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "verifactu.aeat.query_recent",
+  "description": "Consulta a la AEAT los últimos registros del emisor (ConsultaFactuSistemaFacturacion) y vuelca el snapshot en verifactu_aeat_record para mostrarlos. No altera la cadena local. La red TLS-mutua vive en el motor nativo (ADR-0009).",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "issuer_nif": { "type": "string", "default": "", "maxLength": 15 }
+  }
+}
