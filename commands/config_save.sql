@@ -15,11 +15,13 @@ INSERT INTO verifactu_config
    auto_transmit, retry_interval_minutes, max_retries,
    is_deleted, created_by, updated_by, created_at, updated_at)
 VALUES
-  (:new_id, :hub_id, :enabled, :mode, :environment,
-   :software_name, :software_version, :software_id, :software_nif,
-   :issuer_nif, :issuer_name,
-   :certificate_path, :certificate_password, :certificate_pkcs12, :certificate_expiry,
-   :auto_transmit, :retry_interval_minutes, :max_retries,
+  (:new_id, :hub_id, COALESCE(:enabled, 0), COALESCE(:mode, 'verifactu'), COALESCE(:environment, 'testing'),
+   COALESCE(:software_name, 'ERPlora Hub'), COALESCE(:software_version, '1.0.0'),
+   COALESCE(:software_id, 'ERPLORA-001'), COALESCE(:software_nif, ''),
+   COALESCE(:issuer_nif, ''), COALESCE(:issuer_name, ''),
+   COALESCE(:certificate_path, ''), COALESCE(:certificate_password, ''),
+   COALESCE(:certificate_pkcs12, ''), :certificate_expiry,
+   COALESCE(:auto_transmit, 1), COALESCE(:retry_interval_minutes, 5), COALESCE(:max_retries, 10),
    0, :current_user_id, :current_user_id, :now, :now)
 ON CONFLICT(hub_id) DO UPDATE SET
    enabled                = excluded.enabled,
