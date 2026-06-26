@@ -37,6 +37,10 @@
       "verifactu.view_verifactu"
     ]
   },
+  "capabilities": {
+    "certificate": { "purpose": "fiscal-sign" },
+    "network": { "allow": ["https://*.aeat.es", "https://*.agenciatributaria.gob.es"] }
+  },
   "navigation": [
     {
       "id": "records",
@@ -61,14 +65,13 @@
       "label": "Recovery",
       "icon": "shield-checkmark-outline",
       "component": "erp-verifactu-recovery"
-    },
-    {
-      "id": "settings",
-      "label": "Settings",
-      "icon": "settings-outline",
-      "component": "erp-verifactu-settings"
     }
   ],
+  "settings": {
+    "title": "VeriFactu",
+    "icon": "shield-checkmark-outline",
+    "component": "erp-verifactu-settings"
+  },
   "setup": {
     "required": true,
     "query": "verifactu.config.get",
