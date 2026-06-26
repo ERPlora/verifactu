@@ -4,10 +4,10 @@
 -- En su lugar devuelve flags has_certificate / has_password para que la UI muestre estado.
 -- Obligado tributario (emisor): la fuente única es la identidad fiscal GLOBAL del hub
 -- (`:business_tax_id`/`:business_legal_name`, hub_settings — ADR-0061). La UI lo muestra en
--- SOLO-LECTURA (se gestiona en Ajustes → Negocio). NOTA: hoy `:business_tax_id` solo se inyecta en
--- COMMANDS (system_params), no en queries → aquí el COALESCE cae al valor ALMACENADO, que `config_save`
--- mantiene sincronizado con la identidad global en cada guardado. Cuando el runtime inyecte
--- business_* también en queries, este COALESCE pasará a reflejar la identidad global EN VIVO.
+-- SOLO-LECTURA (se gestiona en Ajustes → Negocio). El runtime inyecta `business_*` en commands Y en
+-- queries (queries.rs enriquece el ctx igual que commands::execute) → este COALESCE refleja la
+-- identidad global EN VIVO; el fallback a la columna almacenada solo aplica si la global no se ha
+-- configurado todavía.
 SELECT id, enabled, mode, environment,
        software_name, software_version, software_id, software_nif,
        COALESCE(NULLIF(:business_tax_id, ''), issuer_nif) AS issuer_nif,
