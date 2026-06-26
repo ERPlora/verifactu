@@ -13,7 +13,11 @@ SELECT id, enabled, mode, environment,
        COALESCE(NULLIF(:business_tax_id, ''), issuer_nif) AS issuer_nif,
        COALESCE(NULLIF(:business_legal_name, ''), issuer_name) AS issuer_name,
        certificate_path, certificate_expiry,
-       CASE WHEN certificate_pkcs12 <> '' OR certificate_path <> '' THEN 1 ELSE 0 END AS has_certificate,
+       -- Presencia del certificado: FUENTE = core `_hub_certificate` (ADR-0081), expuesta por el runtime
+       -- como `:has_certificate` (0/1) sin que el módulo lea la tabla de sistema. Fallback a las columnas
+       -- propias (legacy, antes de mover el cert al core).
+       CASE WHEN :has_certificate = 1 THEN 1
+            WHEN certificate_pkcs12 <> '' OR certificate_path <> '' THEN 1 ELSE 0 END AS has_certificate,
        CASE WHEN certificate_password <> '' THEN 1 ELSE 0 END AS has_password,
        auto_transmit, retry_interval_minutes, max_retries
 FROM verifactu_config
