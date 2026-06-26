@@ -64,14 +64,6 @@ function erplora(): ErploraClientLike {
   return c;
 }
 
-/** ArrayBuffer → base64 (sin eval, CSP-safe). */
-function toBase64(buf: ArrayBuffer): string {
-  const bytes = new Uint8Array(buf);
-  let bin = '';
-  for (let i = 0; i < bytes.length; i += 1) bin += String.fromCharCode(bytes[i]);
-  return btoa(bin);
-}
-
 const GREEN = '--track-background-checked: rgba(var(--ion-color-success-rgb, 45,211,111), 0.5); --handle-background-checked: var(--ion-color-success, #2dd36f);';
 
 // Identificación del PRODUCTOR del software (fija, la misma para todos los hubs): es ERPlora
@@ -121,12 +113,6 @@ export class ErpVerifactuSettings extends LitElement {
   @state() error = '';
 
   @state() saved = false;
-
-  @state() certPassword = '';
-
-  @state() pkcs12Base64 = '';
-
-  @state() certFileName = '';
 
   @state() diag: Diagnostic | null = null;
 
@@ -184,23 +170,6 @@ export class ErpVerifactuSettings extends LitElement {
     this.saved = false;
   }
 
-  private pickCert() {
-    this.renderRoot.querySelector<HTMLInputElement>('#cert-file')?.click();
-  }
-
-  private async onCertFile(ev: Event) {
-    const input = ev.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file) return;
-    try {
-      this.pkcs12Base64 = toBase64(await file.arrayBuffer());
-      this.certFileName = file.name;
-      this.saved = false;
-    } catch (e) {
-      this.error = e instanceof Error ? e.message : erplora().t(CATALOG, 'ui.errLoadConfig');
-    }
-  }
-
   private async save(ev: Event) {
     ev.preventDefault();
     this.saving = true;
@@ -219,21 +188,14 @@ export class ErpVerifactuSettings extends LitElement {
         // Obligado tributario (emisor) — editable por el cliente.
         issuer_nif: (this.cfg.issuer_nif || '').trim().toUpperCase(),
         issuer_name: this.cfg.issuer_name || '',
-        certificate_path: this.cfg.certificate_path || '',
-        certificate_password: this.certPassword || '', // vacío = no cambiar (lo preserva el command)
-        certificate_pkcs12: this.pkcs12Base64 || '',
-        certificate_expiry: null,
+        // El certificado fiscal ya NO se gestiona aquí: se sube en Ajustes → Negocio (core,
+        // `_hub_certificate`, ADR-0081) y el host lo superpone en firma. Este formulario solo
+        // configura los parámetros VeriFactu (entorno, emisor, auto-transmisión).
         auto_transmit: this.cfg.auto_transmit !== false,
         retry_interval_minutes: Number(this.cfg.retry_interval_minutes) || 5,
         max_retries: Number(this.cfg.max_retries) || 10,
       });
       this.saved = true;
-      this.certPassword = '';
-      this.pkcs12Base64 = '';
-      this.certFileName = '';
-      // El motor nativo extrae la caducidad (notAfter) del cert almacenado y la persiste
-      // (certificate_expiry); refrescamos para mostrarla. No bloquea el guardado si falla.
-      try { await erplora().command('verifactu.certificate.inspect'); } catch { /* opcional */ }
       await this.refresh();
     } catch (e) {
       this.error = e instanceof Error ? e.message : erplora().t(CATALOG, 'ui.errSaveConfig');
@@ -345,7 +307,7 @@ export class ErpVerifactuSettings extends LitElement {
         </div>
         ${!isTesting ? html`<p class="hint">${t('ui.testInvoiceTestingOnly')}</p>` : nothing}
         ${this.invoiceCreated ? html`<ok-inline-feedback tone="success" icon="checkmark-circle-outline">${t('ui.testInvoiceCreated')}</ok-inline-feedback>` : nothing}
-        ${!this.cfg.has_certificate ? html`<p class="hint">${t('ui.certNotConfigured')} — ${t('ui.certChoose')}</p>` : nothing}
+        ${!this.cfg.has_certificate ? html`<p class="hint">${t('ui.certNotConfigured')} — ${t('ui.certManagedInBusiness')}</p>` : nothing}
         ${d
           ? html`
               <ok-inline-feedback tone=${d.cert_ok ? 'success' : 'danger'} heading=${t('ui.testCert')} icon="ribbon-outline">${d.cert_message ?? ''}</ok-inline-feedback>
@@ -406,22 +368,14 @@ export class ErpVerifactuSettings extends LitElement {
                   : nothing}
               </div>
             </ion-item>
-            <ion-item>
+            <ion-item lines="none">
               <div class="cert">
                 <div class="cert-head">
                   <ion-label>${t('ui.certPkcs12')}</ion-label>
                   <ok-status-pill dot tone=${this.cfg.has_certificate ? 'success' : 'neutral'} label=${this.cfg.has_certificate ? t('ui.certLoaded') : t('ui.certNotConfigured')}></ok-status-pill>
                 </div>
-                <ion-button size="small" fill="outline" @click=${() => this.pickCert()}>${t('ui.certChoose')}</ion-button>
-                <input id="cert-file" type="file" accept=".p12,.pfx,application/x-pkcs12" hidden @change=${(e: Event) => this.onCertFile(e)} />
-                <p class="hint">${this.certFileName ? `${t('ui.certPickedPrefix')}${this.certFileName}${t('ui.certPickedSuffix')}` : t('ui.certDbHint')}</p>
+                <p class="hint">${t('ui.certManagedInBusiness')}</p>
               </div>
-            </ion-item>
-            <ion-item>
-              <ion-input type="password" label=${t('ui.certPassword')} label-placement="stacked" .value=${this.certPassword} placeholder=${this.cfg.has_password ? t('ui.pwdPlaceholderKeep') : t('ui.pwdPlaceholder')} @ionInput=${(e: any) => { this.certPassword = e.target.value; this.saved = false; }}>
-                <ion-input-password-toggle slot="end"></ion-input-password-toggle>
-              </ion-input>
-              <ok-status-pill slot="end" dot tone=${this.cfg.has_password ? 'success' : 'neutral'} label=${this.cfg.has_password ? t('ui.pwdConfigured') : t('ui.pwdNone')}></ok-status-pill>
             </ion-item>
             ${this.cfg.has_certificate
               ? html`<ion-item lines="none">
@@ -435,9 +389,6 @@ export class ErpVerifactuSettings extends LitElement {
                   </div>
                 </ion-item>`
               : nothing}
-            <ion-item>
-              <ion-input label=${t('ui.certificatePath')} label-placement="stacked" .value=${this.cfg.certificate_path || ''} placeholder=${t('ui.certificatePathPlaceholder')} @ionInput=${(e: any) => this.set('certificate_path', e.target.value)}></ion-input>
-            </ion-item>
             <ion-item lines="none">
               <ion-toggle style=${GREEN} ?checked=${this.cfg.auto_transmit !== false} @ionChange=${(e: any) => this.set('auto_transmit', e.target.checked)}>${t('ui.autoTransmit')}</ion-toggle>
             </ion-item>

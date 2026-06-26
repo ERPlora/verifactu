@@ -9,7 +9,7 @@ var __decorateClass = (decorators, target, key, kind) => {
   return result;
 };
 
-// node_modules/.pnpm/@lit-labs+ssr-dom-shim@1.6.0/node_modules/@lit-labs/ssr-dom-shim/lib/element-internals.js
+// ../../../module-toolkit/node_modules/@lit-labs/ssr-dom-shim/lib/element-internals.js
 var ElementInternalsShim = class ElementInternals {
   get shadowRoot() {
     return this.__host.__shadowRoot;
@@ -88,7 +88,7 @@ var ElementInternalsShim = class ElementInternals {
   }
 };
 
-// node_modules/.pnpm/@lit-labs+ssr-dom-shim@1.6.0/node_modules/@lit-labs/ssr-dom-shim/lib/events.js
+// ../../../module-toolkit/node_modules/@lit-labs/ssr-dom-shim/lib/events.js
 var __classPrivateFieldSet = function(receiver, state, value, kind, f3) {
   if (kind === "m") throw new TypeError("Private method is not writable");
   if (kind === "a" && !f3) throw new TypeError("Private accessor was defined without a setter");
@@ -246,7 +246,7 @@ Object.defineProperties(CustomEventShim.prototype, {
 var EventShimWithRealType = EventShim;
 var CustomEventShimWithRealType = CustomEventShim;
 
-// node_modules/.pnpm/@lit-labs+ssr-dom-shim@1.6.0/node_modules/@lit-labs/ssr-dom-shim/lib/css.js
+// ../../../module-toolkit/node_modules/@lit-labs/ssr-dom-shim/lib/css.js
 var _a2;
 var CSSRuleShim = (_a2 = class CSSRule {
   constructor() {
@@ -277,7 +277,7 @@ var CSSRuleShim = (_a2 = class CSSRule {
   }
 }, _a2.STYLE_RULE = 1, _a2.CHARSET_RULE = 2, _a2.IMPORT_RULE = 3, _a2.MEDIA_RULE = 4, _a2.FONT_FACE_RULE = 5, _a2.PAGE_RULE = 6, _a2.NAMESPACE_RULE = 10, _a2.KEYFRAMES_RULE = 7, _a2.KEYFRAME_RULE = 8, _a2.SUPPORTS_RULE = 12, _a2.COUNTER_STYLE_RULE = 11, _a2.FONT_FEATURE_VALUES_RULE = 14, _a2.MARGIN_RULE = 9, _a2);
 
-// node_modules/.pnpm/@lit-labs+ssr-dom-shim@1.6.0/node_modules/@lit-labs/ssr-dom-shim/index.js
+// ../../../module-toolkit/node_modules/@lit-labs/ssr-dom-shim/index.js
 globalThis.Event ??= EventShimWithRealType;
 globalThis.CustomEvent ??= CustomEventShimWithRealType;
 var constructionToken = Symbol();
@@ -674,7 +674,7 @@ var CustomElementRegistryShimWithRealType = CustomElementRegistry;
 var customElements2 = new CustomElementRegistryShimWithRealType();
 var windowShim = new WindowShim(constructionToken);
 
-// node_modules/.pnpm/@lit+reactive-element@2.1.2/node_modules/@lit/reactive-element/node/css-tag.js
+// ../../../module-toolkit/node_modules/@lit/reactive-element/node/css-tag.js
 var t = globalThis;
 var e = t.ShadowRoot && (void 0 === t.ShadyCSS || t.ShadyCSS.nativeShadow) && "adoptedStyleSheets" in Document.prototype && "replace" in CSSStyleSheet.prototype;
 var s = Symbol();
@@ -719,7 +719,7 @@ var c = e || void 0 === t.CSSStyleSheet ? (t5) => t5 : (t5) => t5 instanceof CSS
   return r(e5);
 })(t5) : t5;
 
-// node_modules/.pnpm/@lit+reactive-element@2.1.2/node_modules/@lit/reactive-element/node/reactive-element.js
+// ../../../module-toolkit/node_modules/@lit/reactive-element/node/reactive-element.js
 var { is: h, defineProperty: r2, getOwnPropertyDescriptor: o2, getOwnPropertyNames: n2, getOwnPropertySymbols: a, getPrototypeOf: c2 } = Object;
 var l = globalThis;
 l.customElements ??= customElements2;
@@ -942,7 +942,7 @@ var g = class extends (globalThis.HTMLElement ?? HTMLElementShimWithRealType) {
 };
 g.elementStyles = [], g.shadowRootOptions = { mode: "open" }, g[f("elementProperties")] = /* @__PURE__ */ new Map(), g[f("finalized")] = /* @__PURE__ */ new Map(), u?.({ ReactiveElement: g }), (l.reactiveElementVersions ??= []).push("2.1.2");
 
-// node_modules/.pnpm/lit-html@3.3.3/node_modules/lit-html/lit-html.js
+// ../../../module-toolkit/node_modules/lit-html/lit-html.js
 var t2 = globalThis;
 var i2 = (t5) => t5;
 var s2 = t2.trustedTypes;
@@ -1197,7 +1197,7 @@ var D = (t5, i7, s5) => {
   return h4._$AI(t5), h4;
 };
 
-// node_modules/.pnpm/lit-element@4.2.2/node_modules/lit-element/lit-element.js
+// ../../../module-toolkit/node_modules/lit-element/lit-element.js
 var s3 = globalThis;
 var i3 = class extends g {
   constructor() {
@@ -1226,7 +1226,7 @@ var o4 = s3.litElementPolyfillSupport;
 o4?.({ LitElement: i3 });
 (s3.litElementVersions ??= []).push("4.2.2");
 
-// node_modules/.pnpm/@lit+reactive-element@2.1.2/node_modules/@lit/reactive-element/node/decorators/property.js
+// ../../../module-toolkit/node_modules/@lit/reactive-element/node/decorators/property.js
 var o5 = { attribute: true, type: String, converter: b, reflect: false, hasChanged: m };
 var r4 = (t5 = o5, e5, r6) => {
   const { kind: n6, metadata: i7 } = r6;
@@ -1256,19 +1256,19 @@ function n4(t5) {
   })(t5, e5, o7);
 }
 
-// node_modules/.pnpm/@lit+reactive-element@2.1.2/node_modules/@lit/reactive-element/node/decorators/state.js
+// ../../../module-toolkit/node_modules/@lit/reactive-element/node/decorators/state.js
 function r5(r6) {
   return n4({ ...r6, state: true, attribute: false });
 }
 
-// node_modules/.pnpm/@outfitkit+core@file+..+outfitkit/node_modules/@outfitkit/core/dist/define.js
+// ../../../outfitkit/dist/define.js
 function define(tag, ctor) {
   if (typeof customElements !== "undefined" && !customElements.get(tag)) {
     customElements.define(tag, ctor);
   }
 }
 
-// node_modules/.pnpm/lit-html@3.3.3/node_modules/lit-html/directive.js
+// ../../../module-toolkit/node_modules/lit-html/directive.js
 var t3 = { ATTRIBUTE: 1, CHILD: 2, PROPERTY: 3, BOOLEAN_ATTRIBUTE: 4, EVENT: 5, ELEMENT: 6 };
 var e4 = (t5) => (...e5) => ({ _$litDirective$: t5, values: e5 });
 var i4 = class {
@@ -1288,7 +1288,7 @@ var i4 = class {
   }
 };
 
-// node_modules/.pnpm/lit-html@3.3.3/node_modules/lit-html/directive-helpers.js
+// ../../../module-toolkit/node_modules/lit-html/directive-helpers.js
 var { I: t4 } = j;
 var i5 = (o7) => o7;
 var s4 = () => document.createComment("");
@@ -1321,7 +1321,7 @@ var h3 = (o7) => {
   o7._$AR(), o7._$AA.remove();
 };
 
-// node_modules/.pnpm/lit-html@3.3.3/node_modules/lit-html/directives/repeat.js
+// ../../../module-toolkit/node_modules/lit-html/directives/repeat.js
 var u4 = (e5, s5, t5) => {
   const r6 = /* @__PURE__ */ new Map();
   for (let l3 = s5; l3 <= t5; l3++) r6.set(e5[l3], l3);
@@ -1374,7 +1374,7 @@ var c4 = e4(class extends i4 {
   }
 });
 
-// node_modules/.pnpm/lit-html@3.3.3/node_modules/lit-html/directives/style-map.js
+// ../../../module-toolkit/node_modules/lit-html/directives/style-map.js
 var n5 = "important";
 var i6 = " !" + n5;
 var o6 = e4(class extends i4 {
@@ -1403,7 +1403,7 @@ var o6 = e4(class extends i4 {
   }
 });
 
-// node_modules/.pnpm/@outfitkit+core@file+..+outfitkit/node_modules/@outfitkit/core/dist/ok-data-table.js
+// ../../../outfitkit/dist/ok-data-table.js
 var __defProp2 = Object.defineProperty;
 var __decorateClass2 = (decorators, target, key, kind) => {
   var result = void 0;
@@ -2700,7 +2700,7 @@ __decorateClass2([
 ], OkDataTable.prototype, "menuOpen");
 define("ok-data-table", OkDataTable);
 
-// node_modules/.pnpm/@erplora+module-sdk@file+..+hub+packages+module-sdk/node_modules/@erplora/module-sdk/src/index.ts
+// ../../../hub/packages/module-sdk/src/index.ts
 function isEmpty(v3) {
   return v3 === null || v3 === void 0 || v3 === "";
 }
@@ -2818,7 +2818,7 @@ function createListController(client, queryName, onChange = () => {
   return new ListController(client, queryName, onChange, opts);
 }
 
-// modules/verifactu/locales/es.json
+// locales/es.json
 var es_default = {
   name: "VeriFactu",
   navigation: {
@@ -2939,6 +2939,7 @@ var es_default = {
     obligadoHint: "Empresa/aut\xF3nomo que emite las facturas. La AEAT lo valida y debe coincidir con el titular del certificado.",
     certLoaded: "cargado \u2713",
     certNotConfigured: "no configurado",
+    certManagedInBusiness: "El certificado fiscal se sube en Ajustes \u2192 Negocio (junto al NIF y el nombre del negocio).",
     certDbHint: "El .p12 se guarda en la base de datos del hub (robusto en cloud). Deja el selector vac\xEDo para mantener el actual.",
     certPickedPrefix: "Nuevo: ",
     certPickedSuffix: " (se guardar\xE1 al pulsar Guardar)",
@@ -2978,7 +2979,7 @@ var es_default = {
   }
 };
 
-// modules/verifactu/locales/en.json
+// locales/en.json
 var en_default = {
   name: "VeriFactu",
   navigation: {
@@ -3099,6 +3100,7 @@ var en_default = {
     obligadoHint: "Business issuing the invoices. The AEAT validates it; it must match the certificate holder.",
     certLoaded: "loaded \u2713",
     certNotConfigured: "not configured",
+    certManagedInBusiness: "The fiscal certificate is uploaded in Settings \u2192 Business (next to the tax ID and business name).",
     certDbHint: "The .p12 is stored in the hub database (robust on cloud). Leave the picker empty to keep the current one.",
     certPickedPrefix: "New: ",
     certPickedSuffix: " (will be saved on Save)",
@@ -3138,7 +3140,7 @@ var en_default = {
   }
 };
 
-// modules/verifactu/ui/components/erp-verifactu-contingency/erp-verifactu-contingency.ts
+// ui/components/erp-verifactu-contingency/erp-verifactu-contingency.ts
 var CATALOG = { es: es_default, en: en_default };
 function erplora() {
   const c5 = globalThis.erplora;
@@ -3283,7 +3285,7 @@ __decorateClass([
 ], ErpVerifactuContingency.prototype, "tick", 2);
 define("erp-verifactu-contingency", ErpVerifactuContingency);
 
-// modules/verifactu/ui/components/erp-verifactu-events/erp-verifactu-events.ts
+// ui/components/erp-verifactu-events/erp-verifactu-events.ts
 var CATALOG2 = { es: es_default, en: en_default };
 function erplora2() {
   const c5 = globalThis.erplora;
@@ -3359,7 +3361,7 @@ __decorateClass([
 ], ErpVerifactuEvents.prototype, "tick", 2);
 define("erp-verifactu-events", ErpVerifactuEvents);
 
-// modules/verifactu/ui/components/erp-verifactu-records/erp-verifactu-records.ts
+// ui/components/erp-verifactu-records/erp-verifactu-records.ts
 var CATALOG3 = { es: es_default, en: en_default };
 function erplora3() {
   const c5 = globalThis.erplora;
@@ -3488,7 +3490,7 @@ __decorateClass([
 ], ErpVerifactuRecords.prototype, "tick", 2);
 define("erp-verifactu-records", ErpVerifactuRecords);
 
-// node_modules/.pnpm/@outfitkit+core@file+..+outfitkit/node_modules/@outfitkit/core/dist/ok-inline-feedback.js
+// ../../../outfitkit/dist/ok-inline-feedback.js
 var __defProp3 = Object.defineProperty;
 var __decorateClass3 = (decorators, target, key, kind) => {
   var result = void 0;
@@ -3705,7 +3707,7 @@ __decorateClass3([
 ], OkInlineFeedback.prototype, "hasActions");
 define("ok-inline-feedback", OkInlineFeedback);
 
-// modules/verifactu/ui/components/erp-verifactu-recovery/erp-verifactu-recovery.ts
+// ui/components/erp-verifactu-recovery/erp-verifactu-recovery.ts
 var CATALOG4 = { es: es_default, en: en_default };
 function erplora4() {
   const c5 = globalThis.erplora;
@@ -3923,7 +3925,7 @@ __decorateClass([
 ], ErpVerifactuRecovery.prototype, "done", 2);
 define("erp-verifactu-recovery", ErpVerifactuRecovery);
 
-// node_modules/.pnpm/@outfitkit+core@file+..+outfitkit/node_modules/@outfitkit/core/dist/ok-status-pill.js
+// ../../../outfitkit/dist/ok-status-pill.js
 var __defProp4 = Object.defineProperty;
 var __decorateClass4 = (decorators, target, key, kind) => {
   var result = void 0;
@@ -4042,18 +4044,12 @@ __decorateClass4([
 ], OkStatusPill.prototype, "size");
 define("ok-status-pill", OkStatusPill);
 
-// modules/verifactu/ui/components/erp-verifactu-settings/erp-verifactu-settings.ts
+// ui/components/erp-verifactu-settings/erp-verifactu-settings.ts
 var CATALOG5 = { es: es_default, en: en_default };
 function erplora5() {
   const c5 = globalThis.erplora;
   if (!c5) throw new Error("erplora SDK no inicializado por el shell");
   return c5;
-}
-function toBase64(buf) {
-  const bytes = new Uint8Array(buf);
-  let bin = "";
-  for (let i7 = 0; i7 < bytes.length; i7 += 1) bin += String.fromCharCode(bytes[i7]);
-  return btoa(bin);
 }
 var GREEN = "--track-background-checked: rgba(var(--ion-color-success-rgb, 45,211,111), 0.5); --handle-background-checked: var(--ion-color-success, #2dd36f);";
 var PRODUCER = {
@@ -4071,9 +4067,6 @@ var ErpVerifactuSettings = class extends i3 {
     this.saving = false;
     this.error = "";
     this.saved = false;
-    this.certPassword = "";
-    this.pkcs12Base64 = "";
-    this.certFileName = "";
     this.diag = null;
     this.testing = false;
     this.testType = "F2";
@@ -4145,21 +4138,6 @@ var ErpVerifactuSettings = class extends i3 {
     this.cfg = { ...this.cfg, [key]: value };
     this.saved = false;
   }
-  pickCert() {
-    this.renderRoot.querySelector("#cert-file")?.click();
-  }
-  async onCertFile(ev) {
-    const input = ev.target;
-    const file = input.files?.[0];
-    if (!file) return;
-    try {
-      this.pkcs12Base64 = toBase64(await file.arrayBuffer());
-      this.certFileName = file.name;
-      this.saved = false;
-    } catch (e5) {
-      this.error = e5 instanceof Error ? e5.message : erplora5().t(CATALOG5, "ui.errLoadConfig");
-    }
-  }
   async save(ev) {
     ev.preventDefault();
     this.saving = true;
@@ -4178,23 +4156,14 @@ var ErpVerifactuSettings = class extends i3 {
         // Obligado tributario (emisor) — editable por el cliente.
         issuer_nif: (this.cfg.issuer_nif || "").trim().toUpperCase(),
         issuer_name: this.cfg.issuer_name || "",
-        certificate_path: this.cfg.certificate_path || "",
-        certificate_password: this.certPassword || "",
-        // vacío = no cambiar (lo preserva el command)
-        certificate_pkcs12: this.pkcs12Base64 || "",
-        certificate_expiry: null,
+        // El certificado fiscal ya NO se gestiona aquí: se sube en Ajustes → Negocio (core,
+        // `_hub_certificate`, ADR-0081) y el host lo superpone en firma. Este formulario solo
+        // configura los parámetros VeriFactu (entorno, emisor, auto-transmisión).
         auto_transmit: this.cfg.auto_transmit !== false,
         retry_interval_minutes: Number(this.cfg.retry_interval_minutes) || 5,
         max_retries: Number(this.cfg.max_retries) || 10
       });
       this.saved = true;
-      this.certPassword = "";
-      this.pkcs12Base64 = "";
-      this.certFileName = "";
-      try {
-        await erplora5().command("verifactu.certificate.inspect");
-      } catch {
-      }
       await this.refresh();
     } catch (e5) {
       this.error = e5 instanceof Error ? e5.message : erplora5().t(CATALOG5, "ui.errSaveConfig");
@@ -4298,7 +4267,7 @@ var ErpVerifactuSettings = class extends i3 {
         </div>
         ${!isTesting ? b2`<p class="hint">${t5("ui.testInvoiceTestingOnly")}</p>` : A}
         ${this.invoiceCreated ? b2`<ok-inline-feedback tone="success" icon="checkmark-circle-outline">${t5("ui.testInvoiceCreated")}</ok-inline-feedback>` : A}
-        ${!this.cfg.has_certificate ? b2`<p class="hint">${t5("ui.certNotConfigured")} — ${t5("ui.certChoose")}</p>` : A}
+        ${!this.cfg.has_certificate ? b2`<p class="hint">${t5("ui.certNotConfigured")} — ${t5("ui.certManagedInBusiness")}</p>` : A}
         ${d3 ? b2`
               <ok-inline-feedback tone=${d3.cert_ok ? "success" : "danger"} heading=${t5("ui.testCert")} icon="ribbon-outline">${d3.cert_message ?? ""}</ok-inline-feedback>
               <div class="kv"><span class="k">${t5("ui.testEnv")}</span><code>${d3.environment ?? ""}</code></div>
@@ -4356,25 +4325,14 @@ var ErpVerifactuSettings = class extends i3 {
                     </div>` : A}
               </div>
             </ion-item>
-            <ion-item>
+            <ion-item lines="none">
               <div class="cert">
                 <div class="cert-head">
                   <ion-label>${t5("ui.certPkcs12")}</ion-label>
                   <ok-status-pill dot tone=${this.cfg.has_certificate ? "success" : "neutral"} label=${this.cfg.has_certificate ? t5("ui.certLoaded") : t5("ui.certNotConfigured")}></ok-status-pill>
                 </div>
-                <ion-button size="small" fill="outline" @click=${() => this.pickCert()}>${t5("ui.certChoose")}</ion-button>
-                <input id="cert-file" type="file" accept=".p12,.pfx,application/x-pkcs12" hidden @change=${(e5) => this.onCertFile(e5)} />
-                <p class="hint">${this.certFileName ? `${t5("ui.certPickedPrefix")}${this.certFileName}${t5("ui.certPickedSuffix")}` : t5("ui.certDbHint")}</p>
+                <p class="hint">${t5("ui.certManagedInBusiness")}</p>
               </div>
-            </ion-item>
-            <ion-item>
-              <ion-input type="password" label=${t5("ui.certPassword")} label-placement="stacked" .value=${this.certPassword} placeholder=${this.cfg.has_password ? t5("ui.pwdPlaceholderKeep") : t5("ui.pwdPlaceholder")} @ionInput=${(e5) => {
-      this.certPassword = e5.target.value;
-      this.saved = false;
-    }}>
-                <ion-input-password-toggle slot="end"></ion-input-password-toggle>
-              </ion-input>
-              <ok-status-pill slot="end" dot tone=${this.cfg.has_password ? "success" : "neutral"} label=${this.cfg.has_password ? t5("ui.pwdConfigured") : t5("ui.pwdNone")}></ok-status-pill>
             </ion-item>
             ${this.cfg.has_certificate ? b2`<ion-item lines="none">
                   <div class="cert">
@@ -4386,9 +4344,6 @@ var ErpVerifactuSettings = class extends i3 {
                     <p class="hint">${t5("ui.certExpiryHint")}</p>
                   </div>
                 </ion-item>` : A}
-            <ion-item>
-              <ion-input label=${t5("ui.certificatePath")} label-placement="stacked" .value=${this.cfg.certificate_path || ""} placeholder=${t5("ui.certificatePathPlaceholder")} @ionInput=${(e5) => this.set("certificate_path", e5.target.value)}></ion-input>
-            </ion-item>
             <ion-item lines="none">
               <ion-toggle style=${GREEN} ?checked=${this.cfg.auto_transmit !== false} @ionChange=${(e5) => this.set("auto_transmit", e5.target.checked)}>${t5("ui.autoTransmit")}</ion-toggle>
             </ion-item>
@@ -4418,15 +4373,6 @@ __decorateClass([
 __decorateClass([
   r5()
 ], ErpVerifactuSettings.prototype, "saved", 2);
-__decorateClass([
-  r5()
-], ErpVerifactuSettings.prototype, "certPassword", 2);
-__decorateClass([
-  r5()
-], ErpVerifactuSettings.prototype, "pkcs12Base64", 2);
-__decorateClass([
-  r5()
-], ErpVerifactuSettings.prototype, "certFileName", 2);
 __decorateClass([
   r5()
 ], ErpVerifactuSettings.prototype, "diag", 2);

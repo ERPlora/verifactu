@@ -118,6 +118,7 @@
     "obligadoHint": "Empresa/autónomo que emite las facturas. La AEAT lo valida y debe coincidir con el titular del certificado.",
     "certLoaded": "cargado ✓",
     "certNotConfigured": "no configurado",
+    "certManagedInBusiness": "El certificado fiscal se sube en Ajustes → Negocio (junto al NIF y el nombre del negocio).",
     "certDbHint": "El .p12 se guarda en la base de datos del hub (robusto en cloud). Deja el selector vacío para mantener el actual.",
     "certPickedPrefix": "Nuevo: ",
     "certPickedSuffix": " (se guardará al pulsar Guardar)",

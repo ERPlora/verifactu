@@ -118,6 +118,7 @@
     "obligadoHint": "Business issuing the invoices. The AEAT validates it; it must match the certificate holder.",
     "certLoaded": "loaded ✓",
     "certNotConfigured": "not configured",
+    "certManagedInBusiness": "The fiscal certificate is uploaded in Settings → Business (next to the tax ID and business name).",
     "certDbHint": "The .p12 is stored in the hub database (robust on cloud). Leave the picker empty to keep the current one.",
     "certPickedPrefix": "New: ",
     "certPickedSuffix": " (will be saved on Save)",
