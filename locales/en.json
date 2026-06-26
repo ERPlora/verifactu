@@ -116,6 +116,7 @@
     "obligadoNif": "Taxpayer (issuer) tax ID",
     "obligadoName": "Issuer name / company",
     "obligadoHint": "Business issuing the invoices. The AEAT validates it; it must match the certificate holder.",
+    "obligadoFromBusiness": "The taxpayer (tax ID and name) is taken from the business identity in Settings → Business. To change it, edit it there.",
     "certLoaded": "loaded ✓",
     "certNotConfigured": "not configured",
     "certManagedInBusiness": "The fiscal certificate is uploaded in Settings → Business (next to the tax ID and business name).",

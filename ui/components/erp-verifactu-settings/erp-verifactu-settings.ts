@@ -343,13 +343,13 @@ export class ErpVerifactuSettings extends LitElement {
               </ion-select>
             </ion-item>
             <ion-item>
-              <ion-input label=${t('ui.obligadoNif')} label-placement="stacked" .value=${this.cfg.issuer_nif || ''} placeholder="B12345678" @ionInput=${(e: any) => this.set('issuer_nif', e.target.value)}></ion-input>
+              <ion-input label=${t('ui.obligadoNif')} label-placement="stacked" .value=${this.cfg.issuer_nif || ''} readonly></ion-input>
             </ion-item>
             <ion-item>
-              <ion-input label=${t('ui.obligadoName')} label-placement="stacked" .value=${this.cfg.issuer_name || ''} placeholder="Mi Empresa SL" @ionInput=${(e: any) => this.set('issuer_name', e.target.value)}></ion-input>
+              <ion-input label=${t('ui.obligadoName')} label-placement="stacked" .value=${this.cfg.issuer_name || ''} readonly></ion-input>
             </ion-item>
             <ion-item lines="none">
-              <p class="hint">${t('ui.obligadoHint')}</p>
+              <p class="hint">${t('ui.obligadoFromBusiness')}</p>
             </ion-item>
             <ion-item>
               <div class="prod">

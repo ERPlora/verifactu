@@ -18,7 +18,12 @@ VALUES
   (:new_id, :hub_id, COALESCE(:enabled, 0), COALESCE(:mode, 'verifactu'), COALESCE(:environment, 'testing'),
    COALESCE(:software_name, 'ERPlora Hub'), COALESCE(:software_version, '1.0.0'),
    COALESCE(:software_id, 'ERPLORA-001'), COALESCE(:software_nif, ''),
-   COALESCE(:issuer_nif, ''), COALESCE(:issuer_name, ''),
+   -- Obligado tributario (emisor): FUENTE ÚNICA = identidad fiscal GLOBAL del hub
+   -- (`:business_tax_id`/`:business_legal_name`, hub_settings — ADR-0061), inyectada por el runtime
+   -- en todo el SQL. Ya no se teclea en el formulario VeriFactu; fallback al valor previo si la
+   -- identidad global aún no está configurada.
+   COALESCE(NULLIF(:business_tax_id, ''), :issuer_nif, ''),
+   COALESCE(NULLIF(:business_legal_name, ''), :issuer_name, ''),
    COALESCE(:certificate_path, ''), COALESCE(:certificate_password, ''),
    COALESCE(:certificate_pkcs12, ''), :certificate_expiry,
    COALESCE(:auto_transmit, 1), COALESCE(:retry_interval_minutes, 5), COALESCE(:max_retries, 10),

@@ -116,6 +116,7 @@
     "obligadoNif": "NIF del obligado tributario (emisor)",
     "obligadoName": "Nombre / razón social del emisor",
     "obligadoHint": "Empresa/autónomo que emite las facturas. La AEAT lo valida y debe coincidir con el titular del certificado.",
+    "obligadoFromBusiness": "El obligado tributario (NIF y nombre) se toma de la identidad del negocio en Ajustes → Negocio. Para cambiarlo, edítalo allí.",
     "certLoaded": "cargado ✓",
     "certNotConfigured": "no configurado",
     "certManagedInBusiness": "El certificado fiscal se sube en Ajustes → Negocio (junto al NIF y el nombre del negocio).",

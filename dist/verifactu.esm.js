@@ -2937,6 +2937,7 @@ var es_default = {
     obligadoNif: "NIF del obligado tributario (emisor)",
     obligadoName: "Nombre / raz\xF3n social del emisor",
     obligadoHint: "Empresa/aut\xF3nomo que emite las facturas. La AEAT lo valida y debe coincidir con el titular del certificado.",
+    obligadoFromBusiness: "El obligado tributario (NIF y nombre) se toma de la identidad del negocio en Ajustes \u2192 Negocio. Para cambiarlo, ed\xEDtalo all\xED.",
     certLoaded: "cargado \u2713",
     certNotConfigured: "no configurado",
     certManagedInBusiness: "El certificado fiscal se sube en Ajustes \u2192 Negocio (junto al NIF y el nombre del negocio).",
@@ -3098,6 +3099,7 @@ var en_default = {
     obligadoNif: "Taxpayer (issuer) tax ID",
     obligadoName: "Issuer name / company",
     obligadoHint: "Business issuing the invoices. The AEAT validates it; it must match the certificate holder.",
+    obligadoFromBusiness: "The taxpayer (tax ID and name) is taken from the business identity in Settings \u2192 Business. To change it, edit it there.",
     certLoaded: "loaded \u2713",
     certNotConfigured: "not configured",
     certManagedInBusiness: "The fiscal certificate is uploaded in Settings \u2192 Business (next to the tax ID and business name).",
@@ -4300,13 +4302,13 @@ var ErpVerifactuSettings = class extends i3 {
               </ion-select>
             </ion-item>
             <ion-item>
-              <ion-input label=${t5("ui.obligadoNif")} label-placement="stacked" .value=${this.cfg.issuer_nif || ""} placeholder="B12345678" @ionInput=${(e5) => this.set("issuer_nif", e5.target.value)}></ion-input>
+              <ion-input label=${t5("ui.obligadoNif")} label-placement="stacked" .value=${this.cfg.issuer_nif || ""} readonly></ion-input>
             </ion-item>
             <ion-item>
-              <ion-input label=${t5("ui.obligadoName")} label-placement="stacked" .value=${this.cfg.issuer_name || ""} placeholder="Mi Empresa SL" @ionInput=${(e5) => this.set("issuer_name", e5.target.value)}></ion-input>
+              <ion-input label=${t5("ui.obligadoName")} label-placement="stacked" .value=${this.cfg.issuer_name || ""} readonly></ion-input>
             </ion-item>
             <ion-item lines="none">
-              <p class="hint">${t5("ui.obligadoHint")}</p>
+              <p class="hint">${t5("ui.obligadoFromBusiness")}</p>
             </ion-item>
             <ion-item>
               <div class="prod">
