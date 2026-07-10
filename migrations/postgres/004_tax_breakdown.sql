@@ -1,0 +1,12 @@
+-- Desglose REAL por tipo impositivo, tal cual lo escribe `invoice`:
+--   {"21.00":{"base":1000,"tax":210},"10.00":{"base":500,"tax":50}}   (importes en céntimos)
+--
+-- Sin esta columna el registro solo guardaba `tax_rate` (el tipo EFECTIVO), y el XML de la AEAT
+-- declaraba UNA sola línea `DetalleDesglose`. En una factura mixta —una caña al 21% y una tapa al
+-- 10%, o sea el ticket normal de un bar— eso significaba declarar un 17,33% que no existe en el
+-- sistema fiscal español. Ahora el XML emite una línea por tipo real.
+--
+-- Las filas antiguas quedan con '{}' y siguen emitiendo una única línea con su tipo efectivo, que
+-- para una factura de tipo único ES su tipo real. La huella no cambia: se calcula con CuotaTotal e
+-- ImporteTotal, no con TipoImpositivo, así que la cadena ya emitida sigue siendo válida.
+ALTER TABLE verifactu_record ADD COLUMN IF NOT EXISTS tax_breakdown TEXT NOT NULL DEFAULT '{}';

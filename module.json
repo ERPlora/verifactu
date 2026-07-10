@@ -1,7 +1,7 @@
 {
   "id": "verifactu",
   "name": "VeriFactu",
-  "version": "1.1.16",
+  "version": "1.2.0",
   "agent": {
     "description": "Handles Spanish VeriFactu fiscal compliance: generate, sign, and transmit invoice records to the AEAT, manage the contingency queue, and validate the billing chain integrity.",
     "keywords": [
@@ -86,12 +86,14 @@
     "sqlite": [
       "migrations/sqlite/001_init.sql",
       "migrations/sqlite/002_cert_and_recovery.sql",
-      "migrations/sqlite/003_obligado.sql"
+      "migrations/sqlite/003_obligado.sql",
+      "migrations/sqlite/004_tax_breakdown.sql"
     ],
     "postgres": [
       "migrations/postgres/001_init.sql",
       "migrations/postgres/002_cert_and_recovery.sql",
-      "migrations/postgres/003_obligado.sql"
+      "migrations/postgres/003_obligado.sql",
+      "migrations/postgres/004_tax_breakdown.sql"
     ]
   },
   "queries": {
