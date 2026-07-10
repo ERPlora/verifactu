@@ -7,7 +7,7 @@
 INSERT INTO verifactu_record (
     id, hub_id, record_type, sequence_number, invoice_id,
     issuer_nif, issuer_name, invoice_number, invoice_date, invoice_type, description,
-    base_amount, tax_rate, tax_amount, total_amount,
+    base_amount, tax_rate, tax_breakdown, tax_amount, total_amount,
     previous_hash, record_hash, is_first_record, generation_timestamp,
     status, retry_count, aeat_response_code, aeat_response_message, aeat_csv,
     qr_url, qr_generated, xml_content,
@@ -15,7 +15,7 @@ INSERT INTO verifactu_record (
 ) VALUES (
     :record_id, :hub_id, :record_type, :sequence_number, :invoice_id,
     :issuer_nif, :issuer_name, :invoice_number, :invoice_date, :invoice_type, :description,
-    :base_amount, :tax_rate, :tax_amount, :total_amount,
+    :base_amount, :tax_rate, :tax_breakdown, :tax_amount, :total_amount,
     :previous_hash, :record_hash, :is_first_record, :generation_timestamp,
     'pending', 0, '', '', '',
     :qr_url, 1, '',
