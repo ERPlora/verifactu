@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "module": "verifactu",
+  "consumes": {
+    "queries": [
+      "verifactu.aeat.records.list",
+      "verifactu.chain.status",
+      "verifactu.config.get",
+      "verifactu.contingency.list",
+      "verifactu.diagnostics.last",
+      "verifactu.events.list",
+      "verifactu.records.list"
+    ],
+    "optional_queries": [],
+    "commands": [
+      "invoice.create",
+      "verifactu.aeat.query_recent",
+      "verifactu.certificate.inspect",
+      "verifactu.chain.validate",
+      "verifactu.config.save",
+      "verifactu.contingency.cancel",
+      "verifactu.contingency.process",
+      "verifactu.contingency.retry",
+      "verifactu.diagnostics.run",
+      "verifactu.recovery.from_aeat",
+      "verifactu.recovery.manual"
+    ],
+    "events": [
+      "verifactu.contingency.cancelled",
+      "verifactu.contingency.processed",
+      "verifactu.contingency.retried",
+      "verifactu.record.created",
+      "verifactu.record.transmitted"
+    ],
+    "slots": []
+  }
+}
