@@ -160,7 +160,7 @@
             "op": "eq"
           },
           "issuer_name": {
-            "op": "eq"
+            "op": "like"
           },
           "base_amount": {
             "op": "range"
@@ -284,7 +284,7 @@
             "op": "eq"
           },
           "message": {
-            "op": "eq"
+            "op": "like"
           },
           "details": {
             "op": "eq"
