@@ -14,9 +14,9 @@
     "invoice_date": { "type": "string", "format": "date" },
     "invoice_type": { "type": "string", "enum": ["F1", "F2", "F3", "R1", "R2", "R3", "R4", "R5"] },
     "description": { "type": "string", "default": "", "maxLength": 500 },
-    "base_amount": { "type": "number", "default": 0 },
+    "base_amount": { "type": "integer", "default": 0 },
     "tax_rate": { "type": "number", "default": 21 },
-    "tax_amount": { "type": "number", "default": 0 },
-    "total_amount": { "type": "number", "default": 0 }
+    "tax_amount": { "type": "integer", "default": 0 },
+    "total_amount": { "type": "integer", "default": 0 }
   }
 }
