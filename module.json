@@ -1,7 +1,7 @@
 {
   "id": "verifactu",
   "name": "VeriFactu",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "agent": {
     "description": "Handles Spanish VeriFactu fiscal compliance: generate, sign, and transmit invoice records to the AEAT, manage the contingency queue, and validate the billing chain integrity.",
     "keywords": [
@@ -73,8 +73,14 @@
     "required": true,
     "query": "verifactu.config.get",
     "configured_when": [
-      { "field": "enabled", "truthy": true },
-      { "field": "has_certificate", "truthy": true }
+      {
+        "field": "enabled",
+        "truthy": true
+      },
+      {
+        "field": "has_certificate",
+        "truthy": true
+      }
     ],
     "title": "Configura VeriFactu",
     "description": "Activa VeriFactu y sube tu certificado para enviar las facturas a la AEAT.",
@@ -611,8 +617,12 @@
   },
   "events": {
     "listen": {
-      "invoice.created": { "command": "verifactu.records.ingest_invoice" },
-      "invoice.rectified": { "command": "verifactu.records.ingest_invoice" }
+      "invoice.created": {
+        "command": "verifactu.records.ingest_invoice"
+      },
+      "invoice.rectified": {
+        "command": "verifactu.records.ingest_invoice"
+      }
     }
   },
   "widgets": {
@@ -622,7 +632,12 @@
       "category": "Cumplimiento",
       "size": "sm",
       "permission": "verifactu.view_verifactu",
-      "sectors": ["hosteleria", "retail", "gestoria", "general"],
+      "sectors": [
+        "hosteleria",
+        "retail",
+        "gestoria",
+        "general"
+      ],
       "default": true,
       "kind": "kpi",
       "query": "verifactu.stats.compliance_summary",
@@ -642,7 +657,12 @@
       "category": "Cumplimiento",
       "size": "sm",
       "permission": "verifactu.view_verifactu",
-      "sectors": ["hosteleria", "retail", "gestoria", "general"],
+      "sectors": [
+        "hosteleria",
+        "retail",
+        "gestoria",
+        "general"
+      ],
       "default": false,
       "kind": "stat",
       "query": "verifactu.stats.contingency_summary",
@@ -662,7 +682,12 @@
       "category": "Cumplimiento",
       "size": "md",
       "permission": "verifactu.view_verifactu",
-      "sectors": ["hosteleria", "retail", "gestoria", "general"],
+      "sectors": [
+        "hosteleria",
+        "retail",
+        "gestoria",
+        "general"
+      ],
       "default": false,
       "kind": "bar-list",
       "query": "verifactu.stats.records_by_status",
@@ -680,7 +705,12 @@
       "category": "Cumplimiento",
       "size": "md",
       "permission": "verifactu.view_verifactu",
-      "sectors": ["hosteleria", "retail", "gestoria", "general"],
+      "sectors": [
+        "hosteleria",
+        "retail",
+        "gestoria",
+        "general"
+      ],
       "default": false,
       "kind": "timeline",
       "query": "verifactu.stats.events_recent",
