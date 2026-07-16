@@ -14,12 +14,17 @@ INSERT INTO verifactu_config
    certificate_path, certificate_password, certificate_pkcs12, certificate_expiry,
    auto_transmit, retry_interval_minutes, max_retries,
    is_deleted, created_by, updated_by, created_at, updated_at)
+-- GUARDARRAÍL QA (2026-07-16, qa-hub-beauty): el schema declara enabled/auto_transmit como
+-- BOOLEAN (y la UI manda true/false), pero la columna es INTEGER → en Postgres el bind boolean
+-- revienta ("column enabled is of type bigint but expression is of type boolean") y VeriFactu
+-- NO se puede configurar en Hub Cloud (los defaults del schema también son boolean, así que
+-- ningún payload funciona). CASE WHEN convierte el bind a 0/1 en ambos dialectos.
 VALUES
-  (:new_id, :hub_id, :enabled, :mode, :environment,
+  (:new_id, :hub_id, CASE WHEN :enabled THEN 1 ELSE 0 END, :mode, :environment,
    :software_name, :software_version, :software_id, :software_nif,
    :issuer_nif, :issuer_name,
    :certificate_path, :certificate_password, :certificate_pkcs12, :certificate_expiry,
-   :auto_transmit, :retry_interval_minutes, :max_retries,
+   CASE WHEN :auto_transmit THEN 1 ELSE 0 END, :retry_interval_minutes, :max_retries,
    0, :current_user_id, :current_user_id, :now, :now)
 ON CONFLICT(hub_id) DO UPDATE SET
    enabled                = excluded.enabled,
