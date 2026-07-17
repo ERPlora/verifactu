@@ -650,7 +650,7 @@
         "trend": "trend"
       },
       "options": {
-        "label": "Registros pendientes de envío a la AEAT",
+        "label": "Records pending submission to the AEAT",
         "icon": "shield-checkmark-outline",
         "format": "number"
       }
@@ -680,7 +680,7 @@
         "severity": "severity"
       },
       "options": {
-        "label": "En cola de contingencia",
+        "label": "In contingency queue",
         "icon": "warning-outline",
         "format": "number"
       }

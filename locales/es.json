@@ -157,10 +157,12 @@
   },
   "widgets": {
     "verifactu.pending": {
-      "title": "Pendientes VeriFactu"
+      "title": "Pendientes VeriFactu",
+      "label": "Registros pendientes de envío a la AEAT"
     },
     "verifactu.contingency": {
-      "title": "Cola de contingencia"
+      "title": "Cola de contingencia",
+      "label": "En cola de contingencia"
     },
     "verifactu.by_status": {
       "title": "Registros por estado"
