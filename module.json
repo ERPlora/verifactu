@@ -627,7 +627,7 @@
   },
   "widgets": {
     "verifactu.pending": {
-      "title": "Pendientes VeriFactu",
+      "title": "VeriFactu pending",
       "icon": "shield-checkmark-outline",
       "category": "Cumplimiento",
       "size": "sm",
@@ -653,7 +653,7 @@
       }
     },
     "verifactu.contingency": {
-      "title": "Cola de contingencia",
+      "title": "Contingency queue",
       "icon": "warning-outline",
       "category": "Cumplimiento",
       "size": "sm",
@@ -679,7 +679,7 @@
       }
     },
     "verifactu.by_status": {
-      "title": "Registros por estado",
+      "title": "Records by status",
       "icon": "stats-chart-outline",
       "category": "Cumplimiento",
       "size": "md",
@@ -703,7 +703,7 @@
       }
     },
     "verifactu.events": {
-      "title": "Eventos AEAT recientes",
+      "title": "Recent AEAT events",
       "icon": "time-outline",
       "category": "Cumplimiento",
       "size": "md",

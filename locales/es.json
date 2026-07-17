@@ -154,5 +154,19 @@
     "recErrConsult": "No se pudo consultar a la AEAT",
     "recErrRecover": "No se pudo recuperar la cadena",
     "recErrHash": "La huella debe tener 64 caracteres hexadecimales"
+  },
+  "widgets": {
+    "verifactu.pending": {
+      "title": "Pendientes VeriFactu"
+    },
+    "verifactu.contingency": {
+      "title": "Cola de contingencia"
+    },
+    "verifactu.by_status": {
+      "title": "Registros por estado"
+    },
+    "verifactu.events": {
+      "title": "Eventos AEAT recientes"
+    }
   }
 }
