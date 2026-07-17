@@ -641,6 +641,7 @@
       "default": true,
       "kind": "kpi",
       "query": "verifactu.stats.compliance_summary",
+      "refresh_on": ["verifactu.record.created", "verifactu.record.transmitted"],
       "map": {
         "value": "pending_count",
         "trend": "trend"
@@ -666,6 +667,7 @@
       "default": false,
       "kind": "stat",
       "query": "verifactu.stats.contingency_summary",
+      "refresh_on": ["verifactu.contingency.retried", "verifactu.contingency.cancelled", "verifactu.contingency.processed"],
       "map": {
         "value": "queued_count",
         "severity": "severity"
@@ -691,6 +693,7 @@
       "default": false,
       "kind": "bar-list",
       "query": "verifactu.stats.records_by_status",
+      "refresh_on": ["verifactu.record.created", "verifactu.record.transmitted", "verifactu.contingency.processed"],
       "map": {
         "label": "label",
         "value": "total"
@@ -714,6 +717,7 @@
       "default": false,
       "kind": "timeline",
       "query": "verifactu.stats.events_recent",
+      "refresh_on": ["verifactu.record.created", "verifactu.record.transmitted", "verifactu.contingency.processed"],
       "map": {
         "id": "id",
         "title": "title",
