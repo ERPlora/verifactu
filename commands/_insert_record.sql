@@ -20,6 +20,9 @@ INSERT INTO verifactu_record (
     :previous_hash, :record_hash, :is_first_record, :generation_timestamp,
     'pending', 0, '', '', '',
     :qr_url, 1, '',
-    :substitutes_number, :substitutes_date, :substitutes_nif,
+    -- Guardarraíl del binder (mismo patrón que sales/create_payment_method.sql): el binder del
+    -- runtime pasa NULL para los opcionales omitidos y NO aplica los DEFAULT de columna, así que
+    -- un registro normal (no F3) reventaba con NOT NULL en los substitutes_* de 005_substitution.
+    COALESCE(:substitutes_number, ''), COALESCE(:substitutes_date, ''), COALESCE(:substitutes_nif, ''),
     0, :current_user_id, :current_user_id, :now, :now
 );
