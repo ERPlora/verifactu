@@ -93,13 +93,15 @@
       "migrations/sqlite/001_init.sql",
       "migrations/sqlite/002_cert_and_recovery.sql",
       "migrations/sqlite/003_obligado.sql",
-      "migrations/sqlite/004_tax_breakdown.sql"
+      "migrations/sqlite/004_tax_breakdown.sql",
+      "migrations/sqlite/005_substitution.sql"
     ],
     "postgres": [
       "migrations/postgres/001_init.sql",
       "migrations/postgres/002_cert_and_recovery.sql",
       "migrations/postgres/003_obligado.sql",
-      "migrations/postgres/004_tax_breakdown.sql"
+      "migrations/postgres/004_tax_breakdown.sql",
+      "migrations/postgres/005_substitution.sql"
     ]
   },
   "queries": {
