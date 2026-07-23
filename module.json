@@ -37,6 +37,11 @@
       "verifactu.view_verifactu"
     ]
   },
+  "capabilities": {
+    "certificate": {
+      "purpose": "fiscal-sign"
+    }
+  },
   "navigation": [
     {
       "id": "records",
@@ -83,9 +88,9 @@
       }
     ],
     "title": "Configura VeriFactu",
-    "description": "Activa VeriFactu y sube tu certificado para enviar las facturas a la AEAT.",
+    "description": "Activa VeriFactu y sube el certificado del negocio en Ajustes para enviar facturas a la AEAT.",
     "icon": "shield-checkmark-outline",
-    "route": "/m/verifactu/settings",
+    "route": "/settings",
     "permission": "verifactu.configure_verifactu"
   },
   "migrations": {
@@ -93,13 +98,17 @@
       "migrations/sqlite/001_init.sql",
       "migrations/sqlite/002_cert_and_recovery.sql",
       "migrations/sqlite/003_obligado.sql",
-      "migrations/sqlite/004_tax_breakdown.sql"
+      "migrations/sqlite/004_tax_breakdown.sql",
+      "migrations/sqlite/005_substitution.sql",
+      "migrations/sqlite/006_drop_cert_columns.sql"
     ],
     "postgres": [
       "migrations/postgres/001_init.sql",
       "migrations/postgres/002_cert_and_recovery.sql",
       "migrations/postgres/003_obligado.sql",
-      "migrations/postgres/004_tax_breakdown.sql"
+      "migrations/postgres/004_tax_breakdown.sql",
+      "migrations/postgres/005_substitution.sql",
+      "migrations/postgres/006_drop_cert_columns.sql"
     ]
   },
   "queries": {
@@ -493,17 +502,6 @@
         "description": "Runs a VeriFactu live self-test: validates the certificate/password, builds a sample fingerprint + QR and sends a test record to the AEAT, without touching the real chain."
       }
     },
-    "verifactu.certificate.inspect": {
-      "permission": "verifactu.configure_verifactu",
-      "schema": "schemas/certificate_inspect.json",
-      "handler": {
-        "type": "native",
-        "function": "inspect_certificate"
-      },
-      "ai": {
-        "description": "Reads the stored certificate, extracts its expiry date (notAfter) and persists it in the configuration. Idempotent; does not touch the chain."
-      }
-    },
     "verifactu.chain.validate": {
       "permission": "verifactu.view_verifactu",
       "schema": "schemas/chain_validate.json",
@@ -570,12 +568,6 @@
       "permission": "verifactu.manage_verifactu",
       "sql": [
         "commands/_insert_event.sql"
-      ]
-    },
-    "verifactu._set_certificate_expiry": {
-      "permission": "verifactu.configure_verifactu",
-      "sql": [
-        "commands/_set_certificate_expiry.sql"
       ]
     },
     "verifactu._enqueue_contingency": {
@@ -745,6 +737,14 @@
       }
     }
   },
+  "scheduled_tasks": [
+    {
+      "name": "process_contingency",
+      "command": "verifactu.contingency.process",
+      "cron": "*/5 * * * *",
+      "catch_up": "collapse"
+    }
+  ],
   "ui": {
     "entry": "dist/verifactu.esm.js"
   }
