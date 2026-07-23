@@ -82,7 +82,7 @@ export class ErpVerifactuSettings extends LitElement {
     h3 { font-size:1rem; margin:0 0 .35rem; }
     .cols { display:grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap:1rem; align-items:start; }
     @media (max-width: 980px) { .cols { grid-template-columns:1fr; } }
-    .card { background: var(--ion-card-background, #fff); border:1px solid var(--ion-border-color, #e6e2d8); border-radius:12px; overflow:hidden; }
+    .card { background: var(--ion-card-background, #fff); border:1px solid var(--ion-border-color, #e6e2d8); border-radius: var(--ok-radius, 12px); overflow:hidden; }
     .card-actions { display:flex; justify-content:flex-end; padding:.75rem 1rem; }
     .test-body { display:flex; flex-direction:column; gap:.7rem; padding:1rem 1.1rem 1.2rem; }
     .test-actions { display:flex; gap:.5rem; flex-wrap:wrap; }
@@ -98,7 +98,7 @@ export class ErpVerifactuSettings extends LitElement {
     .prod-head { display:flex; gap:.35rem; align-items:center; }
     .prod-head .t { font-size:.9rem; }
     .prod-head ion-button { --padding-start:.35rem; --padding-end:.35rem; --color: var(--ion-color-primary, #3880ff); margin:0; height:1.6rem; font-size:1.25rem; font-weight:700; }
-    .info { display:flex; flex-direction:column; gap:.45rem; padding:.5rem .75rem; border-radius:8px; background: var(--ion-color-light, #f4f5f8); }
+    .info { display:flex; flex-direction:column; gap:.45rem; padding:.5rem .75rem; border-radius: var(--ok-radius-sm, 8px); background: var(--ion-color-light, #f4f5f8); }
     ok-inline-feedback { display:block; }
   `;
 

@@ -51,7 +51,7 @@ export class ErpVerifactuRecovery extends LitElement {
     :host { display:block; height:100%; overflow:auto; font-family: system-ui, sans-serif; color: var(--ion-text-color, #1c1b18); }
     h2 { font-size:1.1rem; margin:0 0 .75rem; }
     h3 { font-size:.95rem; margin:1.4rem 0 .55rem; color: var(--ion-text-color, #1c1b18); }
-    .card { background: var(--ion-card-background, #fff); border:1px solid var(--ion-border-color, #e6e2d8); border-radius:12px; overflow:hidden; max-width:40rem; }
+    .card { background: var(--ion-card-background, #fff); border:1px solid var(--ion-border-color, #e6e2d8); border-radius: var(--ok-radius, 12px); overflow:hidden; max-width:40rem; }
     .toolbar { display:flex; gap:.5rem; align-items:center; flex-wrap:wrap; margin:.5rem 0; }
     .actions { display:flex; justify-content:flex-end; margin:.85rem 0; max-width:40rem; }
     ok-inline-feedback { display:block; margin-bottom:.5rem; max-width:40rem; }
