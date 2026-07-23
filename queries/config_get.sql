@@ -1,14 +1,15 @@
--- Configuración VeriFactu del hub (singleton). Runtime inyecta :hub_id.
--- Portado de VerifactuService.get_config / settings_view.
--- NUNCA expone el secreto: ni certificate_password ni los bytes certificate_pkcs12.
--- En su lugar devuelve flags has_certificate / has_password para que la UI muestre estado.
-SELECT id, enabled, mode, environment,
-       software_name, software_version, software_id, software_nif,
-       issuer_nif, issuer_name,
-       certificate_path, certificate_expiry,
-       CASE WHEN certificate_pkcs12 <> '' OR certificate_path <> '' THEN 1 ELSE 0 END AS has_certificate,
-       CASE WHEN certificate_password <> '' THEN 1 ELSE 0 END AS has_password,
-       auto_transmit, retry_interval_minutes, max_retries
-FROM verifactu_config
-WHERE hub_id = :hub_id AND is_deleted = 0
+-- Configuración VeriFactu del hub (singleton). Runtime inyecta :hub_id y :has_certificate.
+--
+-- El certificado fiscal (.p12) es un recurso del NEGOCIO/hub (ADR-0079/0081), NO del módulo: se
+-- sube en Ajustes → Negocio. El runtime inyecta :has_certificate (0/1) como system param tras
+-- sondear la presencia del cert del core (_hub_certificate) — el módulo NO lee la tabla de sistema
+-- directamente; confía en el gate del runtime. Los bytes del `.p12` y la contraseña NUNCA se
+-- exponen (el motor Rust firma vía la capability opaca host.certificate_identity(hub_id)).
+SELECT vc.id, vc.enabled, vc.mode, vc.environment,
+       vc.software_name, vc.software_version, vc.software_id, vc.software_nif,
+       vc.issuer_nif, vc.issuer_name,
+       :has_certificate AS has_certificate,
+       vc.auto_transmit, vc.retry_interval_minutes, vc.max_retries
+FROM verifactu_config vc
+WHERE vc.hub_id = :hub_id AND vc.is_deleted = 0
 LIMIT 1;
