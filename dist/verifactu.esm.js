@@ -3184,6 +3184,12 @@ var es_default = {
     recManualInvoice: "N\xBA de factura (opcional)",
     recManualDate: "Fecha (YYYY-MM-DD, opcional)",
     recRecoverManual: "Continuar desde esta huella",
+    recCancel: "Cancelar",
+    recConfirmAeatTitle: "Recuperar la cadena desde la AEAT",
+    recConfirmAeatMessage: "Se reconstruir\xE1 la continuidad local desde el \xFAltimo registro disponible en la AEAT. Verifica el NIF del emisor antes de continuar.",
+    recConfirmManualTitle: "Continuar la cadena desde una huella externa",
+    recConfirmManualMessage: "La huella indicada ser\xE1 el antecedente del pr\xF3ximo registro fiscal. Usa esta opci\xF3n \xFAnicamente durante una migraci\xF3n y despu\xE9s de verificar el dato de origen.",
+    recConfirmAction: "Confirmar recuperaci\xF3n",
     recDone: "Operaci\xF3n completada.",
     recErrValidate: "No se pudo validar la cadena",
     recErrConsult: "No se pudo consultar a la AEAT",
@@ -3354,6 +3360,12 @@ var en_default = {
     recManualInvoice: "Invoice number (optional)",
     recManualDate: "Date (YYYY-MM-DD, optional)",
     recRecoverManual: "Continue from this hash",
+    recCancel: "Cancel",
+    recConfirmAeatTitle: "Recover the chain from AEAT",
+    recConfirmAeatMessage: "Local continuity will be rebuilt from the latest record available at AEAT. Verify the issuer tax ID before continuing.",
+    recConfirmManualTitle: "Continue the chain from an external hash",
+    recConfirmManualMessage: "The supplied hash will become the predecessor of the next fiscal record. Use this only during a migration and after verifying the source data.",
+    recConfirmAction: "Confirm recovery",
     recDone: "Operation completed.",
     recErrValidate: "Could not validate the chain",
     recErrConsult: "Could not query the AEAT",
@@ -3948,6 +3960,7 @@ var ErpVerifactuRecovery = class extends i3 {
     this.busy = "";
     this.error = "";
     this.done = "";
+    this.pendingRecovery = null;
     this.onLocaleChange = () => this.requestUpdate();
   }
   static {
@@ -3958,6 +3971,9 @@ var ErpVerifactuRecovery = class extends i3 {
     .card { background: var(--ion-card-background, #fff); border:1px solid var(--ion-border-color, #e6e2d8); border-radius: var(--ok-radius, 12px); overflow:hidden; max-width:40rem; }
     .toolbar { display:flex; gap:.5rem; align-items:center; flex-wrap:wrap; margin:.5rem 0; }
     .actions { display:flex; justify-content:flex-end; margin:.85rem 0; max-width:40rem; }
+    .toolbar ion-button, .actions ion-button { min-height:44px; margin:.15rem 0; }
+    ion-item { --min-height:52px; }
+    ion-input { min-height:44px; }
     ok-inline-feedback { display:block; margin-bottom:.5rem; max-width:40rem; }
   `;
   }
@@ -4042,6 +4058,21 @@ var ErpVerifactuRecovery = class extends i3 {
       invoice_date: this.manualDate || ""
     }), "ui.recErrRecover");
   }
+  requestRecovery(kind) {
+    if (kind === "manual" && !HEX64.test(this.manualHash.trim())) {
+      this.error = erplora4().t(CATALOG4, "ui.recErrHash");
+      return;
+    }
+    this.error = "";
+    this.pendingRecovery = kind;
+  }
+  async onRecoveryDismiss(ev) {
+    const kind = this.pendingRecovery;
+    this.pendingRecovery = null;
+    if (ev.detail?.role !== "confirm" || !kind) return;
+    if (kind === "aeat") await this.recoverAeat();
+    else await this.recoverManual();
+  }
   statusTone() {
     if (!this.status?.event_type) return "neutral";
     return this.status.event_type === "chain_validated" ? "success" : "danger";
@@ -4073,7 +4104,7 @@ var ErpVerifactuRecovery = class extends i3 {
       <div class="toolbar">
         <ion-button size="small" ?disabled=${blocked} @click=${() => this.validate()}>${this.busy === "validate" ? t5("ui.recValidating") : t5("ui.recValidate")}</ion-button>
         <ion-button size="small" fill="outline" ?disabled=${blocked} @click=${() => this.consult()}>${this.busy === "consult" ? t5("ui.recConsulting") : t5("ui.recConsultAeat")}</ion-button>
-        <ion-button size="small" fill="outline" color="warning" ?disabled=${blocked} @click=${() => this.recoverAeat()}>${this.busy === "recoverAeat" ? t5("ui.recRecovering") : t5("ui.recRecoverFromAeat")}</ion-button>
+        <ion-button fill="outline" color="warning" ?disabled=${blocked} @click=${() => this.requestRecovery("aeat")}>${this.busy === "recoverAeat" ? t5("ui.recRecovering") : t5("ui.recRecoverFromAeat")}</ion-button>
       </div>
 
       <h3>${t5("ui.recAeatTitle")}</h3>
@@ -4118,8 +4149,18 @@ var ErpVerifactuRecovery = class extends i3 {
         </ion-list>
       </div>
       <div class="actions">
-        <ion-button color="warning" ?disabled=${blocked} @click=${() => this.recoverManual()}>${this.busy === "recoverManual" ? t5("ui.recRecovering") : t5("ui.recRecoverManual")}</ion-button>
+        <ion-button color="warning" ?disabled=${blocked} @click=${() => this.requestRecovery("manual")}>${this.busy === "recoverManual" ? t5("ui.recRecovering") : t5("ui.recRecoverManual")}</ion-button>
       </div>
+      <ion-alert
+        .isOpen=${this.pendingRecovery !== null}
+        header=${this.pendingRecovery === "manual" ? t5("ui.recConfirmManualTitle") : t5("ui.recConfirmAeatTitle")}
+        message=${this.pendingRecovery === "manual" ? t5("ui.recConfirmManualMessage") : t5("ui.recConfirmAeatMessage")}
+        .buttons=${[
+      { text: t5("ui.recCancel"), role: "cancel" },
+      { text: t5("ui.recConfirmAction"), role: "confirm", cssClass: "alert-button-warning" }
+    ]}
+        @ionAlertDidDismiss=${(e5) => this.onRecoveryDismiss(e5)}
+      ></ion-alert>
     `;
   }
 };
@@ -4147,6 +4188,9 @@ __decorateClass([
 __decorateClass([
   r5()
 ], ErpVerifactuRecovery.prototype, "done", 2);
+__decorateClass([
+  r5()
+], ErpVerifactuRecovery.prototype, "pendingRecovery", 2);
 define("erp-verifactu-recovery", ErpVerifactuRecovery);
 
 // ../outfitkit/dist/ok-status-pill.js
@@ -4321,7 +4365,10 @@ var ErpVerifactuSettings = class extends i3 {
     .prod { display:flex; flex-direction:column; gap:.5rem; width:100%; padding:.25rem 0; }
     .prod-head { display:flex; gap:.35rem; align-items:center; }
     .prod-head .t { font-size:.9rem; }
-    .prod-head ion-button { --padding-start:.35rem; --padding-end:.35rem; --color: var(--ion-color-primary, #3880ff); margin:0; height:1.6rem; font-size:1.25rem; font-weight:700; }
+    .prod-head ion-button { --padding-start:.35rem; --padding-end:.35rem; --color: var(--ion-color-primary, #3880ff); margin:0; min-width:44px; min-height:44px; font-size:1.25rem; font-weight:700; }
+    .card-actions ion-button, .test-actions ion-button, .cert ion-button { min-height:44px; }
+    ion-item { --min-height:52px; }
+    ion-input, ion-select { min-height:44px; }
     .info { display:flex; flex-direction:column; gap:.45rem; padding:.5rem .75rem; border-radius: var(--ok-radius-sm, 8px); background: var(--ion-color-light, #f4f5f8); }
     ok-inline-feedback { display:block; }
   `;

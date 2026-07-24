@@ -97,7 +97,10 @@ export class ErpVerifactuSettings extends LitElement {
     .prod { display:flex; flex-direction:column; gap:.5rem; width:100%; padding:.25rem 0; }
     .prod-head { display:flex; gap:.35rem; align-items:center; }
     .prod-head .t { font-size:.9rem; }
-    .prod-head ion-button { --padding-start:.35rem; --padding-end:.35rem; --color: var(--ion-color-primary, #3880ff); margin:0; height:1.6rem; font-size:1.25rem; font-weight:700; }
+    .prod-head ion-button { --padding-start:.35rem; --padding-end:.35rem; --color: var(--ion-color-primary, #3880ff); margin:0; min-width:44px; min-height:44px; font-size:1.25rem; font-weight:700; }
+    .card-actions ion-button, .test-actions ion-button, .cert ion-button { min-height:44px; }
+    ion-item { --min-height:52px; }
+    ion-input, ion-select { min-height:44px; }
     .info { display:flex; flex-direction:column; gap:.45rem; padding:.5rem .75rem; border-radius: var(--ok-radius-sm, 8px); background: var(--ion-color-light, #f4f5f8); }
     ok-inline-feedback { display:block; }
   `;

@@ -54,6 +54,9 @@ export class ErpVerifactuRecovery extends LitElement {
     .card { background: var(--ion-card-background, #fff); border:1px solid var(--ion-border-color, #e6e2d8); border-radius: var(--ok-radius, 12px); overflow:hidden; max-width:40rem; }
     .toolbar { display:flex; gap:.5rem; align-items:center; flex-wrap:wrap; margin:.5rem 0; }
     .actions { display:flex; justify-content:flex-end; margin:.85rem 0; max-width:40rem; }
+    .toolbar ion-button, .actions ion-button { min-height:44px; margin:.15rem 0; }
+    ion-item { --min-height:52px; }
+    ion-input { min-height:44px; }
     ok-inline-feedback { display:block; margin-bottom:.5rem; max-width:40rem; }
   `;
 
@@ -72,6 +75,8 @@ export class ErpVerifactuRecovery extends LitElement {
   @state() error = '';
 
   @state() done = '';
+
+  @state() private pendingRecovery: 'aeat' | 'manual' | null = null;
 
   private ctrl!: ListController<AeatRecord>;
 
@@ -169,6 +174,23 @@ export class ErpVerifactuRecovery extends LitElement {
     }), 'ui.recErrRecover');
   }
 
+  private requestRecovery(kind: 'aeat' | 'manual') {
+    if (kind === 'manual' && !HEX64.test(this.manualHash.trim())) {
+      this.error = erplora().t(CATALOG, 'ui.recErrHash');
+      return;
+    }
+    this.error = '';
+    this.pendingRecovery = kind;
+  }
+
+  private async onRecoveryDismiss(ev: CustomEvent<{ role?: string }>) {
+    const kind = this.pendingRecovery;
+    this.pendingRecovery = null;
+    if (ev.detail?.role !== 'confirm' || !kind) return;
+    if (kind === 'aeat') await this.recoverAeat();
+    else await this.recoverManual();
+  }
+
   private statusTone(): string {
     if (!this.status?.event_type) return 'neutral';
     return this.status.event_type === 'chain_validated' ? 'success' : 'danger';
@@ -200,7 +222,7 @@ export class ErpVerifactuRecovery extends LitElement {
       <div class="toolbar">
         <ion-button size="small" ?disabled=${blocked} @click=${() => this.validate()}>${this.busy === 'validate' ? t('ui.recValidating') : t('ui.recValidate')}</ion-button>
         <ion-button size="small" fill="outline" ?disabled=${blocked} @click=${() => this.consult()}>${this.busy === 'consult' ? t('ui.recConsulting') : t('ui.recConsultAeat')}</ion-button>
-        <ion-button size="small" fill="outline" color="warning" ?disabled=${blocked} @click=${() => this.recoverAeat()}>${this.busy === 'recoverAeat' ? t('ui.recRecovering') : t('ui.recRecoverFromAeat')}</ion-button>
+        <ion-button fill="outline" color="warning" ?disabled=${blocked} @click=${() => this.requestRecovery('aeat')}>${this.busy === 'recoverAeat' ? t('ui.recRecovering') : t('ui.recRecoverFromAeat')}</ion-button>
       </div>
 
       <h3>${t('ui.recAeatTitle')}</h3>
@@ -239,8 +261,18 @@ export class ErpVerifactuRecovery extends LitElement {
         </ion-list>
       </div>
       <div class="actions">
-        <ion-button color="warning" ?disabled=${blocked} @click=${() => this.recoverManual()}>${this.busy === 'recoverManual' ? t('ui.recRecovering') : t('ui.recRecoverManual')}</ion-button>
+        <ion-button color="warning" ?disabled=${blocked} @click=${() => this.requestRecovery('manual')}>${this.busy === 'recoverManual' ? t('ui.recRecovering') : t('ui.recRecoverManual')}</ion-button>
       </div>
+      <ion-alert
+        .isOpen=${this.pendingRecovery !== null}
+        header=${this.pendingRecovery === 'manual' ? t('ui.recConfirmManualTitle') : t('ui.recConfirmAeatTitle')}
+        message=${this.pendingRecovery === 'manual' ? t('ui.recConfirmManualMessage') : t('ui.recConfirmAeatMessage')}
+        .buttons=${[
+          { text: t('ui.recCancel'), role: 'cancel' },
+          { text: t('ui.recConfirmAction'), role: 'confirm', cssClass: 'alert-button-warning' },
+        ]}
+        @ionAlertDidDismiss=${(e: CustomEvent<{ role?: string }>) => this.onRecoveryDismiss(e)}
+      ></ion-alert>
     `;
   }
 }
