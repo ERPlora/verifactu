@@ -5,7 +5,8 @@ SELECT id, sequence_number, invoice_number, invoice_date, invoice_type,
        base_amount, tax_rate, tax_amount, total_amount,
        record_hash, previous_hash, is_first_record, generation_timestamp,
        status, transmission_timestamp, retry_count, next_retry_at,
-       aeat_response_code, aeat_response_message, aeat_csv, qr_url
+       aeat_response_code, aeat_response_message, aeat_csv, qr_url,
+       xml_storage_path
 FROM verifactu_record
 WHERE id = :record_id AND hub_id = :hub_id AND is_deleted = 0
 LIMIT 1;

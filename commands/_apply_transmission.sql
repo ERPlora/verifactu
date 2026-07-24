@@ -9,6 +9,7 @@ UPDATE verifactu_record SET
     aeat_response_message  = :aeat_response_message,
     aeat_csv               = :aeat_csv,
     xml_content            = :xml_content,
+    xml_storage_path       = :xml_storage_path,
     updated_by             = :current_user_id,
     updated_at             = :now
 WHERE id = :record_id AND hub_id = :hub_id AND is_deleted = 0;

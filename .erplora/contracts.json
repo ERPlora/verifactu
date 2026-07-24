@@ -15,7 +15,6 @@
     "commands": [
       "invoice.create",
       "verifactu.aeat.query_recent",
-      "verifactu.certificate.inspect",
       "verifactu.chain.validate",
       "verifactu.config.save",
       "verifactu.contingency.cancel",

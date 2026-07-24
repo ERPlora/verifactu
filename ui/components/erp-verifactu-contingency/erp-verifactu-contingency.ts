@@ -162,9 +162,9 @@ export class ErpVerifactuContingency extends LitElement {
         </header>
         ${this.error ? html`<p class="err">${this.error}</p>` : nothing}
         ${this.ctrl?.error ? html`<p class="err">${this.ctrl.error}</p>` : nothing}
-        <ok-data-table .serverSide=${true} .columns=${this.columns} .rows=${this.ctrl?.rows ?? []} .total=${this.ctrl?.total ?? 0} .page=${this.ctrl?.state.page ?? 0} .pageSize=${this.ctrl?.state.pageSize ?? 50} .sort=${this.ctrl?.state.sort} .sortDir=${this.ctrl?.state.dir ?? 'asc'} .searchable=${true} .searchPlaceholder=${t('ui.contingencySearchPlaceholder')} .emptyMessage=${this.ctrl?.loading ? t('ui.loading') : t('ui.contingencyEmpty')} .actions=${[
-            { id: 'retry', label: t('ui.actionRetry') },
-            { id: 'cancel', label: t('ui.actionCancel'), color: 'danger' },
+        <ok-data-table .serverSide=${true} .views=${true} .cardTitle=${(row: Record<string, unknown>) => String(row.record_id ?? row.id ?? '')} .columns=${this.columns} .rows=${this.ctrl?.rows ?? []} .total=${this.ctrl?.total ?? 0} .page=${this.ctrl?.state.page ?? 0} .pageSize=${this.ctrl?.state.pageSize ?? 50} .sort=${this.ctrl?.state.sort} .sortDir=${this.ctrl?.state.dir ?? 'asc'} .searchable=${true} .searchPlaceholder=${t('ui.contingencySearchPlaceholder')} .emptyMessage=${this.ctrl?.loading ? t('ui.loading') : t('ui.contingencyEmpty')} .actions=${[
+            { id: 'retry', label: t('ui.actionRetry'), icon: 'refresh-outline' },
+            { id: 'cancel', label: t('ui.actionCancel'), icon: 'close-circle-outline', color: 'danger' },
           ]} @rowAction=${(e: CustomEvent<{ actionId: string; row: Record<string, unknown> }>) => {
             const { actionId, row } = e.detail;
             if (actionId === 'retry') this.retry(row.id as string);

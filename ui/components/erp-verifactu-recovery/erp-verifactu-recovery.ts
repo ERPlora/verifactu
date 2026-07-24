@@ -206,6 +206,8 @@ export class ErpVerifactuRecovery extends LitElement {
       <h3>${t('ui.recAeatTitle')}</h3>
       <ok-data-table
         .serverSide=${true}
+        .views=${true}
+        .cardTitle=${(row: Record<string, unknown>) => String(row.invoice_number ?? row.record_hash ?? '')}
         .columns=${this.columns}
         .rows=${this.ctrl?.rows ?? []}
         .total=${this.ctrl?.total ?? 0}
