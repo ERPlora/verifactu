@@ -1,7 +1,7 @@
 {
   "id": "verifactu",
   "name": "VeriFactu",
-  "version": "1.3.2",
+  "version": "1.3.3",
   "description": "Spanish VeriFactu compliance: sign and transmit invoice records to the AEAT, with a contingency queue.",
   "static_files": {
     "folder": "verifactu"
@@ -98,15 +98,6 @@
     "permission": "verifactu.configure_verifactu"
   },
   "migrations": {
-    "sqlite": [
-      "migrations/sqlite/001_init.sql",
-      "migrations/sqlite/002_cert_and_recovery.sql",
-      "migrations/sqlite/003_obligado.sql",
-      "migrations/sqlite/004_tax_breakdown.sql",
-      "migrations/sqlite/005_substitution.sql",
-      "migrations/sqlite/006_drop_cert_columns.sql",
-      "migrations/sqlite/007_xml_storage_path.sql"
-    ],
     "postgres": [
       "migrations/postgres/001_init.sql",
       "migrations/postgres/002_cert_and_recovery.sql",
