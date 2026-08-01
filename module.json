@@ -1,7 +1,7 @@
 {
   "id": "verifactu",
   "name": "VeriFactu",
-  "version": "1.3.4",
+  "version": "1.4.0",
   "description": "Spanish VeriFactu compliance: sign and transmit invoice records to the AEAT, with a contingency queue.",
   "static_files": {
     "folder": "verifactu"
@@ -577,6 +577,12 @@
       "permission": "verifactu.transmit_verifactu",
       "sql": [
         "commands/_apply_transmission.sql"
+      ]
+    },
+    "verifactu._rechain_record": {
+      "permission": "verifactu.transmit_verifactu",
+      "sql": [
+        "commands/_rechain_record.sql"
       ]
     },
     "verifactu._insert_recovery": {
