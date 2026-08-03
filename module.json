@@ -96,6 +96,19 @@
     "route": "/settings",
     "permission": "verifactu.configure_verifactu"
   },
+  "alerts": [
+    {
+      "query": "verifactu.stats.contingency_summary",
+      "when": { "field": "queued_count", "gt": 0 },
+      "count_field": "queued_count",
+      "severity_field": "severity",
+      "title": "Invoices not yet sent to the AEAT",
+      "hint": "The POS keeps working; they are sent automatically when the connection is restored.",
+      "route": "/m/verifactu/contingency",
+      "icon": "cloud-offline-outline",
+      "permission": "verifactu.view_verifactu"
+    }
+  ],
   "migrations": {
     "sqlite": [
       "migrations/sqlite/001_init.sql",

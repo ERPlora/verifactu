@@ -170,5 +170,11 @@
     "verifactu.events": {
       "title": "Eventos AEAT recientes"
     }
+  },
+  "alerts": {
+    "verifactu.stats.contingency_summary": {
+      "title": "Facturas sin enviar a la AEAT",
+      "hint": "El TPV sigue funcionando; se envían solas al recuperar la conexión."
+    }
   }
 }
