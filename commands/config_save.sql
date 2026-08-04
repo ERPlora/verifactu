@@ -1,9 +1,13 @@
 -- Guardar/crear la configuración VeriFactu del hub (UPSERT por hub_id).
 -- Runtime inyecta :new_id, :hub_id, :current_user_id, :now.
 --
--- El certificado fiscal (.p12) YA NO se gestiona aquí: es un recurso del NEGOCIO/hub (ADR-0079/0081)
--- y se sube en Ajustes → Negocio (tabla _hub_certificate). Esta config guarda solo los datos
--- operativos: modo, entorno, obligado tributario (emisor) y preferencias de transmisión.
+-- The fiscal certificate (.p12) is NOT managed here: it is a BUSINESS/hub resource
+-- (ADR-0079/0081) uploaded in Settings → Business (`_hub_certificate`). This config keeps only
+-- operational data: mode, environment, issuer and transmission preferences.
+--
+-- ADR-0202 (pending, guards R1/R3): `auto_transmit` gets REMOVED (active module = always
+-- transmits) and `environment` becomes ONE-WAY once a production record is accepted — this
+-- blind UPSERT must then refuse the production→testing flip instead of overwriting it.
 INSERT INTO verifactu_config
   (id, hub_id, enabled, mode, environment,
    software_name, software_version, software_id, software_nif,
