@@ -77,6 +77,22 @@ describe('auto_transmit removal (ADR-0202 R3)', () => {
     expect(sql).not.toMatch(/auto_transmit/i);
   });
 
+  /**
+   * FUNCTIONAL content of a surface file. Two legitimate mentions survive the removal and must
+   * not trip the sweep: the manifest's migration catalog (it MUST declare the drop migration,
+   * whose filename carries the word) and SQL comments documenting the removal.
+   */
+  function functionalContent(rel: string): string {
+    const raw = readFileSync(join(MODULE, rel), 'utf8');
+    if (rel.endsWith('.sql')) return stripComments(raw);
+    if (rel === 'module.json') {
+      const manifest = JSON.parse(raw);
+      delete manifest.migrations;
+      return JSON.stringify(manifest);
+    }
+    return raw;
+  }
+
   it('no source surface still references auto_transmit (only migrations keep history)', () => {
     const surfaces = [
       ...filesUnder('commands'),
@@ -86,9 +102,7 @@ describe('auto_transmit removal (ADR-0202 R3)', () => {
       ...filesUnder('locales'),
       'module.json',
     ].filter((f) => f !== join('ui', 'guards', 'auto-transmit-removal.test.ts'));
-    const offenders = surfaces.filter((f) =>
-      /auto_?transmit/i.test(readFileSync(join(MODULE, f), 'utf8')),
-    );
+    const offenders = surfaces.filter((f) => /auto_?transmit/i.test(functionalContent(f)));
     expect(offenders, `auto_transmit still referenced in: ${offenders.join(', ')}`).toEqual([]);
   });
 });
