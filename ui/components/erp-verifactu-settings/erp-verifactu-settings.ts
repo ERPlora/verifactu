@@ -26,9 +26,8 @@ interface VerifactuConfig {
   software_nif?: string;
   issuer_nif?: string;
   issuer_name?: string;
-  /** ¿Hay certificado del NEGOCIO subido en Ajustes → Negocio (_hub_certificate)? */
+  /** Is there a BUSINESS certificate uploaded in Settings → Business (_hub_certificate)? */
   has_certificate?: number;
-  auto_transmit?: boolean;
   retry_interval_minutes?: number;
   max_retries?: number;
 }
@@ -198,7 +197,6 @@ export class ErpVerifactuSettings extends LitElement {
         // Obligado tributario (emisor) — editable por el cliente.
         issuer_nif: (this.cfg.issuer_nif || '').trim().toUpperCase(),
         issuer_name: this.cfg.issuer_name || '',
-        auto_transmit: this.cfg.auto_transmit !== false,
         retry_interval_minutes: Number(this.cfg.retry_interval_minutes) || 5,
         max_retries: Number(this.cfg.max_retries) || 10,
       });
@@ -225,10 +223,11 @@ export class ErpVerifactuSettings extends LitElement {
   }
 
   /**
-   * Crea una factura de prueba (tiquet F2) vía el comando cross-módulo `invoice.create`.
-   * F2 NO necesita el bloque Destinatarios → evita el error AEAT 1189. El Hub auto-transmite
-   * al crearla (auto_transmit), así que se envía sola a la AEAT y aparece en /m/invoice.
-   * GUARDA: solo en entorno de pruebas y con NIF del emisor configurado.
+   * Creates a test invoice (F2 ticket) via the cross-module `invoice.create` command.
+   * F2 does NOT need the Recipients block → avoids AEAT error 1189. The Hub always transmits
+   * on creation (ADR-0202 R3: active module = always emit), so it sends itself to the AEAT
+   * and shows up in /m/invoice.
+   * GUARD: only in the testing environment and with the issuer tax ID configured.
    */
   private async createTestInvoice() {
     this.creatingInvoice = true;
@@ -364,9 +363,6 @@ export class ErpVerifactuSettings extends LitElement {
                   ${t('ui.certGoSettings')}
                 </ion-button>
               </div>
-            </ion-item>
-            <ion-item lines="none">
-              <ion-toggle style=${GREEN} ?checked=${this.cfg.auto_transmit !== false} @ionChange=${(e: any) => this.set('auto_transmit', e.target.checked)}>${t('ui.autoTransmit')}</ion-toggle>
             </ion-item>
           </ion-list>
           <div class="card-actions">

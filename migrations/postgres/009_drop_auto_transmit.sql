@@ -1,0 +1,13 @@
+-- ADR-0202 phase 1 (guard R3): active module = the record is ALWAYS transmitted.
+--
+-- `auto_transmit` was a user-facing setting: at `0` the record was only enqueued in the
+-- contingency queue and transmission was deferred. That contradicts the VeriFactu FAQ §5 —
+-- once the obliged party operates as VERI*FACTU, transmitting is not a user decision. The
+-- setting disappears from the whole module surface (command, query, schema, UI, locales)
+-- and the column is dropped here (001 stays untouched: migrations are append-only).
+--
+-- Crate compatibility: the hub crate reads the config row with `SELECT *` and falls back to
+-- `int_field(config, "auto_transmit", 1)` — with the column gone it always resolves to 1
+-- (transmit), so hubs still running a crate that predates the paired hub PR already get the
+-- new contract. Rows previously saved with `auto_transmit = 0` stop deferring transmission.
+ALTER TABLE verifactu_config DROP COLUMN IF EXISTS auto_transmit;

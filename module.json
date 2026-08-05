@@ -106,7 +106,8 @@
       "migrations/postgres/005_substitution.sql",
       "migrations/postgres/006_drop_cert_columns.sql",
       "migrations/postgres/007_xml_storage_path.sql",
-      "migrations/postgres/008_environment_chain_scope.sql"
+      "migrations/postgres/008_environment_chain_scope.sql",
+      "migrations/postgres/009_drop_auto_transmit.sql"
     ]
   },
   "queries": {

@@ -942,7 +942,7 @@ var g = class extends (globalThis.HTMLElement ?? HTMLElementShimWithRealType) {
 };
 g.elementStyles = [], g.shadowRootOptions = { mode: "open" }, g[f("elementProperties")] = /* @__PURE__ */ new Map(), g[f("finalized")] = /* @__PURE__ */ new Map(), u?.({ ReactiveElement: g }), (l.reactiveElementVersions ??= []).push("2.1.2");
 
-// node_modules/.pnpm/lit-html@3.3.3/node_modules/lit-html/lit-html.js
+// ../module-toolkit/node_modules/lit-html/lit-html.js
 var t2 = globalThis;
 var i2 = (t5) => t5;
 var s2 = t2.trustedTypes;
@@ -1197,7 +1197,7 @@ var D = (t5, i7, s5) => {
   return h4._$AI(t5), h4;
 };
 
-// node_modules/.pnpm/lit-element@4.2.2/node_modules/lit-element/lit-element.js
+// ../module-toolkit/node_modules/lit-element/lit-element.js
 var s3 = globalThis;
 var i3 = class extends g {
   constructor() {
@@ -1268,7 +1268,7 @@ function define(tag, ctor) {
   }
 }
 
-// node_modules/.pnpm/lit-html@3.3.3/node_modules/lit-html/directive.js
+// ../module-toolkit/node_modules/lit-html/directive.js
 var t3 = { ATTRIBUTE: 1, CHILD: 2, PROPERTY: 3, BOOLEAN_ATTRIBUTE: 4, EVENT: 5, ELEMENT: 6 };
 var e4 = (t5) => (...e5) => ({ _$litDirective$: t5, values: e5 });
 var i4 = class {
@@ -1288,7 +1288,7 @@ var i4 = class {
   }
 };
 
-// node_modules/.pnpm/lit-html@3.3.3/node_modules/lit-html/directive-helpers.js
+// ../module-toolkit/node_modules/lit-html/directive-helpers.js
 var { I: t4 } = j;
 var i5 = (o7) => o7;
 var s4 = () => document.createComment("");
@@ -1321,7 +1321,7 @@ var h3 = (o7) => {
   o7._$AR(), o7._$AA.remove();
 };
 
-// node_modules/.pnpm/lit-html@3.3.3/node_modules/lit-html/directives/repeat.js
+// ../module-toolkit/node_modules/lit-html/directives/repeat.js
 var u4 = (e5, s5, t5) => {
   const r6 = /* @__PURE__ */ new Map();
   for (let l3 = s5; l3 <= t5; l3++) r6.set(e5[l3], l3);
@@ -1374,7 +1374,7 @@ var c4 = e4(class extends i4 {
   }
 });
 
-// node_modules/.pnpm/lit-html@3.3.3/node_modules/lit-html/directives/style-map.js
+// ../module-toolkit/node_modules/lit-html/directives/style-map.js
 var n5 = "important";
 var i6 = " !" + n5;
 var o6 = e4(class extends i4 {
@@ -1643,7 +1643,7 @@ var ES_LABELS = {
   recordSingular: "registro",
   recordPlural: "registros"
 };
-var OkDataTable = class extends i3 {
+var _OkDataTable = class _OkDataTable2 extends i3 {
   constructor() {
     super(...arguments);
     this.columns = [];
@@ -1681,6 +1681,7 @@ var OkDataTable = class extends i3 {
     this.filterDraft = {};
     this.panel = "none";
     this.viewMode = "table";
+    this.isMobile = false;
     this.hiddenKeys = /* @__PURE__ */ new Set();
     this.internalSelection = /* @__PURE__ */ new Set();
     this.menuOpen = false;
@@ -1900,6 +1901,13 @@ var OkDataTable = class extends i3 {
     .empty .empty-ic { display: grid; place-items: center; width: 3.25rem; height: 3.25rem; border-radius: 999px; background: var(--header-background); font-size: 26px; }
 
     .actions { display: flex; gap: 0.25rem; justify-content: flex-end; }
+    /* Las acciones de fila son icon-only y de tamaño small en escritorio. En tablet/móvil se
+     * amplía el host completo (no solo el icono) para que el área táctil alcance 44×44 px. */
+    @media (pointer: coarse), (max-width: 834px) {
+      .actions ion-button { min-width: 44px; min-height: 44px; margin: 0; }
+      .toolbtn { width: 44px; height: 44px; }
+      .pager .nav ion-button { min-width: 44px; min-height: 44px; margin: 0; }
+    }
     /* Spinner de acción en curso (loading): contenido dentro del ion-button small (Ionic lo fija
      * a 28px en el :host, por eso width/height y no font-size). Cubre tabla y tarjetas: los
      * botones de fila siempre van dentro de .actions. */
@@ -1920,15 +1928,36 @@ var OkDataTable = class extends i3 {
     ion-button { --box-shadow: none; }
   `;
   }
+  static {
+    this.MOBILE_BREAKPOINT = 640;
+  }
   connectedCallback() {
     super.connectedCallback();
     if (typeof window !== "undefined") {
       window.addEventListener("erplora:locale-changed", this.onLocaleChanged);
     }
+    if (typeof window !== "undefined" && typeof window.matchMedia === "function") {
+      this.mq = window.matchMedia(`(max-width: ${_OkDataTable2.MOBILE_BREAKPOINT}px)`);
+      this.isMobile = this.mq.matches;
+      const handler = (e5) => {
+        const matches = "matches" in e5 ? e5.matches : this.mq?.matches ?? false;
+        if (this.isMobile === matches) return;
+        this.isMobile = matches;
+        if (matches && this.cardViewEnabled) this.viewMode = "cards";
+        else if (!matches && this.viewMode === "cards") this.viewMode = "table";
+      };
+      this.mq.addEventListener("change", handler);
+      this._mqHandler = handler;
+    }
   }
   disconnectedCallback() {
     if (typeof window !== "undefined") {
       window.removeEventListener("erplora:locale-changed", this.onLocaleChanged);
+    }
+    if (this.mq) {
+      const handler = this._mqHandler;
+      if (handler) this.mq.removeEventListener("change", handler);
+      this.mq = void 0;
     }
     super.disconnectedCallback();
   }
@@ -2288,8 +2317,13 @@ var OkDataTable = class extends i3 {
   // forma robusta de arrancar en tarjetas sin depender de fijar `viewMode` por referencia (que
   // falla si la tabla monta detrás de un `v-if`/loading y el ref aún es null).
   firstUpdated() {
-    if (this.defaultView === "cards" && this.cardViewEnabled) this.viewMode = "cards";
-    else if (this.defaultView === "table") this.viewMode = "table";
+    if (this.isMobile && this.cardViewEnabled) {
+      this.viewMode = "cards";
+    } else if (this.defaultView === "cards" && this.cardViewEnabled) {
+      this.viewMode = "cards";
+    } else if (this.defaultView === "table") {
+      this.viewMode = "table";
+    }
   }
   setViewMode(mode) {
     if (this.viewMode === mode) return;
@@ -2773,151 +2807,155 @@ var OkDataTable = class extends i3 {
 };
 __decorateClass2([
   n4({ attribute: false })
-], OkDataTable.prototype, "columns");
+], _OkDataTable.prototype, "columns");
 __decorateClass2([
   n4({ attribute: false })
-], OkDataTable.prototype, "rows");
+], _OkDataTable.prototype, "rows");
 __decorateClass2([
   n4({ attribute: false })
-], OkDataTable.prototype, "searchKeys");
+], _OkDataTable.prototype, "searchKeys");
 __decorateClass2([
   n4({ attribute: "row-key-field" })
-], OkDataTable.prototype, "rowKeyField");
+], _OkDataTable.prototype, "rowKeyField");
 __decorateClass2([
   n4({ attribute: false })
-], OkDataTable.prototype, "rowKey");
+], _OkDataTable.prototype, "rowKey");
 __decorateClass2([
   n4({ type: Number, attribute: "page-size" })
-], OkDataTable.prototype, "pageSize");
+], _OkDataTable.prototype, "pageSize");
 __decorateClass2([
   n4({ attribute: "empty-message" })
-], OkDataTable.prototype, "emptyMessage");
+], _OkDataTable.prototype, "emptyMessage");
 __decorateClass2([
   n4({ attribute: "search-placeholder" })
-], OkDataTable.prototype, "searchPlaceholder");
+], _OkDataTable.prototype, "searchPlaceholder");
 __decorateClass2([
   n4({ attribute: false })
-], OkDataTable.prototype, "labels");
+], _OkDataTable.prototype, "labels");
 __decorateClass2([
   n4({ attribute: false })
-], OkDataTable.prototype, "actions");
+], _OkDataTable.prototype, "actions");
 __decorateClass2([
   n4({ type: Boolean })
-], OkDataTable.prototype, "addable");
+], _OkDataTable.prototype, "addable");
 __decorateClass2([
   n4({ attribute: false })
-], OkDataTable.prototype, "pageSizeOptions");
+], _OkDataTable.prototype, "pageSizeOptions");
 __decorateClass2([
   n4({ type: Boolean, reflect: true })
-], OkDataTable.prototype, "fill");
+], _OkDataTable.prototype, "fill");
 __decorateClass2([
   n4({ type: Boolean, attribute: "column-picker" })
-], OkDataTable.prototype, "columnPicker");
+], _OkDataTable.prototype, "columnPicker");
 __decorateClass2([
   n4({ type: Boolean })
-], OkDataTable.prototype, "csv");
+], _OkDataTable.prototype, "csv");
 __decorateClass2([
   n4({ attribute: "csv-name" })
-], OkDataTable.prototype, "csvName");
+], _OkDataTable.prototype, "csvName");
 __decorateClass2([
   n4({ type: Boolean, attribute: "server-side" })
-], OkDataTable.prototype, "serverSide");
+], _OkDataTable.prototype, "serverSide");
 __decorateClass2([
   n4({ type: Number })
-], OkDataTable.prototype, "total");
+], _OkDataTable.prototype, "total");
 __decorateClass2([
   n4({ type: Number })
-], OkDataTable.prototype, "page");
+], _OkDataTable.prototype, "page");
 __decorateClass2([
   n4({ type: Boolean })
-], OkDataTable.prototype, "searchable");
+], _OkDataTable.prototype, "searchable");
 __decorateClass2([
   n4({ type: String })
-], OkDataTable.prototype, "sort");
+], _OkDataTable.prototype, "sort");
 __decorateClass2([
   n4({ attribute: "sort-dir" })
-], OkDataTable.prototype, "sortDir");
+], _OkDataTable.prototype, "sortDir");
 __decorateClass2([
   n4()
-], OkDataTable.prototype, "title");
+], _OkDataTable.prototype, "title");
 __decorateClass2([
   n4({ attribute: false })
-], OkDataTable.prototype, "views");
+], _OkDataTable.prototype, "views");
 __decorateClass2([
   n4({ attribute: "default-view" })
-], OkDataTable.prototype, "defaultView");
+], _OkDataTable.prototype, "defaultView");
 __decorateClass2([
   n4({ type: Boolean })
-], OkDataTable.prototype, "exportable");
+], _OkDataTable.prototype, "exportable");
 __decorateClass2([
   n4({ type: Boolean })
-], OkDataTable.prototype, "importable");
+], _OkDataTable.prototype, "importable");
 __decorateClass2([
   n4({ type: Boolean, attribute: "column-selector" })
-], OkDataTable.prototype, "columnSelector");
+], _OkDataTable.prototype, "columnSelector");
 __decorateClass2([
   n4({ attribute: false })
-], OkDataTable.prototype, "pageSizes");
+], _OkDataTable.prototype, "pageSizes");
 __decorateClass2([
   n4({ type: Boolean })
-], OkDataTable.prototype, "selectable");
+], _OkDataTable.prototype, "selectable");
 __decorateClass2([
   n4({ attribute: false })
-], OkDataTable.prototype, "selectedKeys");
+], _OkDataTable.prototype, "selectedKeys");
 __decorateClass2([
   n4({ attribute: false })
-], OkDataTable.prototype, "primaryAction");
+], _OkDataTable.prototype, "primaryAction");
 __decorateClass2([
   n4({ type: Boolean })
-], OkDataTable.prototype, "inlineFilters");
+], _OkDataTable.prototype, "inlineFilters");
 __decorateClass2([
   n4({ attribute: false })
-], OkDataTable.prototype, "menuActions");
+], _OkDataTable.prototype, "menuActions");
 __decorateClass2([
   n4({ attribute: false })
-], OkDataTable.prototype, "cardTitle");
+], _OkDataTable.prototype, "cardTitle");
 __decorateClass2([
   n4({ attribute: false })
-], OkDataTable.prototype, "cardIcon");
+], _OkDataTable.prototype, "cardIcon");
 __decorateClass2([
   n4({ attribute: false })
-], OkDataTable.prototype, "renderCard");
+], _OkDataTable.prototype, "renderCard");
 __decorateClass2([
   r5()
-], OkDataTable.prototype, "q");
+], _OkDataTable.prototype, "q");
 __decorateClass2([
   r5()
-], OkDataTable.prototype, "clientPage");
+], _OkDataTable.prototype, "clientPage");
 __decorateClass2([
   r5()
-], OkDataTable.prototype, "clientPageSize");
+], _OkDataTable.prototype, "clientPageSize");
 __decorateClass2([
   r5()
-], OkDataTable.prototype, "clientSort");
+], _OkDataTable.prototype, "clientSort");
 __decorateClass2([
   r5()
-], OkDataTable.prototype, "clientSortDir");
+], _OkDataTable.prototype, "clientSortDir");
 __decorateClass2([
   r5()
-], OkDataTable.prototype, "clientFilters");
+], _OkDataTable.prototype, "clientFilters");
 __decorateClass2([
   r5()
-], OkDataTable.prototype, "filterDraft");
+], _OkDataTable.prototype, "filterDraft");
 __decorateClass2([
   r5()
-], OkDataTable.prototype, "panel");
+], _OkDataTable.prototype, "panel");
 __decorateClass2([
   r5()
-], OkDataTable.prototype, "viewMode");
+], _OkDataTable.prototype, "viewMode");
 __decorateClass2([
   r5()
-], OkDataTable.prototype, "hiddenKeys");
+], _OkDataTable.prototype, "isMobile");
 __decorateClass2([
   r5()
-], OkDataTable.prototype, "internalSelection");
+], _OkDataTable.prototype, "hiddenKeys");
 __decorateClass2([
   r5()
-], OkDataTable.prototype, "menuOpen");
+], _OkDataTable.prototype, "internalSelection");
+__decorateClass2([
+  r5()
+], _OkDataTable.prototype, "menuOpen");
+var OkDataTable = _OkDataTable;
 define("ok-data-table", OkDataTable);
 
 // ../hub/packages/module-sdk/src/index.ts
@@ -3119,7 +3157,6 @@ var es_default = {
     softwareVersion: "Versi\xF3n del software",
     certificatePath: "Ruta del certificado (.p12)",
     certificatePathPlaceholder: "/ruta/al/certificado.p12",
-    autoTransmit: "Transmisi\xF3n autom\xE1tica a AEAT",
     save: "Guardar configuraci\xF3n",
     saving: "Guardando\u2026",
     certPkcs12: "Certificado PKCS#12 (.p12 / .pfx)",
@@ -3295,7 +3332,6 @@ var en_default = {
     softwareVersion: "Software version",
     certificatePath: "Certificate path (.p12)",
     certificatePathPlaceholder: "/path/to/certificate.p12",
-    autoTransmit: "Automatic transmission to AEAT",
     save: "Save configuration",
     saving: "Saving\u2026",
     certPkcs12: "PKCS#12 certificate (.p12 / .pfx)",
@@ -4435,7 +4471,6 @@ var ErpVerifactuSettings = class extends i3 {
         // Obligado tributario (emisor) — editable por el cliente.
         issuer_nif: (this.cfg.issuer_nif || "").trim().toUpperCase(),
         issuer_name: this.cfg.issuer_name || "",
-        auto_transmit: this.cfg.auto_transmit !== false,
         retry_interval_minutes: Number(this.cfg.retry_interval_minutes) || 5,
         max_retries: Number(this.cfg.max_retries) || 10
       });
@@ -4460,10 +4495,11 @@ var ErpVerifactuSettings = class extends i3 {
     }
   }
   /**
-   * Crea una factura de prueba (tiquet F2) vía el comando cross-módulo `invoice.create`.
-   * F2 NO necesita el bloque Destinatarios → evita el error AEAT 1189. El Hub auto-transmite
-   * al crearla (auto_transmit), así que se envía sola a la AEAT y aparece en /m/invoice.
-   * GUARDA: solo en entorno de pruebas y con NIF del emisor configurado.
+   * Creates a test invoice (F2 ticket) via the cross-module `invoice.create` command.
+   * F2 does NOT need the Recipients block → avoids AEAT error 1189. The Hub always transmits
+   * on creation (ADR-0202 R3: active module = always emit), so it sends itself to the AEAT
+   * and shows up in /m/invoice.
+   * GUARD: only in the testing environment and with the issuer tax ID configured.
    */
   async createTestInvoice() {
     this.creatingInvoice = true;
@@ -4593,9 +4629,6 @@ var ErpVerifactuSettings = class extends i3 {
                   ${t5("ui.certGoSettings")}
                 </ion-button>
               </div>
-            </ion-item>
-            <ion-item lines="none">
-              <ion-toggle style=${GREEN} ?checked=${this.cfg.auto_transmit !== false} @ionChange=${(e5) => this.set("auto_transmit", e5.target.checked)}>${t5("ui.autoTransmit")}</ion-toggle>
             </ion-item>
           </ion-list>
           <div class="card-actions">

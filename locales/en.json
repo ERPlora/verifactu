@@ -78,7 +78,6 @@
     "softwareVersion": "Software version",
     "certificatePath": "Certificate path (.p12)",
     "certificatePathPlaceholder": "/path/to/certificate.p12",
-    "autoTransmit": "Automatic transmission to AEAT",
     "save": "Save configuration",
     "saving": "Saving…",
     "certPkcs12": "PKCS#12 certificate (.p12 / .pfx)",

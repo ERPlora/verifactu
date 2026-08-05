@@ -9,7 +9,7 @@ SELECT vc.id, vc.enabled, vc.mode, vc.environment,
        vc.software_name, vc.software_version, vc.software_id, vc.software_nif,
        vc.issuer_nif, vc.issuer_name,
        :has_certificate AS has_certificate,
-       vc.auto_transmit, vc.retry_interval_minutes, vc.max_retries
+       vc.retry_interval_minutes, vc.max_retries
 FROM verifactu_config vc
 WHERE vc.hub_id = :hub_id AND vc.is_deleted = 0
 LIMIT 1;
