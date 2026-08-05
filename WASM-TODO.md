@@ -59,8 +59,9 @@ Lógica no-CRUD:
  - Insertar `verifactu_record` con `sequence_number`, `previous_hash`, `record_hash`,
  `is_first_record`, snapshot de la factura, `status='pending'`.
  - Insertar `verifactu_event` (`event_type='record_created'`, severity `info`).
- - Si `config.auto_transmit` está desactivado o el sistema está en contingencia: insertar
- `verifactu_contingencyqueue` (priority NORMAL=2, status `pending`).
+ - Si el sistema está en contingencia: insertar `verifactu_contingencyqueue`
+ (priority NORMAL=2, status `pending`). (ADR-0202 R3, verifactu#26: `auto_transmit`
+ ya no existe — módulo activo = siempre se emite.)
  - Emitir `verifactu.record.created`.
 - Binds/lectura runtime: `config` (vía query interna `verifactu.config.get`), ancla de cadena,
  reloj. Payload = schema `record_create.json`.
