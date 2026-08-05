@@ -12,6 +12,7 @@ INSERT INTO verifactu_record (
     status, retry_count, aeat_response_code, aeat_response_message, aeat_csv,
     qr_url, qr_generated, xml_content,
     substitutes_number, substitutes_date, substitutes_nif,
+    environment,
     is_deleted, created_by, updated_by, created_at, updated_at
 ) VALUES (
     :record_id, :hub_id, :record_type, :sequence_number, :invoice_id,
@@ -24,5 +25,13 @@ INSERT INTO verifactu_record (
     -- runtime pasa NULL para los opcionales omitidos y NO aplica los DEFAULT de columna, así que
     -- un registro normal (no F3) reventaba con NOT NULL en los substitutes_* de 005_substitution.
     COALESCE(:substitutes_number, ''), COALESCE(:substitutes_date, ''), COALESCE(:substitutes_nif, ''),
+    -- Environment scoping (ADR-0202 R4): the record joins the chain of the hub's CURRENT config
+    -- environment. Until the native engine passes :environment explicitly (hub#313), the binder
+    -- passes NULL for the omitted param and the config value wins; 'testing' only if no live
+    -- config row exists (same default as verifactu_config.environment).
+    COALESCE(:environment,
+             (SELECT environment FROM verifactu_config
+              WHERE hub_id = :hub_id AND is_deleted = 0),
+             'testing'),
     0, :current_user_id, :current_user_id, :now, :now
 );

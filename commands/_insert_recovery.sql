@@ -11,6 +11,7 @@ INSERT INTO verifactu_record (
     previous_hash, record_hash, is_first_record, generation_timestamp,
     status, retry_count, aeat_response_code, aeat_response_message, aeat_csv,
     qr_url, qr_generated, xml_content,
+    environment,
     is_deleted, created_by, updated_by, created_at, updated_at
 ) VALUES (
     :record_id, :hub_id, 'recovery', :sequence_number, NULL,
@@ -19,5 +20,12 @@ INSERT INTO verifactu_record (
     '', :record_hash, 0, :now,
     'accepted', 0, '', '', :aeat_csv,
     '', 0, '',
+    -- Environment scoping (ADR-0202 R4): the anchor belongs to the chain of the environment the
+    -- recovery was run against — the hub's current config environment (the AEAT consult already
+    -- used its endpoint). Explicit :environment (hub#313) wins once the engine passes it.
+    COALESCE(:environment,
+             (SELECT environment FROM verifactu_config
+              WHERE hub_id = :hub_id AND is_deleted = 0),
+             'testing'),
     0, :current_user_id, :current_user_id, :now, :now
 );
