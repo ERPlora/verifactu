@@ -65,6 +65,7 @@
     "errRetry": "Could not requeue",
     "errCancel": "Could not cancel",
     "errCancelRequiredRecord": "Cannot discard: the record has not been registered with the AEAT yet. Retry the transmission instead.",
+    "errGoLiveIsOneWay": "Cannot switch back to test mode: this hub already sent an accepted record to the AEAT in production. To try things out, use another hub (a free one or the demo).",
     "settingsTitle": "VeriFactu configuration",
     "settingsSaved": "Configuration saved successfully.",
     "errLoadConfig": "Error loading configuration",

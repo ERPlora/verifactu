@@ -6,21 +6,37 @@
 -- operational data: mode, environment, issuer and retry preferences.
 --
 -- ADR-0202 phase 1, guard R3 (verifactu#26): `auto_transmit` is GONE — active module = the
--- record is always transmitted; migration 009 drops the column. Pending guard R1
--- (verifactu#25): this blind UPSERT must refuse the production→testing flip once a
--- production record is accepted, instead of overwriting it.
+-- record is always transmitted; migration 009 drops the column.
+--
+-- GUARD R1 (verifactu#25): going live is ONE WAY. Once this hub has ≥1 record ACCEPTED in
+-- `production` (ADR-0189: `accepted` covers AceptadoConErrores), `environment` cannot go back
+-- to `testing`. The damage is not the past records but the NEXT sales: they are real invoices
+-- whose records would go to preproduction, so for the AEAT they never existed — the
+-- generated-but-never-remitted orphan FAQ §5 forbids, with a QR pointing at `prewww2` that the
+-- customer cannot check. The legitimate way to try things out after go-live is ANOTHER hub
+-- (a free one, or the demo with its environment pinned). When the flip is illegal this INSERT
+-- matches no row and `_config_save_assert.sql` (next in the chain) violates the verifactu__gate
+-- CHECK, rolling the whole transaction back — outbox event included.
 INSERT INTO verifactu_config
   (id, hub_id, enabled, mode, environment,
    software_name, software_version, software_id, software_nif,
    issuer_nif, issuer_name,
    retry_interval_minutes, max_retries,
    is_deleted, created_by, updated_by, created_at, updated_at)
-VALUES
-  (:new_id, :hub_id, :enabled, :mode, :environment,
+SELECT
+   :new_id, :hub_id, :enabled, :mode, :environment,
    :software_name, :software_version, :software_id, :software_nif,
    :issuer_nif, :issuer_name,
    :retry_interval_minutes, :max_retries,
-   0, :current_user_id, :current_user_id, :now, :now)
+   0, :current_user_id, :current_user_id, :now, :now
+WHERE NOT (
+   :environment = 'testing'
+   AND EXISTS (SELECT 1 FROM verifactu_record r
+                 WHERE r.hub_id = :hub_id
+                   AND r.is_deleted = 0
+                   AND r.environment = 'production'
+                   AND r.status = 'accepted')
+)
 ON CONFLICT(hub_id) DO UPDATE SET
    enabled                = excluded.enabled,
    mode                   = excluded.mode,
