@@ -107,7 +107,8 @@
       "migrations/postgres/006_drop_cert_columns.sql",
       "migrations/postgres/007_xml_storage_path.sql",
       "migrations/postgres/008_environment_chain_scope.sql",
-      "migrations/postgres/009_drop_auto_transmit.sql"
+      "migrations/postgres/009_drop_auto_transmit.sql",
+      "migrations/postgres/010_contingency_cancel_gate.sql"
     ]
   },
   "queries": {
@@ -421,14 +422,16 @@
       "permission": "verifactu.manage_verifactu",
       "transaction": true,
       "sql": [
-        "commands/contingency_cancel.sql"
+        "commands/contingency_cancel.sql",
+        "commands/_contingency_cancel_assert.sql",
+        "commands/_gate_clear.sql"
       ],
       "schema": "schemas/contingency_cancel.json",
       "emit": [
         "verifactu.contingency.cancelled"
       ],
       "ai": {
-        "description": "Cancels a contingency record, discarding its retransmission (destructive)."
+        "description": "Discards the retransmission of a contingency entry. Only allowed when the linked record is already registered at the AEAT (accepted): a required record cannot be discarded."
       }
     },
     "verifactu.records.create": {

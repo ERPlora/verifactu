@@ -64,6 +64,7 @@
     "errProcessQueue": "Could not process the queue",
     "errRetry": "Could not requeue",
     "errCancel": "Could not cancel",
+    "errCancelRequiredRecord": "Cannot discard: the record has not been registered with the AEAT yet. Retry the transmission instead.",
     "settingsTitle": "VeriFactu configuration",
     "settingsSaved": "Configuration saved successfully.",
     "errLoadConfig": "Error loading configuration",

@@ -3143,6 +3143,7 @@ var es_default = {
     errProcessQueue: "No se pudo procesar la cola",
     errRetry: "No se pudo reencolar",
     errCancel: "No se pudo cancelar",
+    errCancelRequiredRecord: "No se puede descartar: el registro a\xFAn no est\xE1 registrado en la AEAT. Reintenta la transmisi\xF3n.",
     settingsTitle: "Configuraci\xF3n VeriFactu",
     settingsSaved: "Configuraci\xF3n guardada correctamente.",
     errLoadConfig: "Error cargando la configuraci\xF3n",
@@ -3318,6 +3319,7 @@ var en_default = {
     errProcessQueue: "Could not process the queue",
     errRetry: "Could not requeue",
     errCancel: "Could not cancel",
+    errCancelRequiredRecord: "Cannot discard: the record has not been registered with the AEAT yet. Retry the transmission instead.",
     settingsTitle: "VeriFactu configuration",
     settingsSaved: "Configuration saved successfully.",
     errLoadConfig: "Error loading configuration",
@@ -3519,7 +3521,8 @@ var ErpVerifactuContingency = class extends i3 {
       await erplora().command("verifactu.contingency.cancel", { queue_id: queueId });
       await this.ctrl.load();
     } catch (e5) {
-      this.error = e5 instanceof Error ? e5.message : erplora().t(CATALOG, "ui.errCancel");
+      const message = e5 instanceof Error ? e5.message : "";
+      this.error = message.includes("verifactu__gate") ? erplora().t(CATALOG, "ui.errCancelRequiredRecord") : message || erplora().t(CATALOG, "ui.errCancel");
     } finally {
       this.busy = false;
     }

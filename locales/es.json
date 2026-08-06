@@ -64,6 +64,7 @@
     "errProcessQueue": "No se pudo procesar la cola",
     "errRetry": "No se pudo reencolar",
     "errCancel": "No se pudo cancelar",
+    "errCancelRequiredRecord": "No se puede descartar: el registro aún no está registrado en la AEAT. Reintenta la transmisión.",
     "settingsTitle": "Configuración VeriFactu",
     "settingsSaved": "Configuración guardada correctamente.",
     "errLoadConfig": "Error cargando la configuración",
