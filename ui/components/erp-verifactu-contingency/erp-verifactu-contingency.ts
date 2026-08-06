@@ -147,7 +147,13 @@ export class ErpVerifactuContingency extends LitElement {
       await erplora().command('verifactu.contingency.cancel', { queue_id: queueId });
       await this.ctrl.load();
     } catch (e) {
-      this.error = e instanceof Error ? e.message : erplora().t(CATALOG, 'ui.errCancel');
+      const message = e instanceof Error ? e.message : '';
+      // Gate refusal (verifactu#27): the linked record has not been registered at the
+      // AEAT yet, so its retry cannot be discarded (VeriFactu FAQ §5). The runtime
+      // surfaces the raw CHECK violation on `verifactu__gate` — map it to a friendly one.
+      this.error = message.includes('verifactu__gate')
+        ? erplora().t(CATALOG, 'ui.errCancelRequiredRecord')
+        : message || erplora().t(CATALOG, 'ui.errCancel');
     } finally {
       this.busy = false;
     }
