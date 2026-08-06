@@ -1,7 +1,7 @@
 {
   "id": "verifactu",
   "name": "VeriFactu",
-  "version": "1.5.4",
+  "version": "1.5.5",
   "description": "Spanish VeriFactu compliance: sign and transmit invoice records to the AEAT, with a contingency queue.",
   "static_files": {
     "folder": "verifactu"
