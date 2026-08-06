@@ -203,7 +203,13 @@ export class ErpVerifactuSettings extends LitElement {
       this.saved = true;
       await this.refresh();
     } catch (e) {
-      this.error = e instanceof Error ? e.message : erplora().t(CATALOG, 'ui.errSaveConfig');
+      const message = e instanceof Error ? e.message : '';
+      // Gate refusal (verifactu#25, R1): this hub already sent an accepted record to the AEAT in
+      // production, so it cannot go back to testing. The runtime surfaces the raw CHECK violation
+      // on `verifactu__gate` — map it to a friendly one, same as the cancel guard.
+      this.error = message.includes('verifactu__gate')
+        ? erplora().t(CATALOG, 'ui.errGoLiveIsOneWay')
+        : message || erplora().t(CATALOG, 'ui.errSaveConfig');
     } finally {
       this.saving = false;
     }

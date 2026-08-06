@@ -65,6 +65,7 @@
     "errRetry": "No se pudo reencolar",
     "errCancel": "No se pudo cancelar",
     "errCancelRequiredRecord": "No se puede descartar: el registro aún no está registrado en la AEAT. Reintenta la transmisión.",
+    "errGoLiveIsOneWay": "No se puede volver al modo de pruebas: este hub ya envió a la AEAT un registro aceptado en producción. Para hacer pruebas, usa otro hub (uno gratuito o la demo).",
     "settingsTitle": "Configuración VeriFactu",
     "settingsSaved": "Configuración guardada correctamente.",
     "errLoadConfig": "Error cargando la configuración",
