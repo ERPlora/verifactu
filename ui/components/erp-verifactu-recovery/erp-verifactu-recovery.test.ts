@@ -1,4 +1,14 @@
+// The component is imported STATICALLY on purpose (verifactu#31). Pulling it in drags the whole
+// graph through Vite — OutfitKit's `ok-data-table`/`ok-inline-feedback` bundles, the module SDK and
+// both locale catalogues. Doing that with `await import()` inside a test charged the transform to
+// that test's 5 s budget, so with a cold transform cache and the fork pool competing for CPU the
+// FIRST test of the file timed out (~50% of full-suite runs, always green in isolation). A
+// top-level import is paid once while the file is collected, outside any test timeout.
 import { beforeEach, describe, expect, it } from 'vitest';
+import { ErpVerifactuRecovery } from './erp-verifactu-recovery';
+
+/** The component renders one NIF input plus the three manual-recovery ones. */
+const EXPECTED_INPUTS = 4;
 
 const commands: Array<{ name: string; payload: Record<string, unknown> }> = [];
 
@@ -21,7 +31,6 @@ beforeEach(() => {
 });
 
 async function mount() {
-  await import('./erp-verifactu-recovery');
   const el = document.createElement('erp-verifactu-recovery');
   document.body.appendChild(el);
   await (el as unknown as { updateComplete: Promise<unknown> }).updateComplete;
@@ -32,10 +41,15 @@ async function mount() {
 
 describe('VeriFactu recovery safety', () => {
   it('keeps critical controls at least 44px and all inputs labelled', async () => {
-    const el = await mount();
-    const cssText = (el.constructor as unknown as { styles: { cssText: string } }).styles.cssText;
+    // Touch-target contract: read off the class, not off a rendered box — happy-dom does no layout.
+    const cssText = (ErpVerifactuRecovery.styles as unknown as { cssText: string }).cssText;
     expect(cssText).toContain('min-height:44px');
-    for (const input of el.shadowRoot.querySelectorAll('ion-input')) {
+
+    const el = await mount();
+    const inputs = [...el.shadowRoot.querySelectorAll('ion-input')];
+    // Without this the loop below would pass vacuously if the render produced nothing.
+    expect(inputs).toHaveLength(EXPECTED_INPUTS);
+    for (const input of inputs) {
       expect(input.getAttribute('label')).toBeTruthy();
     }
   });
