@@ -1,7 +1,12 @@
 // The gate refusal (verifactu#27) reaches the UI as a raw Postgres CHECK-violation error
 // mentioning `verifactu__gate`. The component must translate it into the friendly i18n
 // message; any other failure keeps the raw message (existing behavior).
+//
+// The component is imported STATICALLY on purpose (verifactu#31): an `await import()` inside a test
+// charges the whole Vite transform of the OutfitKit/SDK graph to that test's 5 s budget, which is
+// what made the first test of a component file time out under the parallel fork pool.
 import { beforeEach, describe, expect, it } from 'vitest';
+import './erp-verifactu-contingency';
 
 let cancelError: Error | null = null;
 
@@ -22,7 +27,6 @@ beforeEach(() => {
 });
 
 async function mount() {
-  await import('./erp-verifactu-contingency');
   const el = document.createElement('erp-verifactu-contingency');
   document.body.appendChild(el);
   await (el as unknown as { updateComplete: Promise<unknown> }).updateComplete;
