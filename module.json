@@ -629,7 +629,19 @@
       "invoice.rectified": {
         "command": "verifactu.records.ingest_invoice"
       }
-    }
+    },
+    "emits": [
+      "verifactu.aeat.queried",
+      "verifactu.chain.recovered",
+      "verifactu.chain.validated",
+      "verifactu.config.changed",
+      "verifactu.contingency.cancelled",
+      "verifactu.contingency.processed",
+      "verifactu.contingency.retried",
+      "verifactu.diagnostic.run",
+      "verifactu.record.created",
+      "verifactu.record.transmitted"
+    ]
   },
   "widgets": {
     "verifactu.pending": {
