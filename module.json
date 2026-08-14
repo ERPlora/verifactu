@@ -639,7 +639,9 @@
       "verifactu.contingency.processed",
       "verifactu.contingency.retried",
       "verifactu.diagnostic.run",
+      "verifactu.record.accepted_with_errors",
       "verifactu.record.created",
+      "verifactu.record.rejected",
       "verifactu.record.transmitted"
     ]
   },
