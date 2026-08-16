@@ -1,5 +1,6 @@
 {
   "name": "VeriFactu",
+  "description": "Cumplimiento de VeriFactu en España: firma y remite los registros de facturación a la AEAT, con cola de contingencia.",
   "navigation": {
     "records": {
       "label": "Registros"
