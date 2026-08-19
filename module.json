@@ -4,7 +4,8 @@
   "version": "1.5.11",
   "fiscal_regime": {
     "country": "ES",
-    "regime": "verifactu"
+    "regime": "verifactu",
+    "simplified_invoice_max_cents": 300000
   },
   "description": "Spanish VeriFactu compliance: sign and transmit invoice records to the AEAT, with a contingency queue.",
   "static_files": {
