@@ -117,6 +117,8 @@
     "obligadoNif": "Taxpayer (issuer) tax ID",
     "obligadoName": "Issuer name / company",
     "obligadoHint": "Business issuing the invoices. The AEAT validates it; it must match the certificate holder.",
+    "obligadoFromHub": "Taken from the business fiscal identity in Settings → Business. It is the hub's single source, so it is shown here and changed there.",
+    "obligadoMissing": "not configured",
     "certLoaded": "loaded ✓",
     "certNotConfigured": "not configured",
     "certHubHint": "The fiscal certificate is configured in Settings → Business (it's a hub resource, not this module's).",
@@ -154,6 +156,7 @@
     "recErrValidate": "Could not validate the chain",
     "recErrConsult": "Could not query the AEAT",
     "recErrRecover": "Could not recover the chain",
-    "recErrHash": "The hash must be 64 hexadecimal characters"
+    "recErrHash": "The hash must be 64 hexadecimal characters",
+    "errIssuerRequired": "VeriFactu cannot be enabled without a taxpayer: set the tax ID and company name in Settings → Business first."
   }
 }

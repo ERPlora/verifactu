@@ -5,6 +5,15 @@
 -- (ADR-0079/0081) uploaded in Settings → Business (`_hub_certificate`). This config keeps only
 -- operational data: mode, environment, issuer and retry preferences.
 --
+-- OBLIGADO TRIBUTARIO (verifactu#49): the issuer is NOT owned here either. The business fiscal
+-- identity is the hub's (`hub_settings`, ADR-0061), injected as :business_tax_id /
+-- :business_legal_name. The module keeps the column because the ENGINE reads it — `resolve_nif`
+-- in hub `crates/verifactu` anchors `chain.validate`, `recovery.*` and `diagnostics.run` on it —
+-- so the save PERSISTS the effective issuer instead of whatever the form sent. That is what stops
+-- the two drifting apart, and it is why an empty payload no longer means an empty taxpayer: it
+-- means "take the hub's". Only a hub with NO fiscal identity at all ends up empty, and
+-- `_config_save_issuer_assert.sql` refuses to leave VeriFactu enabled in that state.
+--
 -- ADR-0202 phase 1, guard R3 (verifactu#26): `auto_transmit` is GONE — active module = the
 -- record is always transmitted; migration 009 drops the column.
 --
@@ -26,7 +35,8 @@ INSERT INTO verifactu_config
 SELECT
    :new_id, :hub_id, :enabled, :mode, :environment,
    :software_name, :software_version, :software_id, :software_nif,
-   :issuer_nif, :issuer_name,
+   COALESCE(NULLIF(:issuer_nif, ''), :business_tax_id),
+   COALESCE(NULLIF(:issuer_name, ''), :business_legal_name),
    :retry_interval_minutes, :max_retries,
    0, :current_user_id, :current_user_id, :now, :now
 WHERE NOT (

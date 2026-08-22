@@ -170,12 +170,16 @@ export class ErpVerifactuSettings extends LitElement {
     this.saved = false;
   }
 
-  /** Navega a Ajustes → Negocio (donde se sube el certificado del hub). El WC de Lit vive dentro
-   *  del shell del Hub (Vue Router con createWebHistory). pushState SOLO cambia la URL; hay que
-   *  disparar popstate en WINDOW (no en el elemento — el dispatchEvent sin target se queda en el
-   *  shadow root y no llega al router de Vue). Es el patrón de navegación módulo→shell. */
+  /** Navega a Ajustes → **Negocio** (`#tax`), que es donde viven la identidad fiscal Y el
+   *  certificado del hub. El WC de Lit vive dentro del shell del Hub (Vue Router con
+   *  createWebHistory). pushState SOLO cambia la URL; hay que disparar popstate en WINDOW (no en el
+   *  elemento — el dispatchEvent sin target se queda en el shadow root y no llega al router de
+   *  Vue). Es el patrón de navegación módulo→shell.
+   *
+   *  El hash importa (verifactu#49): `/settings` a secas aterriza en General (país, moneda, idioma,
+   *  tema), así que el usuario hacía lo que se le pedía y volvía a una pantalla sin nada que tocar. */
   private goToSettings(): void {
-    window.history.pushState({}, '', '/settings');
+    window.history.pushState({}, '', '/settings#tax');
     window.dispatchEvent(new PopStateEvent('popstate'));
   }
 
@@ -185,6 +189,14 @@ export class ErpVerifactuSettings extends LitElement {
     this.error = '';
     this.saved = false;
     try {
+      // No se puede ACTIVAR VeriFactu sin obligado tributario (verifactu#49). El emisor efectivo
+      // ya viene resuelto desde la identidad fiscal del hub, así que vacío = el hub no la tiene
+      // configurada. El backstop real es el gate `config_save_requires_issuer` (rollback de la
+      // transacción); esto solo evita el viaje y nombra la causa donde se arregla.
+      if (this.cfg.enabled && !(this.cfg.issuer_nif || '').trim()) {
+        this.error = erplora().t(CATALOG, 'ui.errIssuerRequired');
+        return;
+      }
       await erplora().command('verifactu.config.save', {
         enabled: !!this.cfg.enabled,
         mode: this.cfg.mode || 'verifactu',
@@ -194,9 +206,9 @@ export class ErpVerifactuSettings extends LitElement {
         software_version: PRODUCER.software_version,
         software_id: PRODUCER.software_id,
         software_nif: PRODUCER.software_nif,
-        // Obligado tributario (emisor) — editable por el cliente.
-        issuer_nif: (this.cfg.issuer_nif || '').trim().toUpperCase(),
-        issuer_name: this.cfg.issuer_name || '',
+        // Obligado tributario (emisor): NO se manda. Es identidad fiscal del hub (ADR-0061) y la
+        // resuelve el propio `config_save.sql` desde `:business_tax_id`/`:business_legal_name`,
+        // que es lo que impide que la config del módulo y el hub declaren NIF distintos.
         retry_interval_minutes: Number(this.cfg.retry_interval_minutes) || 5,
         max_retries: Number(this.cfg.max_retries) || 10,
       });
@@ -207,9 +219,15 @@ export class ErpVerifactuSettings extends LitElement {
       // Gate refusal (verifactu#25, R1): this hub already sent an accepted record to the AEAT in
       // production, so it cannot go back to testing. The runtime surfaces the raw CHECK violation
       // on `verifactu__gate` — map it to a friendly one, same as the cancel guard.
-      this.error = message.includes('verifactu__gate')
-        ? erplora().t(CATALOG, 'ui.errGoLiveIsOneWay')
-        : message || erplora().t(CATALOG, 'ui.errSaveConfig');
+      // Two gates share that table now, so name the specific one when Postgres surfaces the
+      // failing row (`config_save_requires_issuer`) and fall back to the go-live refusal.
+      if (message.includes('config_save_requires_issuer')) {
+        this.error = erplora().t(CATALOG, 'ui.errIssuerRequired');
+      } else {
+        this.error = message.includes('verifactu__gate')
+          ? erplora().t(CATALOG, 'ui.errGoLiveIsOneWay')
+          : message || erplora().t(CATALOG, 'ui.errSaveConfig');
+      }
     } finally {
       this.saving = false;
     }
@@ -313,6 +331,9 @@ export class ErpVerifactuSettings extends LitElement {
 
   render() {
     const t = (k: string): string => erplora().t(CATALOG, k);
+    // Emisor EFECTIVO: `config.get` ya resuelve la identidad fiscal del hub cuando la columna del
+    // módulo está vacía, así que un vacío AQUÍ significa que el hub no tiene identidad fiscal.
+    const issuerNif = (this.cfg.issuer_nif || '').trim();
     return html`
       <h2>${t('ui.settingsTitle')}</h2>
       ${this.error ? html`<ok-inline-feedback tone="danger" icon="alert-circle-outline">${this.error}</ok-inline-feedback>` : nothing}
@@ -329,14 +350,24 @@ export class ErpVerifactuSettings extends LitElement {
                 <ion-select-option value="production">${t('ui.envProduction')}</ion-select-option>
               </ion-select>
             </ion-item>
-            <ion-item>
-              <ion-input label=${t('ui.obligadoNif')} label-placement="stacked" .value=${this.cfg.issuer_nif || ''} placeholder="B12345678" @ionInput=${(e: any) => this.set('issuer_nif', e.target.value)}></ion-input>
-            </ion-item>
-            <ion-item>
-              <ion-input label=${t('ui.obligadoName')} label-placement="stacked" .value=${this.cfg.issuer_name || ''} placeholder="Mi Empresa SL" @ionInput=${(e: any) => this.set('issuer_name', e.target.value)}></ion-input>
-            </ion-item>
+            <!-- Obligado tributario: identidad fiscal del NEGOCIO/hub (ADR-0061), NO del módulo.
+                 Se configura en Ajustes → Negocio y aquí solo se muestra — igual que el
+                 certificado, justo debajo. Pedirlo dos veces permitía emitir a nombre de un NIF
+                 y DECLARAR a nombre de otro (verifactu#49). -->
             <ion-item lines="none">
-              <p class="hint">${t('ui.obligadoHint')}</p>
+              <div class="cert">
+                <div class="cert-head">
+                  <ion-label>${t('ui.obligadoNif')}</ion-label>
+                  <ok-status-pill dot tone=${issuerNif ? 'success' : 'danger'} label=${issuerNif || t('ui.obligadoMissing')}></ok-status-pill>
+                </div>
+                <div class="kv"><span class="k">${t('ui.obligadoName')}</span><code>${this.cfg.issuer_name || '—'}</code></div>
+                <p class="hint">${t('ui.obligadoFromHub')}</p>
+                <p class="hint">${t('ui.obligadoHint')}</p>
+                <ion-button size="small" fill="outline" @click=${() => this.goToSettings()}>
+                  <ion-icon slot="start" name="open-outline"></ion-icon>
+                  ${t('ui.certGoSettings')}
+                </ion-button>
+              </div>
             </ion-item>
             <ion-item>
               <div class="prod">

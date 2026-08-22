@@ -118,6 +118,8 @@
     "obligadoNif": "NIF del obligado tributario (emisor)",
     "obligadoName": "Nombre / razón social del emisor",
     "obligadoHint": "Empresa/autónomo que emite las facturas. La AEAT lo valida y debe coincidir con el titular del certificado.",
+    "obligadoFromHub": "Se toma de la identidad fiscal del negocio en Ajustes → Negocio. Es la fuente única del hub: aquí se muestra y allí se cambia.",
+    "obligadoMissing": "sin configurar",
     "certLoaded": "cargado ✓",
     "certNotConfigured": "no configurado",
     "certHubHint": "El certificado fiscal se configura en Ajustes → Negocio (es un recurso del hub, no de este módulo).",
@@ -155,7 +157,8 @@
     "recErrValidate": "No se pudo validar la cadena",
     "recErrConsult": "No se pudo consultar a la AEAT",
     "recErrRecover": "No se pudo recuperar la cadena",
-    "recErrHash": "La huella debe tener 64 caracteres hexadecimales"
+    "recErrHash": "La huella debe tener 64 caracteres hexadecimales",
+    "errIssuerRequired": "No se puede activar VeriFactu sin obligado tributario: configura antes el NIF y la razón social en Ajustes → Negocio."
   },
   "widgets": {
     "verifactu.pending": {

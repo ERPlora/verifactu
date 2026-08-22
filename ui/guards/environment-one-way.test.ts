@@ -53,13 +53,15 @@ describe('R1 — going live is one way: production→testing is refused', () => 
     expect(sql).toMatch(/hub_id\s*=\s*:hub_id/i);
   });
 
-  it('the command chains guarded upsert → assert → gate cleanup', () => {
+  // The chain grew a second assert in verifactu#49 (the taxpayer guard). What R1 needs is that
+  // its OWN assert still runs right after the guarded upsert and before the cleanup — the order
+  // that makes a refused flip roll the transaction back. `issuer-single-source.test.ts` pins the
+  // full chain, including the new step.
+  it('the command chains guarded upsert → assert → … → gate cleanup', () => {
     const chain = manifest.commands['verifactu.config.save'].sql;
-    expect(chain).toEqual([
-      'commands/config_save.sql',
-      'commands/_config_save_assert.sql',
-      'commands/_gate_clear.sql',
-    ]);
+    expect(chain[0]).toBe('commands/config_save.sql');
+    expect(chain[1]).toBe('commands/_config_save_assert.sql');
+    expect(chain[chain.length - 1]).toBe('commands/_gate_clear.sql');
   });
 
   it('the assert only passes when the config landed in THIS command run', () => {
