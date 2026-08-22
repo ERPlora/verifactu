@@ -99,7 +99,7 @@
     "title": "Configura VeriFactu",
     "description": "Activa VeriFactu y sube el certificado del negocio en Ajustes para enviar facturas a la AEAT.",
     "icon": "shield-checkmark-outline",
-    "route": "/settings",
+    "route": "/settings#tax",
     "permission": "verifactu.configure_verifactu"
   },
   "migrations": {
@@ -401,6 +401,7 @@
       "sql": [
         "commands/config_save.sql",
         "commands/_config_save_assert.sql",
+        "commands/_config_save_issuer_assert.sql",
         "commands/_gate_clear.sql"
       ],
       "schema": "schemas/config_save.json",
