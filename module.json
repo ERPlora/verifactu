@@ -113,7 +113,12 @@
       "migrations/postgres/007_xml_storage_path.sql",
       "migrations/postgres/008_environment_chain_scope.sql",
       "migrations/postgres/009_drop_auto_transmit.sql",
-      "migrations/postgres/010_contingency_cancel_gate.sql"
+      "migrations/postgres/010_contingency_cancel_gate.sql",
+      {
+        "file": "migrations/postgres/012_named_gate_constraints.sql",
+        "kind": "contract",
+        "since": "1.5.15"
+      }
     ]
   },
   "queries": {

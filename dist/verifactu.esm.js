@@ -9,7 +9,7 @@ var __decorateClass = (decorators, target, key, kind) => {
   return result;
 };
 
-// node_modules/@lit-labs/ssr-dom-shim/lib/element-internals.js
+// ../module-toolkit/node_modules/@lit-labs/ssr-dom-shim/lib/element-internals.js
 var ElementInternalsShim = class ElementInternals {
   get shadowRoot() {
     return this.__host.__shadowRoot;
@@ -88,7 +88,7 @@ var ElementInternalsShim = class ElementInternals {
   }
 };
 
-// node_modules/@lit-labs/ssr-dom-shim/lib/events.js
+// ../module-toolkit/node_modules/@lit-labs/ssr-dom-shim/lib/events.js
 var __classPrivateFieldSet = function(receiver, state, value, kind, f3) {
   if (kind === "m") throw new TypeError("Private method is not writable");
   if (kind === "a" && !f3) throw new TypeError("Private accessor was defined without a setter");
@@ -246,7 +246,7 @@ Object.defineProperties(CustomEventShim.prototype, {
 var EventShimWithRealType = EventShim;
 var CustomEventShimWithRealType = CustomEventShim;
 
-// node_modules/@lit-labs/ssr-dom-shim/lib/css.js
+// ../module-toolkit/node_modules/@lit-labs/ssr-dom-shim/lib/css.js
 var _a2;
 var CSSRuleShim = (_a2 = class CSSRule {
   constructor() {
@@ -277,7 +277,7 @@ var CSSRuleShim = (_a2 = class CSSRule {
   }
 }, _a2.STYLE_RULE = 1, _a2.CHARSET_RULE = 2, _a2.IMPORT_RULE = 3, _a2.MEDIA_RULE = 4, _a2.FONT_FACE_RULE = 5, _a2.PAGE_RULE = 6, _a2.NAMESPACE_RULE = 10, _a2.KEYFRAMES_RULE = 7, _a2.KEYFRAME_RULE = 8, _a2.SUPPORTS_RULE = 12, _a2.COUNTER_STYLE_RULE = 11, _a2.FONT_FEATURE_VALUES_RULE = 14, _a2.MARGIN_RULE = 9, _a2);
 
-// node_modules/@lit-labs/ssr-dom-shim/index.js
+// ../module-toolkit/node_modules/@lit-labs/ssr-dom-shim/index.js
 globalThis.Event ??= EventShimWithRealType;
 globalThis.CustomEvent ??= CustomEventShimWithRealType;
 var constructionToken = Symbol();
@@ -674,7 +674,7 @@ var CustomElementRegistryShimWithRealType = CustomElementRegistry;
 var customElements2 = new CustomElementRegistryShimWithRealType();
 var windowShim = new WindowShim(constructionToken);
 
-// node_modules/@lit/reactive-element/node/css-tag.js
+// ../module-toolkit/node_modules/@lit/reactive-element/node/css-tag.js
 var t = globalThis;
 var e = t.ShadowRoot && (void 0 === t.ShadyCSS || t.ShadyCSS.nativeShadow) && "adoptedStyleSheets" in Document.prototype && "replace" in CSSStyleSheet.prototype;
 var s = Symbol();
@@ -719,7 +719,7 @@ var c = e || void 0 === t.CSSStyleSheet ? (t5) => t5 : (t5) => t5 instanceof CSS
   return r(e5);
 })(t5) : t5;
 
-// node_modules/@lit/reactive-element/node/reactive-element.js
+// ../module-toolkit/node_modules/@lit/reactive-element/node/reactive-element.js
 var { is: h, defineProperty: r2, getOwnPropertyDescriptor: o2, getOwnPropertyNames: n2, getOwnPropertySymbols: a, getPrototypeOf: c2 } = Object;
 var l = globalThis;
 l.customElements ??= customElements2;
@@ -942,7 +942,7 @@ var g = class extends (globalThis.HTMLElement ?? HTMLElementShimWithRealType) {
 };
 g.elementStyles = [], g.shadowRootOptions = { mode: "open" }, g[f("elementProperties")] = /* @__PURE__ */ new Map(), g[f("finalized")] = /* @__PURE__ */ new Map(), u?.({ ReactiveElement: g }), (l.reactiveElementVersions ??= []).push("2.1.2");
 
-// ../modules-workspace/node_modules/.pnpm/lit-html@3.3.3/node_modules/lit-html/lit-html.js
+// node_modules/.pnpm/lit-html@3.3.3/node_modules/lit-html/lit-html.js
 var t2 = globalThis;
 var i2 = (t5) => t5;
 var s2 = t2.trustedTypes;
@@ -1197,7 +1197,7 @@ var D = (t5, i7, s5) => {
   return h4._$AI(t5), h4;
 };
 
-// ../modules-workspace/node_modules/.pnpm/lit-element@4.2.2/node_modules/lit-element/lit-element.js
+// node_modules/.pnpm/lit-element@4.2.2/node_modules/lit-element/lit-element.js
 var s3 = globalThis;
 var i3 = class extends g {
   constructor() {
@@ -1226,7 +1226,7 @@ var o4 = s3.litElementPolyfillSupport;
 o4?.({ LitElement: i3 });
 (s3.litElementVersions ??= []).push("4.2.2");
 
-// node_modules/@lit/reactive-element/node/decorators/property.js
+// ../module-toolkit/node_modules/@lit/reactive-element/node/decorators/property.js
 var o5 = { attribute: true, type: String, converter: b, reflect: false, hasChanged: m };
 var r4 = (t5 = o5, e5, r6) => {
   const { kind: n6, metadata: i7 } = r6;
@@ -1256,7 +1256,7 @@ function n4(t5) {
   })(t5, e5, o7);
 }
 
-// node_modules/@lit/reactive-element/node/decorators/state.js
+// ../module-toolkit/node_modules/@lit/reactive-element/node/decorators/state.js
 function r5(r6) {
   return n4({ ...r6, state: true, attribute: false });
 }
@@ -1268,7 +1268,7 @@ function define(tag, ctor) {
   }
 }
 
-// ../modules-workspace/node_modules/.pnpm/lit-html@3.3.3/node_modules/lit-html/directive.js
+// node_modules/.pnpm/lit-html@3.3.3/node_modules/lit-html/directive.js
 var t3 = { ATTRIBUTE: 1, CHILD: 2, PROPERTY: 3, BOOLEAN_ATTRIBUTE: 4, EVENT: 5, ELEMENT: 6 };
 var e4 = (t5) => (...e5) => ({ _$litDirective$: t5, values: e5 });
 var i4 = class {
@@ -1288,7 +1288,7 @@ var i4 = class {
   }
 };
 
-// ../modules-workspace/node_modules/.pnpm/lit-html@3.3.3/node_modules/lit-html/directive-helpers.js
+// node_modules/.pnpm/lit-html@3.3.3/node_modules/lit-html/directive-helpers.js
 var { I: t4 } = j;
 var i5 = (o7) => o7;
 var s4 = () => document.createComment("");
@@ -1321,7 +1321,7 @@ var h3 = (o7) => {
   o7._$AR(), o7._$AA.remove();
 };
 
-// ../modules-workspace/node_modules/.pnpm/lit-html@3.3.3/node_modules/lit-html/directives/repeat.js
+// node_modules/.pnpm/lit-html@3.3.3/node_modules/lit-html/directives/repeat.js
 var u4 = (e5, s5, t5) => {
   const r6 = /* @__PURE__ */ new Map();
   for (let l3 = s5; l3 <= t5; l3++) r6.set(e5[l3], l3);
@@ -1374,7 +1374,7 @@ var c4 = e4(class extends i4 {
   }
 });
 
-// ../modules-workspace/node_modules/.pnpm/lit-html@3.3.3/node_modules/lit-html/directives/style-map.js
+// node_modules/.pnpm/lit-html@3.3.3/node_modules/lit-html/directives/style-map.js
 var n5 = "important";
 var i6 = " !" + n5;
 var o6 = e4(class extends i4 {
@@ -3211,7 +3211,7 @@ function createListController(client, queryName, onChange = () => {
   return new ListController(client, queryName, onChange, opts);
 }
 
-// ../modules-workspace/modules/verifactu/.wt-vf50/locales/es.json
+// ../../../../../../private/tmp/claude-501/-Users-ioan-beilic-workspace-code-ERPlora/2f9a9744-b897-46f7-aa33-753a99fdd47b/scratchpad/vf40/locales/es.json
 var es_default = {
   name: "VeriFactu",
   description: "Cumplimiento de VeriFactu en Espa\xF1a: firma y remite los registros de facturaci\xF3n a la AEAT, con cola de contingencia.",
@@ -3372,7 +3372,12 @@ var es_default = {
     recErrConsult: "No se pudo consultar a la AEAT",
     recErrRecover: "No se pudo recuperar la cadena",
     recErrHash: "La huella debe tener 64 caracteres hexadecimales",
-    errIssuerRequired: "No se puede activar VeriFactu sin obligado tributario: configura antes el NIF y la raz\xF3n social en Ajustes \u2192 Negocio."
+    errIssuerRequired: "No se puede activar VeriFactu sin obligado tributario: configura antes el NIF y la raz\xF3n social en Ajustes \u2192 Negocio.",
+    errDemoEnvironmentLocked: "Este es un hub de demostraci\xF3n: siempre declara al entorno de pruebas de la AEAT, as\xED que no se puede pasar a producci\xF3n. Todo lo dem\xE1s funciona \u2014 los registros se encadenan y cada uno tiene su tique y su QR. Para facturar de verdad, crea tu propio hub.",
+    errDemoCertificateLocked: "Este es un hub de demostraci\xF3n: no puede tener certificado propio del negocio, porque la AEAT no emite ninguno ficticio. Firma con el certificado delegado de ERPlora contra el entorno de pruebas. Para usar el tuyo, crea tu propio hub.",
+    errDemoIdentityLocked: "Este es un hub de demostraci\xF3n: su NIF y su raz\xF3n social son fijos y no se pueden editar, porque los documentos que emite no son de nadie. Para facturar con tu propio NIF, crea tu propio hub.",
+    errTestRun: "No se pudo ejecutar la prueba",
+    errTestInvoice: "No se pudo crear la factura de prueba"
   },
   widgets: {
     "verifactu.pending": {
@@ -3392,7 +3397,7 @@ var es_default = {
   }
 };
 
-// ../modules-workspace/modules/verifactu/.wt-vf50/locales/en.json
+// ../../../../../../private/tmp/claude-501/-Users-ioan-beilic-workspace-code-ERPlora/2f9a9744-b897-46f7-aa33-753a99fdd47b/scratchpad/vf40/locales/en.json
 var en_default = {
   name: "VeriFactu",
   navigation: {
@@ -3552,11 +3557,16 @@ var en_default = {
     recErrConsult: "Could not query the AEAT",
     recErrRecover: "Could not recover the chain",
     recErrHash: "The hash must be 64 hexadecimal characters",
-    errIssuerRequired: "VeriFactu cannot be enabled without a taxpayer: set the tax ID and company name in Settings \u2192 Business first."
+    errIssuerRequired: "VeriFactu cannot be enabled without a taxpayer: set the tax ID and company name in Settings \u2192 Business first.",
+    errDemoEnvironmentLocked: "This is a demo hub: it always files to the AEAT test environment, so it cannot be switched to production. Everything else works \u2014 records are chained, and each one gets its ticket and its QR. To invoice for real, create your own hub.",
+    errDemoCertificateLocked: "This is a demo hub: it cannot hold its own business certificate, because the AEAT issues no fictitious one. It signs with ERPlora's delegated certificate against the test environment. To use your own, create your own hub.",
+    errDemoIdentityLocked: "This is a demo hub: its tax ID and company name are fixed and cannot be edited, because the documents it issues are nobody's. To invoice under your own tax ID, create your own hub.",
+    errTestRun: "Could not run the test",
+    errTestInvoice: "Could not create the test invoice"
   }
 };
 
-// ../modules-workspace/modules/verifactu/.wt-vf50/ui/components/erp-verifactu-contingency/erp-verifactu-contingency.ts
+// ../../../../../../private/tmp/claude-501/-Users-ioan-beilic-workspace-code-ERPlora/2f9a9744-b897-46f7-aa33-753a99fdd47b/scratchpad/vf40/ui/components/erp-verifactu-contingency/erp-verifactu-contingency.ts
 var CATALOG = { es: es_default, en: en_default };
 function erplora() {
   const c5 = globalThis.erplora;
@@ -3702,7 +3712,7 @@ __decorateClass([
 ], ErpVerifactuContingency.prototype, "tick", 2);
 define("erp-verifactu-contingency", ErpVerifactuContingency);
 
-// ../modules-workspace/modules/verifactu/.wt-vf50/ui/components/erp-verifactu-events/erp-verifactu-events.ts
+// ../../../../../../private/tmp/claude-501/-Users-ioan-beilic-workspace-code-ERPlora/2f9a9744-b897-46f7-aa33-753a99fdd47b/scratchpad/vf40/ui/components/erp-verifactu-events/erp-verifactu-events.ts
 var CATALOG2 = { es: es_default, en: en_default };
 function erplora2() {
   const c5 = globalThis.erplora;
@@ -3778,7 +3788,7 @@ __decorateClass([
 ], ErpVerifactuEvents.prototype, "tick", 2);
 define("erp-verifactu-events", ErpVerifactuEvents);
 
-// ../modules-workspace/modules/verifactu/.wt-vf50/ui/components/erp-verifactu-records/erp-verifactu-records.ts
+// ../../../../../../private/tmp/claude-501/-Users-ioan-beilic-workspace-code-ERPlora/2f9a9744-b897-46f7-aa33-753a99fdd47b/scratchpad/vf40/ui/components/erp-verifactu-records/erp-verifactu-records.ts
 var CATALOG3 = { es: es_default, en: en_default };
 function erplora3() {
   const c5 = globalThis.erplora;
@@ -4124,7 +4134,7 @@ __decorateClass3([
 ], OkInlineFeedback.prototype, "hasActions");
 define("ok-inline-feedback", OkInlineFeedback);
 
-// ../modules-workspace/modules/verifactu/.wt-vf50/ui/components/erp-verifactu-recovery/erp-verifactu-recovery.ts
+// ../../../../../../private/tmp/claude-501/-Users-ioan-beilic-workspace-code-ERPlora/2f9a9744-b897-46f7-aa33-753a99fdd47b/scratchpad/vf40/ui/components/erp-verifactu-recovery/erp-verifactu-recovery.ts
 var CATALOG4 = { es: es_default, en: en_default };
 function erplora4() {
   const c5 = globalThis.erplora;
@@ -4495,18 +4505,34 @@ __decorateClass4([
 ], OkStatusPill.prototype, "size");
 define("ok-status-pill", OkStatusPill);
 
-// ../modules-workspace/modules/verifactu/.wt-vf50/ui/lib/quantity.ts
+// ../../../../../../private/tmp/claude-501/-Users-ioan-beilic-workspace-code-ERPlora/2f9a9744-b897-46f7-aa33-753a99fdd47b/scratchpad/vf40/ui/lib/quantity.ts
 var QUANTITY_SCALE2 = 1e6;
 function toMicro2(qty) {
   return Math.round(qty * QUANTITY_SCALE2);
 }
 
-// ../modules-workspace/modules/verifactu/.wt-vf50/ui/components/erp-verifactu-settings/erp-verifactu-settings.ts
+// ../../../../../../private/tmp/claude-501/-Users-ioan-beilic-workspace-code-ERPlora/2f9a9744-b897-46f7-aa33-753a99fdd47b/scratchpad/vf40/ui/components/erp-verifactu-settings/erp-verifactu-settings.ts
 var CATALOG5 = { es: es_default, en: en_default };
 function erplora5() {
   const c5 = globalThis.erplora;
   if (!c5) throw new Error("erplora SDK no inicializado por el shell");
   return c5;
+}
+var DEMO_LOCKS = {
+  demo_fiscal_environment_locked: "ui.errDemoEnvironmentLocked",
+  demo_business_certificate_locked: "ui.errDemoCertificateLocked",
+  demo_fiscal_identity_locked: "ui.errDemoIdentityLocked"
+};
+function refusalKey(e5) {
+  const code = typeof e5?.code === "string" ? e5.code : "";
+  const message = e5 instanceof Error ? e5.message : "";
+  if (DEMO_LOCKS[code]) return DEMO_LOCKS[code];
+  const lockInText = Object.keys(DEMO_LOCKS).find((c5) => message.includes(c5));
+  if (lockInText) return DEMO_LOCKS[lockInText];
+  if (message.includes("config_save_requires_issuer")) return "ui.errIssuerRequired";
+  if (message.includes("config_save_go_live_is_one_way")) return "ui.errGoLiveIsOneWay";
+  if (message.includes("verifactu__gate")) return "ui.errGoLiveIsOneWay";
+  return "";
 }
 var GREEN = "--track-background-checked: rgba(var(--ion-color-success-rgb, 45,211,111), 0.5); --handle-background-checked: var(--ion-color-success, #2dd36f);";
 var PRODUCER = {
@@ -4638,12 +4664,9 @@ var ErpVerifactuSettings = class extends i3 {
       this.saved = true;
       await this.refresh();
     } catch (e5) {
+      const key = refusalKey(e5);
       const message = e5 instanceof Error ? e5.message : "";
-      if (message.includes("config_save_requires_issuer")) {
-        this.error = erplora5().t(CATALOG5, "ui.errIssuerRequired");
-      } else {
-        this.error = message.includes("verifactu__gate") ? erplora5().t(CATALOG5, "ui.errGoLiveIsOneWay") : message || erplora5().t(CATALOG5, "ui.errSaveConfig");
-      }
+      this.error = key ? erplora5().t(CATALOG5, key) : message || erplora5().t(CATALOG5, "ui.errSaveConfig");
     } finally {
       this.saving = false;
     }
@@ -4655,7 +4678,8 @@ var ErpVerifactuSettings = class extends i3 {
       await erplora5().command("verifactu.diagnostics.run", { invoice_type: this.testType });
       await this.loadDiag();
     } catch (e5) {
-      this.error = e5 instanceof Error ? e5.message : "No se pudo ejecutar la prueba";
+      const key = refusalKey(e5);
+      this.error = key ? erplora5().t(CATALOG5, key) : (e5 instanceof Error ? e5.message : "") || erplora5().t(CATALOG5, "ui.errTestRun");
     } finally {
       this.testing = false;
     }
@@ -4686,7 +4710,8 @@ var ErpVerifactuSettings = class extends i3 {
       });
       this.invoiceCreated = true;
     } catch (e5) {
-      this.error = e5 instanceof Error ? e5.message : "No se pudo crear la factura de prueba";
+      const key = refusalKey(e5);
+      this.error = key ? erplora5().t(CATALOG5, key) : (e5 instanceof Error ? e5.message : "") || erplora5().t(CATALOG5, "ui.errTestInvoice");
     } finally {
       this.creatingInvoice = false;
     }

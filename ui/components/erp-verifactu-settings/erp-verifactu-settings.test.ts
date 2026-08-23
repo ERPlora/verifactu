@@ -97,3 +97,90 @@ describe('test invoice button: `invoice.create` wire contract (verifactu#50)', (
     expect(base + quota).toBe(121);
   });
 });
+
+// ── verifactu#40 — a refusal has to say WHAT was refused, in the user's language ────────────
+//
+// The demo report ("activating VeriFactu does not persist") was investigated as a persistence
+// bug and is not one: since hub#684 the core SEEDS a demo's fiscal identity at boot
+// (`business_tax_id = B00000000`), so the taxpayer gate of verifactu#49 is satisfied and the
+// save applies — `tests/demo_activation.postgres.test.py` pins that against a real Postgres.
+//
+// What was left is the half the reporter actually felt: when a save IS refused, the screen did
+// not tell the truth about it.
+//
+//   * The gate name never reached the browser. A rollback arrives as the Postgres CHECK
+//     violation, and `PgDatabaseError`'s `Display` writes only the PRIMARY message — the `gate`
+//     value lives in the separate DETAIL field, which `message()` drops. So the branch looking
+//     for `config_save_requires_issuer` could never match and EVERY gate fell through to the
+//     go-live text: a hub with no taxpayer was told that "going live is one way", which is not
+//     its problem. Migration 012 moves each gate's name into its own CONSTRAINT NAME, which is
+//     part of the primary message.
+//   * A demo closure (ADR-0197 §4) arrives as an `ErploraError` with a stable `code` and an
+//     ENGLISH sentence written for a developer. The screen printed that sentence verbatim, so a
+//     Spanish visitor got untranslated English — and, worse, prose instead of the one thing that
+//     is stable and translatable: the code.
+//
+// These tests pin BOTH: map on the `code` the SDK already carries, fall back to the constraint
+// name in the text, and never let raw SQL reach a person.
+class FakeErploraError extends Error {
+  readonly code: string;
+
+  constructor(code: string, message: string) {
+    super(message);
+    this.name = 'ErploraError';
+    this.code = code;
+  }
+}
+
+/** The message the RUNTIME really hands over for a gate rollback: primary line only. */
+function gateRefusal(constraint: string) {
+  return new Error(
+    `error returned from database: new row for relation "verifactu__gate" violates check constraint "${constraint}"`,
+  );
+}
+
+async function saveWith(rejection: unknown) {
+  (globalThis as Record<string, unknown>).erplora = {
+    ...((globalThis as Record<string, unknown>).erplora as object),
+    command: async () => {
+      throw rejection;
+    },
+  };
+  const el = await mount();
+  const wc = el as unknown as { save: (e: Event) => Promise<void>; error: string; updateComplete: Promise<unknown> };
+  await wc.save(new Event('submit'));
+  await wc.updateComplete;
+  return wc;
+}
+
+describe('a refused save says what was refused (verifactu#40)', () => {
+  it.each([
+    ['demo_fiscal_environment_locked', 'ui.errDemoEnvironmentLocked'],
+    ['demo_business_certificate_locked', 'ui.errDemoCertificateLocked'],
+    ['demo_fiscal_identity_locked', 'ui.errDemoIdentityLocked'],
+  ])('translates the demo closure `%s` instead of printing the runtime English', async (code, key) => {
+    const wc = await saveWith(
+      new FakeErploraError(code, 'this is a demo hub: its tax authority environment stays on testing'),
+    );
+    expect(wc.error, 'the demo closure was not mapped to its catalogue key').toBe(key);
+    expect(wc.error).not.toMatch(/this is a demo hub/i);
+  });
+
+  it('names the missing taxpayer instead of the go-live refusal', async () => {
+    // The exact string the browser gets once migration 012 names the constraint after the gate.
+    const wc = await saveWith(gateRefusal('config_save_requires_issuer'));
+    expect(wc.error, 'a hub with no taxpayer was told the go-live story').toBe('ui.errIssuerRequired');
+  });
+
+  it('still names the go-live refusal when THAT is the gate that fired', async () => {
+    const wc = await saveWith(gateRefusal('config_save_go_live_is_one_way'));
+    expect(wc.error).toBe('ui.errGoLiveIsOneWay');
+  });
+
+  it('never shows raw SQL to a person, whichever gate fired', async () => {
+    for (const constraint of ['config_save_requires_issuer', 'config_save_go_live_is_one_way', 'verifactu__gate_ok_check']) {
+      const wc = await saveWith(gateRefusal(constraint));
+      expect(wc.error, `the ${constraint} refusal leaked SQL`).not.toMatch(/verifactu__gate|check constraint|relation/i);
+    }
+  });
+});

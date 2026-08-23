@@ -54,6 +54,19 @@ describe('contingency cancel refusal in the UI (verifactu#27)', () => {
     expect(el.shadowRoot.querySelector('.err')?.textContent).toBe('ui.errCancelRequiredRecord');
   });
 
+  // verifactu#40: migration 012 renamed this gate's constraint after the gate itself, so the
+  // message the runtime really hands over changed. The mapping keys on the RELATION name, which
+  // both spellings carry — but the case above is now historical, and a battery that only pins a
+  // message production no longer emits would keep passing while the live one broke.
+  it('maps the gate violation under its own constraint name too (migration 012)', async () => {
+    const el = await mount();
+    cancelError = new Error(
+      'error returned from database: new row for relation "verifactu__gate" violates check constraint "contingency_cancel_requires_accepted_record"',
+    );
+    await cancelOn(el);
+    expect(el.shadowRoot.querySelector('.err')?.textContent).toBe('ui.errCancelRequiredRecord');
+  });
+
   it('keeps the raw message for any other failure', async () => {
     const el = await mount();
     cancelError = new Error('network down');

@@ -158,7 +158,12 @@
     "recErrConsult": "No se pudo consultar a la AEAT",
     "recErrRecover": "No se pudo recuperar la cadena",
     "recErrHash": "La huella debe tener 64 caracteres hexadecimales",
-    "errIssuerRequired": "No se puede activar VeriFactu sin obligado tributario: configura antes el NIF y la razón social en Ajustes → Negocio."
+    "errIssuerRequired": "No se puede activar VeriFactu sin obligado tributario: configura antes el NIF y la razón social en Ajustes → Negocio.",
+    "errDemoEnvironmentLocked": "Este es un hub de demostración: siempre declara al entorno de pruebas de la AEAT, así que no se puede pasar a producción. Todo lo demás funciona — los registros se encadenan y cada uno tiene su tique y su QR. Para facturar de verdad, crea tu propio hub.",
+    "errDemoCertificateLocked": "Este es un hub de demostración: no puede tener certificado propio del negocio, porque la AEAT no emite ninguno ficticio. Firma con el certificado delegado de ERPlora contra el entorno de pruebas. Para usar el tuyo, crea tu propio hub.",
+    "errDemoIdentityLocked": "Este es un hub de demostración: su NIF y su razón social son fijos y no se pueden editar, porque los documentos que emite no son de nadie. Para facturar con tu propio NIF, crea tu propio hub.",
+    "errTestRun": "No se pudo ejecutar la prueba",
+    "errTestInvoice": "No se pudo crear la factura de prueba"
   },
   "widgets": {
     "verifactu.pending": {

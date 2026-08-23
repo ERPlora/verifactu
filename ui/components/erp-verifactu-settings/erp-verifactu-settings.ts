@@ -62,6 +62,49 @@ function erplora(): ErploraClientLike {
   return c;
 }
 
+// ── Naming a refusal (verifactu#40) ─────────────────────────────────────────────────────────
+//
+// The three closures an ephemeral DEMO hub applies (ADR-0197 §4), by the STABLE machine code the
+// runtime publishes for each (`DemoLock::as_str` in `crates/runtime/src/errors.rs`). Mapped by
+// CODE and not by prose on purpose: the runtime's own sentence is English written for a
+// developer ("this is a demo hub: ..."), it is the one thing here allowed to change, and a demo
+// visitor reads Spanish. The SDK already carries the code — `ErploraError.code`, built from the
+// runtime's `{ ok:false, error:{ code, message } }` envelope — so there is a machine contract to
+// key on and no reason to read the sentence.
+const DEMO_LOCKS: Record<string, string> = {
+  demo_fiscal_environment_locked: 'ui.errDemoEnvironmentLocked',
+  demo_business_certificate_locked: 'ui.errDemoCertificateLocked',
+  demo_fiscal_identity_locked: 'ui.errDemoIdentityLocked',
+};
+
+/**
+ * The catalogue key that explains a refusal, or `''` when we have nothing better than what the
+ * caller sent.
+ *
+ * The gate arm is why migration 012 exists. A command rollback reaches the browser as the raw
+ * Postgres CHECK violation, and `PgDatabaseError`'s `Display` writes only the PRIMARY message —
+ * the failing row, and therefore the `gate` value, travels in the separate DETAIL field, which
+ * `message()` never includes. So while every gate shared one auto-named constraint
+ * (`verifactu__gate_ok_check`) this function could not tell them apart, and a hub with no
+ * obligado tributario was handed the GO-LIVE text: the other gate's story, about a problem it
+ * does not have, naming nothing anyone could act on. Migration 012 gives each gate its own
+ * named constraint, which IS part of the primary message, so the specific arm below can match.
+ *
+ * Order matters: the specific gate first, the relation name only as the last resort — that
+ * fallback still covers a hub whose migration 012 has not run yet.
+ */
+function refusalKey(e: unknown): string {
+  const code = typeof (e as { code?: unknown })?.code === 'string' ? (e as { code: string }).code : '';
+  const message = e instanceof Error ? e.message : '';
+  if (DEMO_LOCKS[code]) return DEMO_LOCKS[code];
+  const lockInText = Object.keys(DEMO_LOCKS).find((c) => message.includes(c));
+  if (lockInText) return DEMO_LOCKS[lockInText];
+  if (message.includes('config_save_requires_issuer')) return 'ui.errIssuerRequired';
+  if (message.includes('config_save_go_live_is_one_way')) return 'ui.errGoLiveIsOneWay';
+  if (message.includes('verifactu__gate')) return 'ui.errGoLiveIsOneWay';
+  return '';
+}
+
 const GREEN = '--track-background-checked: rgba(var(--ion-color-success-rgb, 45,211,111), 0.5); --handle-background-checked: var(--ion-color-success, #2dd36f);';
 
 // Identificación del PRODUCTOR del software (fija, la misma para todos los hubs): es ERPlora
@@ -216,19 +259,15 @@ export class ErpVerifactuSettings extends LitElement {
       this.saved = true;
       await this.refresh();
     } catch (e) {
+      // Every refusal this save can meet — the two gates that roll the transaction back and the
+      // three closures a demo hub applies — resolves to a sentence the operator can act on.
+      // Anything left over is shown as it came rather than swallowed: silence is what made the
+      // original report read as "the switch just goes back off".
+      const key = refusalKey(e);
       const message = e instanceof Error ? e.message : '';
-      // Gate refusal (verifactu#25, R1): this hub already sent an accepted record to the AEAT in
-      // production, so it cannot go back to testing. The runtime surfaces the raw CHECK violation
-      // on `verifactu__gate` — map it to a friendly one, same as the cancel guard.
-      // Two gates share that table now, so name the specific one when Postgres surfaces the
-      // failing row (`config_save_requires_issuer`) and fall back to the go-live refusal.
-      if (message.includes('config_save_requires_issuer')) {
-        this.error = erplora().t(CATALOG, 'ui.errIssuerRequired');
-      } else {
-        this.error = message.includes('verifactu__gate')
-          ? erplora().t(CATALOG, 'ui.errGoLiveIsOneWay')
-          : message || erplora().t(CATALOG, 'ui.errSaveConfig');
-      }
+      this.error = key
+        ? erplora().t(CATALOG, key)
+        : message || erplora().t(CATALOG, 'ui.errSaveConfig');
     } finally {
       this.saving = false;
     }
@@ -241,7 +280,10 @@ export class ErpVerifactuSettings extends LitElement {
       await erplora().command('verifactu.diagnostics.run', { invoice_type: this.testType });
       await this.loadDiag();
     } catch (e) {
-      this.error = e instanceof Error ? e.message : 'No se pudo ejecutar la prueba';
+      const key = refusalKey(e);
+      this.error = key
+        ? erplora().t(CATALOG, key)
+        : (e instanceof Error ? e.message : '') || erplora().t(CATALOG, 'ui.errTestRun');
     } finally {
       this.testing = false;
     }
@@ -276,7 +318,10 @@ export class ErpVerifactuSettings extends LitElement {
       });
       this.invoiceCreated = true;
     } catch (e) {
-      this.error = e instanceof Error ? e.message : 'No se pudo crear la factura de prueba';
+      const key = refusalKey(e);
+      this.error = key
+        ? erplora().t(CATALOG, key)
+        : (e instanceof Error ? e.message : '') || erplora().t(CATALOG, 'ui.errTestInvoice');
     } finally {
       this.creatingInvoice = false;
     }
