@@ -58,6 +58,7 @@ export class ErpVerifactuRecovery extends LitElement {
     ion-item { --min-height:52px; }
     ion-input { min-height:44px; }
     ok-inline-feedback { display:block; margin-bottom:.5rem; max-width:40rem; }
+    .scope { margin:-.25rem 0 .5rem; max-width:40rem; font-size:.8rem; line-height:1.4; color: var(--ion-color-medium, #6b6459); }
   `;
 
   @state() nif = '';
@@ -219,6 +220,10 @@ export class ErpVerifactuRecovery extends LitElement {
 
       <h3>${t('ui.recChainStatus')}</h3>
       <ok-inline-feedback tone=${this.statusTone()} heading=${this.statusLabel(t)} icon="shield-checkmark-outline">${this.status?.message ?? ''}</ok-inline-feedback>
+      <!-- verifactu#53: the verdict is about the HASH CHAIN, not about the amounts. A QA report
+           quoted «Cadena íntegra: 27 registro(s) verificados» as proof that records declaring an
+           impossible quota were fine. The check has to say what it covers. -->
+      <p class="scope">${t('ui.recChainScope')}</p>
       <div class="toolbar">
         <ion-button size="small" ?disabled=${blocked} @click=${() => this.validate()}>${this.busy === 'validate' ? t('ui.recValidating') : t('ui.recValidate')}</ion-button>
         <ion-button size="small" fill="outline" ?disabled=${blocked} @click=${() => this.consult()}>${this.busy === 'consult' ? t('ui.recConsulting') : t('ui.recConsultAeat')}</ion-button>

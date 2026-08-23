@@ -22,11 +22,52 @@
 | `demo_fiscal_environment_locked` | A demo hub tried to change its fiscal environment | Demo hubs are pinned; nothing to fix |
 | Contingency cancel rolled back | The linked record is not `accepted` at the AEAT | Retry or rectify — never discard |
 | `record_environment_unknown` | A queued record does not say which environment it belongs to | It stays queued with an error event; it is not transmitted to the wrong authority |
+| `ck_verifactu_record_quota_matches_declared_rate` | A breakdown line declares a quota its own `rate` cannot justify (±1 cent per line) | Fix the amounts upstream — `invoice` refuses the same thing as `invoice.tax_quota_mismatch` |
+| `ck_verifactu_record_quota_matches_row_rate` | No readable breakdown, and the quota does not match the row's own `tax_rate` | Same — nothing was sealed, no sequence number was spent |
+| `ck_verifactu_record_ordinary_total_not_negative` | An `F1`/`F2`/`F3` totalling below zero | A negative amount is a corrective invoice (`R1`…`R5`), issued by `invoice.rectify` |
 | Capability denied | The `certificate` or `network` grant is missing | Grant them in Settings → Permissions |
 | Signing failed, no certificate | Neither an own nor a delegated certificate is available | Upload one in Settings → Business, or wait for the delegated one — the error names both halves on purpose |
 
 Note the guard style: a violated assert **rolls the entire command back**, including the event that
 would have gone to the outbox. Nothing half-happens.
+
+## What is checked before a record is sealed
+
+Since `013_arithmetic_integrity.sql` (verifactu#53) the record table itself refuses an
+**arithmetically impossible** record. The rules are `CHECK` constraints, so no writer can go around
+them — not the native engine, not `verifactu.records.create`, not a future one. The **constraint name
+is the error code**, and a violation rolls the whole command back: no row, no fingerprint, no
+sequence number spent, no contingency entry.
+
+- **The quota against the declared rate.** Each `tax_breakdown` line must declare a quota its own
+  `rate` justifies, with a tolerance of **one cent per line** — the same `invoice.audit` uses. The
+  equivalence surcharge is judged against its own `surcharge_rate`.
+- **The quota against the row's rate**, when there is no readable breakdown (legacy `'{}'` rows,
+  corrective invoices, a `records.create` without one). The tolerance here also absorbs the precision
+  lost by storing the effective rate with two decimals.
+- **The sign.** An `F1`/`F2`/`F3` cannot total below zero. `R1`…`R5` can, and must: that is the legal
+  path for a refund. Zero is fine — a fully comped ticket still needs its `F2`.
+
+What these rules do **not** cover, on purpose:
+
+- **The breakdown against the header** (Σ bases and Σ quotas vs `base_amount`/`tax_amount`). `invoice`
+  owns the document and already refuses it as `invoice.totals_mismatch`.
+- **The amounts against the lines** (`quantity × unit_price`). Same reason — VeriFactu never sees the
+  lines.
+- **A one-cent rounding disagreement.** With VAT included the correct quota is `gross − base`, and
+  only a producer that knows the gross can tell that apart from a rounding artefact. VeriFactu cannot,
+  so it tolerates it rather than rejecting correct invoices.
+
+Records **already chained** are not judged: the constraints arrive `NOT VALID`. A sealed record is
+immutable under RD 1007/2023 and cannot be corrected afterwards, and a hub whose boot dies on its own
+fiscal history would be worse than the bug.
+
+### What `chain.validate` does and does not say
+
+`verifactu.chain.validate` recomputes the SHA-256 fingerprints and verifies the chaining. **That is
+all it claims.** It does not re-audit the amounts — by the time it runs, the record is sealed and
+immutable, so the control that matters is the one above, which prevents sealing. Read a green verdict
+as "the fingerprint chain has not been tampered with", never as "these records add up".
 
 ## Retry behaviour
 

@@ -3211,7 +3211,7 @@ function createListController(client, queryName, onChange = () => {
   return new ListController(client, queryName, onChange, opts);
 }
 
-// ../../../../../../private/tmp/claude-501/-Users-ioan-beilic-workspace-code-ERPlora/2f9a9744-b897-46f7-aa33-753a99fdd47b/scratchpad/vf40/locales/es.json
+// ../modules-workspace/modules/verifactu/locales/es.json
 var es_default = {
   name: "VeriFactu",
   description: "Cumplimiento de VeriFactu en Espa\xF1a: firma y remite los registros de facturaci\xF3n a la AEAT, con cola de contingencia.",
@@ -3342,9 +3342,10 @@ var es_default = {
     recChainStatus: "Integridad de la cadena",
     recValidate: "Validar cadena",
     recValidating: "Validando\u2026",
-    recChainValid: "Cadena \xEDntegra \u2713",
-    recChainBroken: "Cadena ROTA \u2717",
+    recChainValid: "Cadena de huellas \xEDntegra \u2713",
+    recChainBroken: "Cadena de huellas ROTA \u2717",
     recChainUnknown: "Sin validar todav\xEDa",
+    recChainScope: "Recalcula las huellas SHA-256 y verifica el encadenado. No vuelve a auditar los importes: la base, la cuota y el total se comprueban antes de sellar el registro, y una vez encadenado son inmutables.",
     recAeatTitle: "\xDAltimos registros en la AEAT",
     recConsultAeat: "Consultar AEAT",
     recConsulting: "Consultando\u2026",
@@ -3397,7 +3398,7 @@ var es_default = {
   }
 };
 
-// ../../../../../../private/tmp/claude-501/-Users-ioan-beilic-workspace-code-ERPlora/2f9a9744-b897-46f7-aa33-753a99fdd47b/scratchpad/vf40/locales/en.json
+// ../modules-workspace/modules/verifactu/locales/en.json
 var en_default = {
   name: "VeriFactu",
   navigation: {
@@ -3527,9 +3528,10 @@ var en_default = {
     recChainStatus: "Chain integrity",
     recValidate: "Validate chain",
     recValidating: "Validating\u2026",
-    recChainValid: "Chain intact \u2713",
-    recChainBroken: "Chain BROKEN \u2717",
+    recChainValid: "Fingerprint chain intact \u2713",
+    recChainBroken: "Fingerprint chain BROKEN \u2717",
     recChainUnknown: "Not validated yet",
+    recChainScope: "This recomputes the SHA-256 fingerprints and verifies the chaining. It does not re-audit the amounts: the base, quota and total are checked before a record is sealed, and once chained they are immutable.",
     recAeatTitle: "Latest records at the AEAT",
     recConsultAeat: "Query AEAT",
     recConsulting: "Querying\u2026",
@@ -3566,7 +3568,7 @@ var en_default = {
   }
 };
 
-// ../../../../../../private/tmp/claude-501/-Users-ioan-beilic-workspace-code-ERPlora/2f9a9744-b897-46f7-aa33-753a99fdd47b/scratchpad/vf40/ui/components/erp-verifactu-contingency/erp-verifactu-contingency.ts
+// ../modules-workspace/modules/verifactu/ui/components/erp-verifactu-contingency/erp-verifactu-contingency.ts
 var CATALOG = { es: es_default, en: en_default };
 function erplora() {
   const c5 = globalThis.erplora;
@@ -3712,7 +3714,7 @@ __decorateClass([
 ], ErpVerifactuContingency.prototype, "tick", 2);
 define("erp-verifactu-contingency", ErpVerifactuContingency);
 
-// ../../../../../../private/tmp/claude-501/-Users-ioan-beilic-workspace-code-ERPlora/2f9a9744-b897-46f7-aa33-753a99fdd47b/scratchpad/vf40/ui/components/erp-verifactu-events/erp-verifactu-events.ts
+// ../modules-workspace/modules/verifactu/ui/components/erp-verifactu-events/erp-verifactu-events.ts
 var CATALOG2 = { es: es_default, en: en_default };
 function erplora2() {
   const c5 = globalThis.erplora;
@@ -3788,7 +3790,7 @@ __decorateClass([
 ], ErpVerifactuEvents.prototype, "tick", 2);
 define("erp-verifactu-events", ErpVerifactuEvents);
 
-// ../../../../../../private/tmp/claude-501/-Users-ioan-beilic-workspace-code-ERPlora/2f9a9744-b897-46f7-aa33-753a99fdd47b/scratchpad/vf40/ui/components/erp-verifactu-records/erp-verifactu-records.ts
+// ../modules-workspace/modules/verifactu/ui/components/erp-verifactu-records/erp-verifactu-records.ts
 var CATALOG3 = { es: es_default, en: en_default };
 function erplora3() {
   const c5 = globalThis.erplora;
@@ -4134,7 +4136,7 @@ __decorateClass3([
 ], OkInlineFeedback.prototype, "hasActions");
 define("ok-inline-feedback", OkInlineFeedback);
 
-// ../../../../../../private/tmp/claude-501/-Users-ioan-beilic-workspace-code-ERPlora/2f9a9744-b897-46f7-aa33-753a99fdd47b/scratchpad/vf40/ui/components/erp-verifactu-recovery/erp-verifactu-recovery.ts
+// ../modules-workspace/modules/verifactu/ui/components/erp-verifactu-recovery/erp-verifactu-recovery.ts
 var CATALOG4 = { es: es_default, en: en_default };
 function erplora4() {
   const c5 = globalThis.erplora;
@@ -4168,6 +4170,7 @@ var ErpVerifactuRecovery = class extends i3 {
     ion-item { --min-height:52px; }
     ion-input { min-height:44px; }
     ok-inline-feedback { display:block; margin-bottom:.5rem; max-width:40rem; }
+    .scope { margin:-.25rem 0 .5rem; max-width:40rem; font-size:.8rem; line-height:1.4; color: var(--ion-color-medium, #6b6459); }
   `;
   }
   get columns() {
@@ -4294,6 +4297,10 @@ var ErpVerifactuRecovery = class extends i3 {
 
       <h3>${t5("ui.recChainStatus")}</h3>
       <ok-inline-feedback tone=${this.statusTone()} heading=${this.statusLabel(t5)} icon="shield-checkmark-outline">${this.status?.message ?? ""}</ok-inline-feedback>
+      <!-- verifactu#53: the verdict is about the HASH CHAIN, not about the amounts. A QA report
+           quoted «Cadena íntegra: 27 registro(s) verificados» as proof that records declaring an
+           impossible quota were fine. The check has to say what it covers. -->
+      <p class="scope">${t5("ui.recChainScope")}</p>
       <div class="toolbar">
         <ion-button size="small" ?disabled=${blocked} @click=${() => this.validate()}>${this.busy === "validate" ? t5("ui.recValidating") : t5("ui.recValidate")}</ion-button>
         <ion-button size="small" fill="outline" ?disabled=${blocked} @click=${() => this.consult()}>${this.busy === "consult" ? t5("ui.recConsulting") : t5("ui.recConsultAeat")}</ion-button>
@@ -4505,13 +4512,13 @@ __decorateClass4([
 ], OkStatusPill.prototype, "size");
 define("ok-status-pill", OkStatusPill);
 
-// ../../../../../../private/tmp/claude-501/-Users-ioan-beilic-workspace-code-ERPlora/2f9a9744-b897-46f7-aa33-753a99fdd47b/scratchpad/vf40/ui/lib/quantity.ts
+// ../modules-workspace/modules/verifactu/ui/lib/quantity.ts
 var QUANTITY_SCALE2 = 1e6;
 function toMicro2(qty) {
   return Math.round(qty * QUANTITY_SCALE2);
 }
 
-// ../../../../../../private/tmp/claude-501/-Users-ioan-beilic-workspace-code-ERPlora/2f9a9744-b897-46f7-aa33-753a99fdd47b/scratchpad/vf40/ui/components/erp-verifactu-settings/erp-verifactu-settings.ts
+// ../modules-workspace/modules/verifactu/ui/components/erp-verifactu-settings/erp-verifactu-settings.ts
 var CATALOG5 = { es: es_default, en: en_default };
 function erplora5() {
   const c5 = globalThis.erplora;

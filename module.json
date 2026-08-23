@@ -118,7 +118,8 @@
         "file": "migrations/postgres/012_named_gate_constraints.sql",
         "kind": "contract",
         "since": "1.5.15"
-      }
+      },
+      "migrations/postgres/013_arithmetic_integrity.sql"
     ]
   },
   "queries": {
