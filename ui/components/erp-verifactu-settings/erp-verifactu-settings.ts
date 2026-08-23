@@ -3,6 +3,7 @@ import { state } from 'lit/decorators.js';
 import { define } from '@erplora/outfitkit/define';
 import '@erplora/outfitkit/ok-status-pill';
 import '@erplora/outfitkit/ok-inline-feedback';
+import { toMicro } from '../../lib/quantity';
 import esLocale from '../../../locales/es.json';
 import enLocale from '../../../locales/en.json';
 const CATALOG: Record<string, unknown> = { es: esLocale, en: enLocale };
@@ -251,6 +252,11 @@ export class ErpVerifactuSettings extends LitElement {
    * F2 does NOT need the Recipients block → avoids AEAT error 1189. The Hub always transmits
    * on creation (ADR-0202 R3: active module = always emit), so it sends itself to the AEAT
    * and shows up in /m/invoice.
+   * WIRE CONTRACT (verifactu#50): `quantity` is a FIXED-POINT integer of scale 10⁶ (ADR-0147,
+   * 1 unit = 1000000) and `unit_price` is integer minor units (ADR-0123, cents). A bare `1`
+   * is 0,000001 units: invoice < 1.2.17 issued the ticket for 0.00 €, and since invoice#49
+   * the destination rejects it (422 `invalid_payload`, then `line_amount_underflow`). With
+   * 1 unit at 100 cents the ticket comes out at base 1.00 € + quota 0.21 € (21 %).
    * GUARD: only in the testing environment and with the issuer tax ID configured.
    */
   private async createTestInvoice() {
@@ -266,7 +272,7 @@ export class ErpVerifactuSettings extends LitElement {
         invoice_type: 'F2',
         source_type: 'test',
         notes: 'Prueba VeriFactu',
-        items: [{ description: 'Factura de PRUEBA VeriFactu (entorno de pruebas)', quantity: 1, unit_price: 100, tax_rate: 21, product_id: null }],
+        items: [{ description: 'Factura de PRUEBA VeriFactu (entorno de pruebas)', quantity: toMicro(1), unit_price: 100, tax_rate: 21, product_id: null }],
       });
       this.invoiceCreated = true;
     } catch (e) {
