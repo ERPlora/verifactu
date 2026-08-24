@@ -12,6 +12,8 @@ INSERT INTO verifactu_record (
     status, retry_count, aeat_response_code, aeat_response_message, aeat_csv,
     qr_url, qr_generated, xml_content,
     substitutes_number, substitutes_date, substitutes_nif,
+    rectifies_number, rectifies_date, rectifies_nif, rectification_type,
+    rectified_base_amount, rectified_tax_amount, rectified_surcharge_amount,
     environment,
     is_deleted, created_by, updated_by, created_at, updated_at
 ) VALUES (
@@ -25,6 +27,16 @@ INSERT INTO verifactu_record (
     -- runtime pasa NULL para los opcionales omitidos y NO aplica los DEFAULT de columna, así que
     -- un registro normal (no F3) reventaba con NOT NULL en los substitutes_* de 005_substitution.
     COALESCE(:substitutes_number, ''), COALESCE(:substitutes_date, ''), COALESCE(:substitutes_nif, ''),
+    -- R1-R5 → bloque rectificativo (verifactu#55, hub#1023). Mismo snapshot y mismo motivo que
+    -- los substitutes_*: un envío DIFERIDO reconstruye el XML desde esta fila, así que lo que no
+    -- esté aquí no llega nunca a la AEAT.
+    -- Los cuatro identificadores, con el mismo guardarraíl del binder (NOT NULL en la tabla).
+    COALESCE(:rectifies_number, ''), COALESCE(:rectifies_date, ''),
+    COALESCE(:rectifies_nif, ''), COALESCE(:rectification_type, ''),
+    -- Los tres importes van SIN COALESCE a propósito: el NULL es información. En
+    -- ImporteRectificacion «no hay importe» y «el importe es cero» son cosas distintas ante
+    -- Hacienda (hub#324) — un 0 aquí declararía que se rectifica una base de cero euros.
+    :rectified_base_amount, :rectified_tax_amount, :rectified_surcharge_amount,
     -- Environment scoping (ADR-0202 R4): the record joins the chain of the hub's CURRENT config
     -- environment. Until the native engine passes :environment explicitly (hub#313), the binder
     -- passes NULL for the omitted param and the config value wins; 'testing' only if no live

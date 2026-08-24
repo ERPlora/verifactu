@@ -119,7 +119,8 @@
         "kind": "contract",
         "since": "1.5.15"
       },
-      "migrations/postgres/013_arithmetic_integrity.sql"
+      "migrations/postgres/013_arithmetic_integrity.sql",
+      "migrations/postgres/014_rectification.sql"
     ]
   },
   "queries": {

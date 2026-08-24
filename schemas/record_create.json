@@ -17,6 +17,15 @@
     "base_amount": { "type": "integer", "default": 0 },
     "tax_rate": { "type": "number", "default": 21 },
     "tax_amount": { "type": "integer", "default": 0 },
-    "total_amount": { "type": "integer", "default": 0 }
+    "total_amount": { "type": "integer", "default": 0 },
+
+    "rectifies_number": { "type": "string", "default": "", "maxLength": 60 },
+    "rectifies_date": { "type": "string", "default": "" },
+    "rectifies_nif": { "type": "string", "default": "", "maxLength": 15 },
+    "rectification_type": { "type": "string", "default": "", "enum": ["", "S", "I"] },
+
+    "rectified_base_amount": { "type": ["integer", "null"], "default": null },
+    "rectified_tax_amount": { "type": ["integer", "null"], "default": null },
+    "rectified_surcharge_amount": { "type": ["integer", "null"], "default": null }
   }
 }
