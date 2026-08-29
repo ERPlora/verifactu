@@ -121,7 +121,11 @@
       },
       "migrations/postgres/013_arithmetic_integrity.sql",
       "migrations/postgres/014_rectification.sql",
-    "migrations/postgres/015_quota_rate_check_needs_the_line_count.sql"
+      {
+        "file": "migrations/postgres/015_quota_rate_check_needs_the_line_count.sql",
+        "kind": "contract",
+        "since": "1.5.18"
+      }
     ]
   },
   "queries": {

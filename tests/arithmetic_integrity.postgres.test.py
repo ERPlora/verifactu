@@ -509,12 +509,34 @@ def test_the_migration_is_declared_and_additive():
     # TWO: `013` created the three rules, `015` (verifactu#60) replaced the breakdown one — a
     # published migration is never edited, it is superseded by its own file.
     check("013 adds the rules and 015 replaces one of them", 2, len(owning))
+    # The manifest accepts BOTH forms (hub `MigrationEntry`): a bare path string — read as
+    # `expand` — or `{"file": ..., "kind": ..., "since": ...}`. Matching with `in` over the raw
+    # list only ever sees the first, so a migration declared as a `contract` (`012`, and now `015`)
+    # read as «not declared» even though it was right there.
+    declared = {
+        entry if isinstance(entry, str) else entry["file"]
+        for entry in MANIFEST["migrations"]["postgres"]
+    }
     for name in owning:
         check(
             f"{name} declared in module.json",
             True,
-            f"migrations/postgres/{name}" in MANIFEST["migrations"]["postgres"],
+            f"migrations/postgres/{name}" in declared,
         )
+    # `015` DROPs the constraint `013` created, and a `DROP` is only allowed in a migration that
+    # declares itself `contract` — a bare string means `expand`, and the hub REFUSES to install it
+    # (`migration_guard::kind_matches`). This is the regression guard for verifactu#61: the module
+    # validated fine as a file and still could not be installed, and only CI said so.
+    entry_015 = next(
+        (
+            e
+            for e in MANIFEST["migrations"]["postgres"]
+            if isinstance(e, dict)
+            and e["file"] == "migrations/postgres/015_quota_rate_check_needs_the_line_count.sql"
+        ),
+        None,
+    )
+    check("015 declares itself `contract`, because it DROPs", "contract", (entry_015 or {}).get("kind"))
     # Every constraint arrives `NOT VALID`: the records already chained are immutable by
     # RD 1007/2023 and cannot be corrected after the fact — validating against them would abort
     # the hub boot.
