@@ -360,6 +360,30 @@ def test_legitimate_records_still_seal():
     )
     check("A — the one-cent rounding disagreement is INSIDE tolerance", True, ok)
 
+    # 🔴 verifactu#60 — THE ticket the 1,5-cent tolerance was killing. `invoice` rounds the quota
+    # PER LINE and sums, so four lines of 0,50 € at 21 % (`round_half_up(10,5) = 11` each) declare
+    # `200 / 44` while 21 % of 200 is 42. `invoice.audit` emits it (tolerance 4). This is a real
+    # ticket, and it must reach the chain.
+    ok, err = seal(
+        "OK-4lines",
+        base=200,
+        rate=21.0,
+        tax=44,
+        breakdown=vat(21.0, 200, 44),
+    )
+    check("4 lines of 0,50 € at 21 % (200 / 44, per-line rounding)", True, ok)
+
+    # The table of twelve: 12 lines of 0,55 € at 10 % → `round_half_up(5,5) = 6` each → `660 / 72`
+    # where the rate justifies 66. With 1,5 cents this shape failed ~1 time in 3.
+    ok, err = seal(
+        "OK-12lines",
+        base=660,
+        rate=10.0,
+        tax=72,
+        breakdown=vat(10.0, 660, 72),
+    )
+    check("a 12-line table at 10 % (660 / 72, per-line rounding)", True, ok)
+
     # A bar ticket: a beer at 21 % and a tapa at 10 %. `tax_rate` carries the EFFECTIVE rate
     # (`derive_tax_rate`), and the breakdown carries the two real ones.
     mixed = json.dumps(
@@ -430,6 +454,23 @@ def test_legitimate_records_still_seal():
         refused_by(err),
     )
 
+    # ...and the replacement rule is not a blank cheque: a quota that DOUBLES what its rate
+    # justifies is not rounding, however many lines the invoice claims. 20 lines of 1 cent at 21 %
+    # round to a quota of ZERO, never to 10.
+    ok, err = seal(
+        "BAD-doubled",
+        base=20,
+        rate=21.0,
+        tax=10,
+        breakdown=vat(21.0, 20, 10),
+    )
+    check("a quota that doubles its own rate is REFUSED", False, ok)
+    check(
+        "...by the breakdown rule",
+        "ck_verifactu_record_quota_matches_declared_rate",
+        refused_by(err),
+    )
+
     # Legacy rows: `004_tax_breakdown.sql` left `'{}'` behind, and rectified invoices still write
     # it (`invoice/commands/rectify_insert.sql`). Nothing declared = nothing to contrast.
     ok, err = seal("OK-legacy", base=1000, rate=21.0, tax=210, breakdown="{}")
@@ -465,23 +506,59 @@ def test_the_migration_is_declared_and_additive():
         for m in migs
         if "ck_verifactu_record_quota_matches_declared_rate" in m.read_text()
     ]
-    check("exactly one migration adds the rules", 1, len(owning))
-    if owning:
+    # TWO: `013` created the three rules, `015` (verifactu#60) replaced the breakdown one — a
+    # published migration is never edited, it is superseded by its own file.
+    check("013 adds the rules and 015 replaces one of them", 2, len(owning))
+    # The manifest accepts BOTH forms (hub `MigrationEntry`): a bare path string — read as
+    # `expand` — or `{"file": ..., "kind": ..., "since": ...}`. Matching with `in` over the raw
+    # list only ever sees the first, so a migration declared as a `contract` (`012`, and now `015`)
+    # read as «not declared» even though it was right there.
+    declared = {
+        entry if isinstance(entry, str) else entry["file"]
+        for entry in MANIFEST["migrations"]["postgres"]
+    }
+    for name in owning:
         check(
-            "declared in module.json",
+            f"{name} declared in module.json",
             True,
-            f"migrations/postgres/{owning[0]}" in MANIFEST["migrations"]["postgres"],
+            f"migrations/postgres/{name}" in declared,
         )
-        # Append-only: never by editing a published migration.
-        check("it is a NEW file, not 001", True, owning[0] != "001_init.sql")
-        # `NOT VALID`: the records already chained are immutable by RD 1007/2023 and cannot be
-        # corrected after the fact — validating against them would abort the hub boot.
-        text = (MODULE_DIR / "migrations" / "postgres" / owning[0]).read_text()
-        check(
-            "the constraints arrive NOT VALID",
-            3,
-            len(re.findall(r"NOT\s+VALID\s*;", text, re.I)),
+    # `015` DROPs the constraint `013` created, and a `DROP` is only allowed in a migration that
+    # declares itself `contract` — a bare string means `expand`, and the hub REFUSES to install it
+    # (`migration_guard::kind_matches`). This is the regression guard for verifactu#61: the module
+    # validated fine as a file and still could not be installed, and only CI said so.
+    entry_015 = next(
+        (
+            e
+            for e in MANIFEST["migrations"]["postgres"]
+            if isinstance(e, dict)
+            and e["file"] == "migrations/postgres/015_quota_rate_check_needs_the_line_count.sql"
+        ),
+        None,
+    )
+    check("015 declares itself `contract`, because it DROPs", "contract", (entry_015 or {}).get("kind"))
+    # Every constraint arrives `NOT VALID`: the records already chained are immutable by
+    # RD 1007/2023 and cannot be corrected after the fact — validating against them would abort
+    # the hub boot.
+    added = sum(
+        len(
+            re.findall(
+                r"NOT\s+VALID\s*;",
+                (MODULE_DIR / "migrations" / "postgres" / name).read_text(),
+                re.I,
+            )
         )
+        for name in owning
+    )
+    check("every constraint arrives NOT VALID (3 in 013 + 1 in 015)", 4, added)
+    # And the replacement drops before it adds, or the second ALTER fails on a name already taken.
+    replacement = (MODULE_DIR / "migrations" / "postgres" / owning[-1]).read_text()
+    check(
+        "the replacement DROPs the old constraint first",
+        True,
+        "DROP CONSTRAINT IF EXISTS ck_verifactu_record_quota_matches_declared_rate"
+        in replacement,
+    )
 
     check(
         "all three rules are constraints of verifactu_record",
