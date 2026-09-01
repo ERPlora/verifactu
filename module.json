@@ -7,6 +7,7 @@
     "regime": "verifactu",
     "simplified_invoice_max_cents": 300000
   },
+  "installation_bound_data": true,
   "description": "Spanish VeriFactu compliance: sign and transmit invoice records to the AEAT, with a contingency queue.",
   "static_files": {
     "folder": "verifactu"
@@ -371,6 +372,9 @@
         "default_dir": "desc",
         "filters": {
           "invoice_number": {
+            "op": "eq"
+          },
+          "invoice_date": {
             "op": "eq"
           },
           "record_type": {
