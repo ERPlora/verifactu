@@ -213,7 +213,7 @@ def seal(
     rate: float,
     tax: int,
     total: int | None = None,
-    breakdown: str = "{}",
+    breakdown: str | None = "{}",
     record_type: str = "alta",
 ) -> tuple[bool, str]:
     """`verifactu._insert_record` — the door every writer goes through to chain a record."""
@@ -494,7 +494,72 @@ def test_legitimate_records_still_seal():
     check("an `anulacion` record is out of scope", True, ok)
 
 
-# ── 4. The migration is declared and does not touch what is already chained ─────────────
+# ── 4. A breakdown that never ARRIVED is still a judgeable record (verifactu#66) ─────────
+
+
+def test_a_record_whose_breakdown_never_arrived_still_seals():
+    """`''` is not JSON, and in Postgres 18 `FALSE ON ERROR` does not cover that.
+
+    `create_record` reads the breakdown with `str_field`, which answers the EMPTY STRING for a key
+    the payload does not carry. Until verifactu#58 the public schema could not even declare
+    `tax_breakdown`, so every record born at that door carried `''` into the column — never the
+    `'{}'` DEFAULT of `001_init.sql`, which only applies when the INSERT omits the column.
+
+    Both rules of `013`/`015` open on `JSON_EXISTS(tax_breakdown, …)`, and Postgres casts the
+    context item text -> json BEFORE evaluating the path. That cast is outside what `ON ERROR`
+    catches, so it throws instead of answering `false` (Postgres 18.4, verified):
+
+        SELECT JSON_EXISTS(''::text, 'strict $[*]' FALSE ON ERROR);
+        ERROR:  invalid input syntax for type json
+        SELECT JSON_EXISTS('{}'::text, 'strict $[*]' FALSE ON ERROR);   -- f, no error
+
+    Effect: `verifactu.records.create` with `record_type: 'alta'` failed for ANY amount and any
+    rate — the manual door, the one numbering recovery and the assistant use. `anulacion` escaped
+    because both rules short-circuit on `record_type <> 'alta'` before reaching `JSON_EXISTS`.
+
+    The fix is at the door every writer goes through: `_insert_record` normalises the absent
+    breakdown to `'{}'` (`COALESCE(NULLIF(:tax_breakdown, ''), '{}')`, the same guardrail the
+    `substitutes_*` already carry), so the row holds a value its own CHECK can read.
+    """
+    ok, err = seal("FACT-2026-000066", base=1000, rate=21.0, tax=210, breakdown="")
+    check("an `alta` whose breakdown never arrived IS sealed", True, ok)
+    check("...and no raw Postgres cast error reaches the caller", "<accepted>", refused_by(err))
+    check(
+        "...the row holds the `{}` its own rules can judge",
+        "{}",
+        q(
+            "SELECT tax_breakdown FROM verifactu_record "
+            "WHERE invoice_number = 'FACT-2026-000066'"
+        ),
+    )
+
+    # The runtime binder passes NULL for a `:param` the payload omits, and the column is NOT NULL.
+    # Same guardrail, same reason as the `substitutes_*` of `005`: an older engine that stops
+    # sending the parameter must not stop the chain either.
+    ok, err = seal("FACT-2026-000066-B", base=1000, rate=21.0, tax=210, breakdown=None)
+    check("...same when the binder hands over NULL", True, ok)
+    check(
+        "...also stored as `{}`",
+        "{}",
+        q(
+            "SELECT tax_breakdown FROM verifactu_record "
+            "WHERE invoice_number = 'FACT-2026-000066-B'"
+        ),
+    )
+
+    # The positive control: normalising must not BLIND the rules. With nothing declared to
+    # contrast, judgement falls to the row's own rate — and case C of verifactu#53 still dies here.
+    ok, err = seal("BAD-2026-000066", base=545, rate=21.0, tax=9999, breakdown="")
+    check("an impossible quota with no breakdown is STILL refused", False, ok)
+    check(
+        "...by the row rule, which is now the one that can see it",
+        "ck_verifactu_record_quota_matches_row_rate",
+        refused_by(err),
+    )
+    check("...and nothing was chained", 0, sealed("BAD-2026-000066"))
+
+
+# ── 5. The migration is declared and does not touch what is already chained ─────────────
 
 
 def test_the_migration_is_declared_and_additive():
@@ -656,6 +721,7 @@ def main() -> int:
         test_an_impossible_quota_is_never_sealed()
         test_an_ordinary_invoice_cannot_total_negative()
         test_legitimate_records_still_seal()
+        test_a_record_whose_breakdown_never_arrived_still_seals()
         test_the_migration_is_declared_and_additive()
     finally:
         psql(["-c", f"DROP DATABASE IF EXISTS {DB} WITH (FORCE)"])

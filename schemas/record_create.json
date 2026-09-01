@@ -16,8 +16,30 @@
     "description": { "type": "string", "default": "", "maxLength": 500 },
     "base_amount": { "type": "integer", "default": 0 },
     "tax_rate": { "type": "number", "default": 21 },
+    "tax_breakdown": {
+      "type": "string",
+      "default": "",
+      "description": "Real per-rate breakdown, as the invoice module writes it: a JSON array of {tax, regime, class, rate, base, quota} in cents. It is what lets a bar ticket (drink at 21 %, tapa at 10 %) declare its TWO rates instead of one invented average. Empty means there is none, and the record is then judged by its own tax_rate."
+    },
     "tax_amount": { "type": "integer", "default": 0 },
     "total_amount": { "type": "integer", "default": 0 },
+
+    "recipient_nif": {
+      "type": "string",
+      "default": "",
+      "maxLength": 15,
+      "description": "Customer tax id for the Destinatarios block. Required by the AEAT for F1/F3/R1-R4 (it rejects them with error 1189 otherwise); empty for simplified tickets (F2)."
+    },
+    "recipient_name": { "type": "string", "default": "", "maxLength": 200 },
+
+    "substitutes_number": {
+      "type": "string",
+      "default": "",
+      "maxLength": 60,
+      "description": "Number+series of the simplified invoice (F2) this F3 replaces — the FacturasSustituidas block (ADR-0140). Empty for anything that is not a substitution."
+    },
+    "substitutes_date": { "type": "string", "default": "" },
+    "substitutes_nif": { "type": "string", "default": "", "maxLength": 15 },
 
     "rectifies_number": { "type": "string", "default": "", "maxLength": 60 },
     "rectifies_date": { "type": "string", "default": "" },

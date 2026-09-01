@@ -19,7 +19,18 @@ INSERT INTO verifactu_record (
 ) VALUES (
     :record_id, :hub_id, :record_type, :sequence_number, :invoice_id,
     :issuer_nif, :issuer_name, :invoice_number, :invoice_date, :invoice_type, :description,
-    :base_amount, :tax_rate, :tax_breakdown, :tax_amount, :total_amount,
+    :base_amount, :tax_rate,
+    -- verifactu#66 — a breakdown that NEVER ARRIVED becomes `'{}'`, the value the column has
+    -- carried by DEFAULT since 004 and the one the rules of 013/015 know how to read.
+    -- `create_record` reads this field with `str_field`, which answers the EMPTY STRING for a key
+    -- the payload does not carry, and `''` is not JSON. In Postgres 18 the context item is cast
+    -- text -> json BEFORE the path is evaluated, and that cast is outside what `FALSE ON ERROR`
+    -- catches: `JSON_EXISTS('', 'strict $[*]' FALSE ON ERROR)` raises 22P02 instead of answering
+    -- FALSE. Both rules open on that call, so an `alta` created through the public command died
+    -- for ANY amount and any rate, with a raw Postgres error. `NULLIF` before `COALESCE` so the
+    -- binder's NULL (a `:param` the payload omits) lands on the same value — same guardrail, and
+    -- the same reason, as the `substitutes_*` below.
+    COALESCE(NULLIF(:tax_breakdown, ''), '{}'), :tax_amount, :total_amount,
     :previous_hash, :record_hash, :is_first_record, :generation_timestamp,
     'pending', 0, '', '', '',
     :qr_url, 1, '',
