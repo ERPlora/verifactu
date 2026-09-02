@@ -14,6 +14,57 @@ de contingencia** y valida la integridad de la cadena.
 > exceden el sandbox WASM. Su acceso está **gateado por consentimiento** (ADR-0079): capabilities
 > `certificate` + `network` (`https://*.aeat.es`), default-deny.
 
+## Cómo viaja un registro a la AEAT — test y go-live
+
+El camino es **el mismo** en pruebas y en producción; solo cambian dos cosas: qué entorno estampa
+el módulo en el payload, y si el token del Cloud lleva el grant. El entorno lo decide **este
+módulo** (su config, go-live de un solo sentido — guarda R1 de abajo); la celda gateway obedece al
+payload y no distingue auras ni remitentes. *(Ruta gateway en implementación:
+[hub#1432](https://github.com/ERPlora/hub/issues/1432) ·
+[verifactu-gateway#42](https://github.com/ERPlora/verifactu-gateway/issues/42) ·
+[saas#1794](https://github.com/ERPlora/saas/issues/1794). Un hub con **certificado propio**
+transmite DIRECTO a la AEAT, sin celda — eso no cambia.)*
+
+### Antes del go-live — todo va a la AEAT de pruebas
+
+```mermaid
+flowchart LR
+    TPV["TPV\nventa"] --> MOD["Módulo verifactu\nhuella + QR + XML"]
+    MOD --> HUB["Hub core\nel canal (mTLS)"]
+    SAAS["SaaS (Cloud)\ntoken 5 min — sin grant"] <-- "pide / token + URL" --> HUB
+    HUB -- "payload · environment: testing" --> CELDA["Celda gateway\nsiempre viva"]
+    CELDA -- "Sello · SOAP tal cual" --> AEAT["AEAT DE PRUEBAS\nprewww"]
+    AEAT -. "accepted + CSV → QR cotejable en prewww2" .-> MOD
+```
+
+En test **no hace falta ningún grant**: el SaaS siempre acuña el token. Así funcionan PRE, la demo
+y cualquier cliente que aún no ha hecho el go-live.
+
+### Go-live — mismo camino, con la puerta del grant
+
+```mermaid
+flowchart LR
+    ANEXO["ANTES, una sola vez:\nAnexo I firmado → grant en el Cloud"] -.-> SAAS
+    TPV["TPV\nventa"] --> MOD["Módulo verifactu\nhuella + QR + XML"]
+    MOD --> HUB["Hub core\nel canal (mTLS)"]
+    SAAS["SaaS (Cloud)\ntoken 5 min · lleva grant_id"] <-- "pide / token + URL" --> HUB
+    HUB -- "payload · environment: production" --> GATE{"Celda gateway:\n¿grant_id en el token?"}
+    GATE -- "sí · Sello" --> AEAT["AEAT REAL\nwww"]
+    GATE -- "no → 403" --> STOP["NO sale"]
+    AEAT -. "accepted + CSV → QR en la Sede real" .-> MOD
+```
+
+| | Test | Go-live |
+| --- | --- | --- |
+| El módulo estampa en el payload | `environment: "testing"` | `environment: "production"` |
+| El token del Cloud | se acuña siempre, sin requisitos | lleva `grant_id` (Anexo I firmado) |
+| La celda entrega a | AEAT de pruebas (prewww) | AEAT real (www) — **solo con grant** |
+
+🔒 **El go-live no tiene vuelta atrás**: es un interruptor de una sola dirección y, emitida la
+primera factura o tique real, queda sellado para siempre (guarda **R1**: cualquier intento de
+volver revierte la transacción entera). La celda no tiene interruptor propio: su única exigencia
+es «production → grant», porque lo enviado a la AEAT real es irreversible.
+
 ## Documentación de usuario — [`docs/`](docs/)
 
 Viaja **dentro** del módulo y se versiona con él: el asistente del hub (ADR-0282) la indexa por
