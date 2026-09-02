@@ -1,7 +1,7 @@
 {
   "file": "dist/verifactu.esm.js",
-  "sources_sha256": "f3161087d975f35b9e8aef0348d995349dcdd9dbb63de87feec3c33f41fbc8a3",
-  "locales_sha256": "e1dc36f27eafd3abebb6b46b62228a9be4805651938af292393ae4361cee305b",
-  "bundle_sha256": "e8bafd7d1cc25b1e9669e40dd08a47b63eb0444788d7ace4f736ead9a6582875",
-  "built_at": "2026-09-02T03:34:54.074Z"
+  "sources_sha256": "e9be67aca67af7d338753644ee9ea4028604b8f2191ec07c09def07819a710d9",
+  "locales_sha256": "0c723de885002c37fd759e9f8b4cc6f3a121d0d789196b35607d6c812d012802",
+  "bundle_sha256": "941996e329a466d387be28fbd833dfd8d0de76c258b7d0c378dca9331466bff6",
+  "built_at": "2026-09-02T04:11:26.974Z"
 }

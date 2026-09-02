@@ -78,6 +78,18 @@ const DEMO_LOCKS: Record<string, string> = {
 };
 
 /**
+ * The runtime's refusal when the `certificate` capability is DECLARED but not GRANTED
+ * (`capabilities::enforce`, ADR-0079 — default-deny, checked in Rust in front of every native
+ * handler of this module). Same wire code the flows editor keys on, and the only way this screen
+ * can ever KNOW the grant is missing: `system_params` injects `:has_certificate` and
+ * `:is_demo_hub`, but nothing about grants, and the SDK exposes no capability API on purpose
+ * (`architecture/hub/module-capabilities.md` — an identity declared in the browser may only
+ * SUBTRACT, never grant). So the screen states the requirement up front and calls it DENIED only
+ * once the runtime has actually said so.
+ */
+const CAPABILITY_DENIED = 'capability_denied';
+
+/**
  * The catalogue key that explains a refusal, or `''` when we have nothing better than what the
  * caller sent.
  *
@@ -99,6 +111,10 @@ function refusalKey(e: unknown): string {
   if (DEMO_LOCKS[code]) return DEMO_LOCKS[code];
   const lockInText = Object.keys(DEMO_LOCKS).find((c) => message.includes(c));
   if (lockInText) return DEMO_LOCKS[lockInText];
+  // The capability gate (verifactu#62). Its runtime sentence is Spanish prose written for a
+  // developer and names the raw capability id; the operator gets the catalogue key instead, and
+  // with it the one action that fixes the situation.
+  if (code === CAPABILITY_DENIED || message.includes(CAPABILITY_DENIED)) return 'ui.errCapabilityDenied';
   if (message.includes('config_save_requires_issuer')) return 'ui.errIssuerRequired';
   if (message.includes('config_save_go_live_is_one_way')) return 'ui.errGoLiveIsOneWay';
   if (message.includes('verifactu__gate')) return 'ui.errGoLiveIsOneWay';
@@ -170,6 +186,18 @@ export class ErpVerifactuSettings extends LitElement {
 
   @state() private invoiceCreated = false;
 
+  /**
+   * The runtime has PROVEN the `certificate` capability is not granted (verifactu#62).
+   *
+   * Never guessed: it flips only when a native command comes back `capability_denied`, and back
+   * off when one succeeds. Until then the prerequisite row states the requirement without
+   * claiming a state the module has no way to read.
+   */
+  @state() private capabilityDenied = false;
+
+  /** VeriFactu was just saved as ON, so the screen owes the owner the remaining step. */
+  @state() private savedEnabled = false;
+
   private readonly onLocaleChange = (): void => this.requestUpdate();
 
   async connectedCallback() {
@@ -227,11 +255,29 @@ export class ErpVerifactuSettings extends LitElement {
     window.dispatchEvent(new PopStateEvent('popstate'));
   }
 
+  /** Navigates to Settings → **Permissions** (`#permissions`), where the owner grants the module
+   *  capabilities (ADR-0079). Same module→shell navigation as {@link goToSettings}, and the hash
+   *  matters for the same reason (verifactu#49): `/settings` bare degrades to the Hub tab
+   *  (`resolveSettingsTab`), so the owner would do as told and land on a screen with nothing to
+   *  press. `permissions` is one of the shell's declared tabs — it is not a hash we invented. */
+  private goToPermissions(): void {
+    window.history.pushState({}, '', '/settings#permissions');
+    window.dispatchEvent(new PopStateEvent('popstate'));
+  }
+
+  /** Records what a native command just proved about the capability grant. */
+  private noteCapability(e: unknown): void {
+    const code = typeof (e as { code?: unknown })?.code === 'string' ? (e as { code: string }).code : '';
+    this.capabilityDenied = code === CAPABILITY_DENIED
+      || (e instanceof Error && e.message.includes(CAPABILITY_DENIED));
+  }
+
   private async save(ev: Event) {
     ev.preventDefault();
     this.saving = true;
     this.error = '';
     this.saved = false;
+    this.savedEnabled = false;
     try {
       // No se puede ACTIVAR VeriFactu sin obligado tributario (verifactu#49). El emisor efectivo
       // ya viene resuelto desde la identidad fiscal del hub, así que vacío = el hub no la tiene
@@ -257,6 +303,11 @@ export class ErpVerifactuSettings extends LitElement {
         max_retries: Number(this.cfg.max_retries) || 10,
       });
       this.saved = true;
+      // Turning the switch on is where the silence used to be (verifactu#62): `config.save` is
+      // plain SQL, it does NOT pass the capability gate and must not — so it succeeds with the
+      // permission still denied and the screen used to look finished. It says the remaining step
+      // instead, read BEFORE `refresh()` overwrites `cfg` with what the hub stored.
+      this.savedEnabled = !!this.cfg.enabled;
       await this.refresh();
     } catch (e) {
       // Every refusal this save can meet — the two gates that roll the transaction back and the
@@ -278,8 +329,11 @@ export class ErpVerifactuSettings extends LitElement {
     this.error = '';
     try {
       await erplora().command('verifactu.diagnostics.run', { invoice_type: this.testType });
+      // A native handler that RAN is proof the grant is there: the gate sits in front of it.
+      this.capabilityDenied = false;
       await this.loadDiag();
     } catch (e) {
+      this.noteCapability(e);
       const key = refusalKey(e);
       this.error = key
         ? erplora().t(CATALOG, key)
@@ -389,6 +443,19 @@ export class ErpVerifactuSettings extends LitElement {
       <h2>${t('ui.settingsTitle')}</h2>
       ${this.error ? html`<ok-inline-feedback tone="danger" icon="alert-circle-outline">${this.error}</ok-inline-feedback>` : nothing}
       ${this.saved ? html`<ok-inline-feedback tone="success" icon="checkmark-circle-outline">${t('ui.settingsSaved')}</ok-inline-feedback>` : nothing}
+      <!-- verifactu#62: saving with the switch ON succeeds even with the capability denied (the
+           save is plain SQL and must not depend on the gate), so the screen owes the owner the
+           step that is left. Only after a save that turned it ON — a permanent notice would be
+           noise in the hubs where the permission is granted, which the module cannot tell apart. -->
+      ${this.savedEnabled
+        ? html`<ok-inline-feedback tone="warning" icon="key-outline" heading=${t('ui.capabilityTitle')}>
+            ${t('ui.enabledNeedsPermission')}
+            <ion-button size="small" fill="outline" @click=${() => this.goToPermissions()}>
+              <ion-icon slot="start" name="open-outline"></ion-icon>
+              ${t('ui.capabilityGoPermissions')}
+            </ion-button>
+          </ok-inline-feedback>`
+        : nothing}
       <div class="cols">
         <form class="card" @submit=${(e: Event) => this.save(e)}>
           <ion-list>
@@ -449,6 +516,29 @@ export class ErpVerifactuSettings extends LitElement {
                 <ion-button size="small" fill="outline" @click=${() => this.goToSettings()}>
                   <ion-icon slot="start" name="open-outline"></ion-icon>
                   ${t('ui.certGoSettings')}
+                </ion-button>
+              </div>
+            </ion-item>
+            <!-- Permiso módulo→host (ADR-0079), verifactu#62. Es el TERCER requisito para poder
+                 firmar, y hasta ahora era el único invisible: los otros dos ya se enseñan aquí
+                 arriba. La píldora es NEUTRA por defecto porque el módulo no puede leer el estado
+                 de la concesión (no hay system param ni API del SDK, a propósito); se pone en rojo
+                 cuando el runtime lo ha DENEGADO de verdad. Conceder sigue siendo cosa de una
+                 persona en Ajustes → Permisos: auto-concederlo dejaría el gate en decoración. -->
+            <ion-item lines="none">
+              <div class="cert">
+                <div class="cert-head">
+                  <ion-label>${t('ui.capabilityTitle')}</ion-label>
+                  <ok-status-pill
+                    dot
+                    tone=${this.capabilityDenied ? 'danger' : 'neutral'}
+                    label=${this.capabilityDenied ? t('ui.capabilityDenied') : t('ui.capabilityPending')}
+                  ></ok-status-pill>
+                </div>
+                <p class="hint">${t('ui.capabilityHint')}</p>
+                <ion-button size="small" fill="outline" @click=${() => this.goToPermissions()}>
+                  <ion-icon slot="start" name="open-outline"></ion-icon>
+                  ${t('ui.capabilityGoPermissions')}
                 </ion-button>
               </div>
             </ion-item>
