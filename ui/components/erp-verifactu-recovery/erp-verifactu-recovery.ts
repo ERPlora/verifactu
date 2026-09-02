@@ -85,7 +85,10 @@ export class ErpVerifactuRecovery extends LitElement {
     const t = (k: string): string => erplora().t(CATALOG, k);
     return [
       { key: 'invoice_number', header: t('ui.colInvoice'), sortable: true, filterable: true, filterType: 'text' },
-      { key: 'invoice_date', header: t('ui.colDate'), sortable: true, filterable: true, filterType: 'text' },
+      // A from/to, like the sibling Records table over the same column (verifactu#68). Both hold
+      // date-only `YYYY-MM-DD` TEXT, so the range is exact at both ends; the manifest has to
+      // declare `op: "range"` to match, or the bounds this control sends arrive unknown.
+      { key: 'invoice_date', header: t('ui.colDate'), sortable: true, filterable: true, filterType: 'daterange' },
       {
         key: 'record_hash',
         header: t('ui.recColHuella'),

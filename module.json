@@ -380,7 +380,7 @@
             "op": "eq"
           },
           "invoice_date": {
-            "op": "eq"
+            "op": "range"
           },
           "record_type": {
             "op": "eq"

@@ -3,6 +3,7 @@
   "module": "verifactu",
   "consumes": {
     "queries": [
+      "invoice.list",
       "verifactu.aeat.records.list",
       "verifactu.chain.status",
       "verifactu.config.get",
