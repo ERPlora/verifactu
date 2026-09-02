@@ -47,6 +47,24 @@ OPS_FOR_FILTER_TYPE = {
     "select": {"eq"},
 }
 
+# A calendar date is filtered by a RANGE, never by a free-text box (verifactu#68).
+#
+# The pair above only checks that the control and the `op` AGREE. Both halves can agree and still
+# be the wrong control: `invoice_date` as `filterType: 'text'` + `op: "eq"` is internally consistent
+# and asks the user to type `2026-08-29` exactly to see that one day — while the sibling table
+# `erp-verifactu-records`, over the SAME column of the SAME shape, offers a from/to. Two screens of
+# one module disagreeing about how a date is filtered is the thing the user notices.
+#
+# The criterion is the `_date` suffix, and it stops there ON PURPOSE. Every `_date` column in this
+# module is `TEXT` holding a date-only `YYYY-MM-DD` (`verifactu_record.invoice_date`,
+# `verifactu_aeat_record.invoice_date`), so a lexicographic `BETWEEN from AND to` is exact at both
+# ends. Full ISO-8601 INSTANTS (`timestamp`, `query_timestamp`, `next_attempt_at`) carry a time and
+# an offset, so `'2026-08-29T14:23:11+02:00' <= '2026-08-29'` is FALSE and a same-day range would
+# silently return nothing. Widening this rule to them needs the list engine to close the upper bound
+# on a timestamp column, which is kernel work, not a control swap — tracked in verifactu#70.
+DATE_COLUMN_SUFFIX = "_date"
+DATE_FILTER_TYPE = "daterange"
+
 failures: list[str] = []
 
 
@@ -98,12 +116,15 @@ def declared_filters(query_name: str) -> dict:
 def main() -> int:
     components = sorted((MODULE_DIR / "ui" / "components").rglob("*.ts"))
     checked = 0
+    dates_checked = 0
     seen: set[tuple[str, str]] = set()
     for path in components:
         if path.name.endswith(".test.ts"):
             continue
         source = path.read_text()
-        listed = re.search(r"createListController<[^>]*>\(\s*erplora\(\),\s*'([^']+)'", source)
+        listed = re.search(
+            r"createListController<[^>]*>\(\s*erplora\(\),\s*'([^']+)'", source
+        )
         if not listed:
             continue
         query_name = listed.group(1)
@@ -116,6 +137,20 @@ def main() -> int:
             seen.add((path.name, column))
             checked += 1
             label = f"{path.name}: `{column}` (filterType {kind}) → {query_name}"
+            # No `continue`: the control rule and the `op` rule are INDEPENDENT, and skipping the
+            # second one here would hand a half-fix a green light. Swapping the component to
+            # `daterange` while leaving `op: "eq"` in the manifest has to keep failing — that pair
+            # is the whole point of verifactu#68, and it is how the same column stayed broken
+            # through #64.
+            if column.endswith(DATE_COLUMN_SUFFIX):
+                dates_checked += 1
+                if kind != DATE_FILTER_TYPE:
+                    fail(
+                        f"{label} — a calendar date offered as `{kind}` is an exact-string box: "
+                        f"the user has to type the day character by character to see it. Use "
+                        f"`filterType: '{DATE_FILTER_TYPE}'` (and `op: \"range\"`), the same "
+                        f"from/to the other tables of this module give the same column"
+                    )
             declared = filters.get(column)
             if declared is None:
                 fail(
@@ -137,6 +172,11 @@ def main() -> int:
         fail(
             "no filterable column was inspected: the parser stopped matching the components, so "
             "this test would pass while proving nothing"
+        )
+    if not dates_checked:
+        fail(
+            f"no filterable `*{DATE_COLUMN_SUFFIX}` column was inspected: the date rule would pass "
+            "while proving nothing (verifactu#68)"
         )
     print()
     if failures:

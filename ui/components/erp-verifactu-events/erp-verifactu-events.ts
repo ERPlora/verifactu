@@ -7,6 +7,7 @@ import { createListController } from '@erplora/module-sdk';
 import type { ListController, ListClient, ListParams, ListPage } from '@erplora/module-sdk';
 import esLocale from '../../../locales/es.json';
 import enLocale from '../../../locales/en.json';
+import { eventMessage, type Translate } from '../../lib/event-message';
 const CATALOG: Record<string, unknown> = { es: esLocale, en: enLocale };
 
 interface ErploraClientLike extends ListClient {
@@ -23,7 +24,10 @@ interface VerifactuEvent {
   record_id: string | null;
   event_type: string;
   severity: string;
+  /** The engine's own Spanish prose. Kept as the fallback for keys this catalogue lacks. */
   message: string;
+  /** `TEXT NOT NULL DEFAULT '{}'` — carries the stable `message_key` plus its params. */
+  details: string;
   timestamp: string;
 }
 
@@ -46,7 +50,9 @@ export class ErpVerifactuEvents extends LitElement {
   private ctrl!: ListController<VerifactuEvent>;
 
   private get columns(): DataTableColumn[] {
-    const t = (k: string): string => erplora().t(CATALOG, k);
+    const client = erplora();
+    const t = (k: string): string => client.t(CATALOG, k);
+    const translate: Translate = (catalog, key, params) => client.t(catalog, key, params);
     return [
     { key: 'timestamp', header: t('ui.colWhen'), sortable: true, filterable: true, filterType: 'text' },
     {
@@ -64,7 +70,24 @@ export class ErpVerifactuEvents extends LitElement {
       ],
     },
     { key: 'event_type', header: t('ui.colType'), sortable: true, filterable: true, filterType: 'text' },
-    { key: 'message', header: t('ui.colMessage'), sortable: true, filterable: true, filterType: 'text' },
+    {
+      key: 'message',
+      header: t('ui.colMessage'),
+      sortable: true,
+      filterable: true,
+      filterType: 'text',
+      // verifactu#63: the sentence is built from `details.message_key` against this module's
+      // catalogue, so the fiscal audit trail speaks the reader's language. `message` — Spanish
+      // prose formatted by the engine — stays as the fallback for a key we do not know.
+      //
+      // `format` and not `render`: the table is `serverSide`, so sorting and filtering travel to
+      // the query over the raw column and only the CELL changes. A `render` would also have to
+      // return a template for something that is a sentence.
+      format: (r) => eventMessage(CATALOG, client.locale, translate, {
+        message: String(r.message ?? ''),
+        details: r.details,
+      }),
+    },
     ];
   }
 

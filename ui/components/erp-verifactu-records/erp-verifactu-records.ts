@@ -2,6 +2,7 @@ import { LitElement, html, css, nothing } from 'lit';
 import { state } from 'lit/decorators.js';
 import { define } from '@erplora/outfitkit/define';
 import '@erplora/outfitkit/ok-data-table';
+import '@erplora/outfitkit/ok-inline-feedback';
 import type { DataTableColumn } from '@erplora/outfitkit';
 import { createListController } from '@erplora/module-sdk';
 import type { ListController, ListClient, ListParams, ListPage } from '@erplora/module-sdk';
@@ -56,9 +57,20 @@ export class ErpVerifactuRecords extends LitElement {
     header { display:flex; gap:.5rem; align-items:center; margin-bottom:.75rem; }
     h2 { margin:0; font-size:1.15rem; flex:1; }
     .err { color:#d9480f; font-weight:600; }
+    ok-inline-feedback { display:block; margin-bottom:.75rem; }
+    ok-inline-feedback ion-button { min-height:44px; }
   `;
 
   @state() tick = 0;
+
+  /**
+   * How many invoices this hub has issued, or `null` while it is unknown — either not read yet or
+   * not readable (a cashier without `invoice.view_invoice`). `null` is NOT zero: it is the state in
+   * which this screen is not entitled to claim anything about the chain (verifactu#59).
+   */
+  @state() private invoiceTotal: number | null = null;
+
+  @state() private invoiceCountFailed = false;
 
   private ctrl!: ListController<VerifactuRecord>;
 
@@ -136,6 +148,7 @@ export class ErpVerifactuRecords extends LitElement {
       dir: 'asc',
     });
     await this.ctrl.load();
+    await this.loadInvoiceTotal();
     try {
       const off1 = erplora().on('verifactu.record.created', () => this.ctrl.load());
       const off2 = erplora().on('verifactu.record.transmitted', () => this.ctrl.load());
@@ -154,14 +167,93 @@ export class ErpVerifactuRecords extends LitElement {
     this.unsub?.();
   }
 
+  /**
+   * How many invoices exist, so an empty chain can be told apart from an empty business.
+   *
+   * Reuses `invoice.list` — the module is a hard `depends_on`, and its every row is stamped
+   * `status: issued` by the command that emits `invoice.created`, which is the very event this
+   * module listens to. So «rows in `invoice.list`» IS «invoices the chain was meant to seal», with
+   * no draft state to filter out and no new query to add. Asked for one row: only `total` is used.
+   */
+  private async loadInvoiceTotal(): Promise<void> {
+    try {
+      const page = await erplora().queryPage<Record<string, unknown>>('invoice.list', {
+        limit: 1,
+        offset: 0,
+      });
+      this.invoiceTotal = typeof page?.total === 'number' ? page.total : null;
+      this.invoiceCountFailed = this.invoiceTotal === null;
+    } catch {
+      // Denied (no `invoice.view_invoice`) or unavailable. Not fatal to this screen and NOT
+      // silent: `invoiceCountFailed` paints a note saying the comparison could not be made, which
+      // is the honest state — a false calm here is what verifactu#59 exists to remove.
+      this.invoiceTotal = null;
+      this.invoiceCountFailed = true;
+    }
+    this.requestUpdate();
+  }
+
+  /** Invoices were issued and NOTHING got sealed: an incident, not an empty screen. */
+  private get chainNotSealing(): boolean {
+    return !this.ctrl?.loading
+      && (this.ctrl?.total ?? 0) === 0
+      && this.invoiceTotal !== null
+      && this.invoiceTotal > 0;
+  }
+
+  /** 0 records and 0 invoices: nothing has been sold yet, which is not a problem. */
+  private get nothingInvoicedYet(): boolean {
+    return (this.ctrl?.total ?? 0) === 0 && this.invoiceTotal === 0;
+  }
+
+  private emptyMessage(t: (k: string) => string): string {
+    if (this.ctrl?.loading) return t('ui.loading');
+    if (this.nothingInvoicedYet) return t('ui.recordsEmptyNoInvoices');
+    return t('ui.recordsEmpty');
+  }
+
+  /** Deep-links into the hub shell, the same way the Settings screen does (verifactu#49). */
+  private go(path: string): void {
+    window.history.pushState({}, '', path);
+    window.dispatchEvent(new PopStateEvent('popstate'));
+  }
+
   render() {
-    const t = (k: string): string => erplora().t(CATALOG, k);
+    const t = (k: string, params?: Record<string, unknown>): string =>
+      erplora().t(CATALOG, k, params);
     return html`<div>
         <header>
           <h2>${t('ui.recordsTitle')}</h2>
         </header>
         ${this.ctrl?.error ? html`<p class="err">${this.ctrl.error}</p>` : nothing}
-        <ok-data-table .serverSide=${true} .views=${true} .cardTitle=${(row: Record<string, unknown>) => String(row.invoice_number ?? row.sequence_number ?? '')} .columns=${this.columns} .rows=${this.ctrl?.rows ?? []} .total=${this.ctrl?.total ?? 0} .page=${this.ctrl?.state.page ?? 0} .pageSize=${this.ctrl?.state.pageSize ?? 50} .sort=${this.ctrl?.state.sort} .sortDir=${this.ctrl?.state.dir ?? 'asc'} .searchable=${true} .searchPlaceholder=${t('ui.recordsSearchPlaceholder')} .emptyMessage=${this.ctrl?.loading ? t('ui.loading') : t('ui.recordsEmpty')} @pageChange=${(e: CustomEvent<number>) => this.ctrl.setPage(e.detail)} @sortChange=${(e: CustomEvent<{ sort: string; dir: 'asc' | 'desc' }>) => this.ctrl.setSort(e.detail.sort, e.detail.dir)} @searchChange=${(e: CustomEvent<string>) => this.ctrl.setSearch(e.detail)} @filterChange=${(e: CustomEvent<{ col: string; value: unknown }>) => this.ctrl.setFilter(e.detail.col, e.detail.value)}></ok-data-table>
+        <!-- verifactu#59: an empty chain over a hub that HAS invoiced is an incident — an
+             ungranted certificate capability, or a listener that died (hub#1119 / ADR-0399).
+             The plain empty state reassures exactly when it should alarm, so the two are told
+             apart here and each one points at where the cause lives.
+             (No backticks in here: inside a lit template literal they close the template.) -->
+        ${this.chainNotSealing
+          ? html`<ok-inline-feedback
+              tone="danger"
+              icon="alert-circle-outline"
+              heading=${t('ui.recordsNotSealingTitle')}
+            >
+              ${t('ui.recordsNotSealing', { count: this.invoiceTotal })}
+              <div slot="actions">
+                <ion-button size="small" fill="outline" @click=${() => this.go('/settings#permissions')}>
+                  ${t('ui.recordsNotSealingGrant')}
+                </ion-button>
+                <ion-button size="small" fill="outline" @click=${() => this.go('/system#events')}>
+                  ${t('ui.recordsNotSealingEvents')}
+                </ion-button>
+              </div>
+            </ok-inline-feedback>`
+          : nothing}
+        ${this.invoiceCountFailed && (this.ctrl?.total ?? 0) === 0
+          ? html`<ok-inline-feedback tone="warning" icon="help-circle-outline">
+              ${t('ui.recordsSealingUnknown')}
+            </ok-inline-feedback>`
+          : nothing}
+        <ok-data-table .serverSide=${true} .views=${true} .cardTitle=${(row: Record<string, unknown>) => String(row.invoice_number ?? row.sequence_number ?? '')} .columns=${this.columns} .rows=${this.ctrl?.rows ?? []} .total=${this.ctrl?.total ?? 0} .page=${this.ctrl?.state.page ?? 0} .pageSize=${this.ctrl?.state.pageSize ?? 50} .sort=${this.ctrl?.state.sort} .sortDir=${this.ctrl?.state.dir ?? 'asc'} .searchable=${true} .searchPlaceholder=${t('ui.recordsSearchPlaceholder')} .emptyMessage=${this.emptyMessage(t)} @pageChange=${(e: CustomEvent<number>) => this.ctrl.setPage(e.detail)} @sortChange=${(e: CustomEvent<{ sort: string; dir: 'asc' | 'desc' }>) => this.ctrl.setSort(e.detail.sort, e.detail.dir)} @searchChange=${(e: CustomEvent<string>) => this.ctrl.setSearch(e.detail)} @filterChange=${(e: CustomEvent<{ col: string; value: unknown }>) => this.ctrl.setFilter(e.detail.col, e.detail.value)}></ok-data-table>
       </div>`;
   }
 }
