@@ -22,7 +22,7 @@
 | `demo_fiscal_environment_locked` | A demo hub tried to change its fiscal environment | Demo hubs are pinned; nothing to fix |
 | Contingency cancel rolled back | The linked record is not `accepted` at the AEAT | Retry or rectify — never discard |
 | `record_environment_unknown` | A queued record does not say which environment it belongs to | It stays queued with an error event; it is not transmitted to the wrong authority |
-| `ck_verifactu_record_quota_matches_declared_rate` | A breakdown line declares a quota its own `rate` cannot justify (±1 cent per line) | Fix the amounts upstream — `invoice` refuses the same thing as `invoice.tax_quota_mismatch` |
+| `ck_verifactu_record_quota_matches_declared_rate` | A breakdown line declares a quota its own `rate` cannot justify — it strays by more than that quota again, plus a cent | Fix the amounts upstream — `invoice` refuses the same thing as `invoice.tax_quota_mismatch` |
 | `ck_verifactu_record_quota_matches_row_rate` | No readable breakdown, and the quota does not match the row's own `tax_rate` | Same — nothing was sealed, no sequence number was spent |
 | `ck_verifactu_record_ordinary_total_not_negative` | An `F1`/`F2`/`F3` totalling below zero | A negative amount is a corrective invoice (`R1`…`R5`), issued by `invoice.rectify` |
 | Capability denied | The `certificate` or `network` grant is missing | Grant them in Settings → Permissions |
@@ -40,11 +40,16 @@ is the error code**, and a violation rolls the whole command back: no row, no fi
 sequence number spent, no contingency entry.
 
 - **The quota against the declared rate.** Each `tax_breakdown` line must declare a quota its own
-  `rate` justifies, with a tolerance of **one cent per line** — the same `invoice.audit` uses. The
+  `rate` justifies. Since `015` (verifactu#60) the tolerance is **the justified quota again, plus a
+  cent**: the row carries the breakdown, not the document, so it cannot count lines, and `invoice`
+  rounds the quota per line and sums it — a fixed ±1 cent rejected one legitimate twelve-line ticket
+  in three. The rule that counts lines lives in the native engine, which can see them. The
   equivalence surcharge is judged against its own `surcharge_rate`.
 - **The quota against the row's rate**, when there is no readable breakdown (legacy `'{}'` rows,
   corrective invoices, a `records.create` without one). The tolerance here also absorbs the precision
-  lost by storing the effective rate with two decimals.
+  lost by storing the effective rate with two decimals. Only in **this** branch is `tax_rate` the
+  effective rate: with a readable breakdown of a single rate the column holds the **declared** one
+  (ERPlora/hub#1198), and the effective rate is left for the mixed invoice — 2+ distinct rates.
 - **The sign.** An `F1`/`F2`/`F3` cannot total below zero. `R1`…`R5` can, and must: that is the legal
   path for a refund. Zero is fine — a fully comped ticket still needs its `F2`.
 

@@ -36,11 +36,22 @@ ALTER TABLE verifactu_record
 
 -- 2. Sin desglose legible (filas legacy con `'{}'` de 004, rectificativas —que lo dejan vacío— o un
 --    `records.create` que no lo manda), lo único que queda es el `tax_rate` de la fila. Cuando SÍ
---    hay desglose esta regla se aparta: manda la 1, y además ahí `tax_rate` es el tipo EFECTIVO
---    (`derive_tax_rate`), que en una factura mixta o con recargo no puede explicar la cuota.
---    Tolerancia: 1 céntimo de redondeo + el error que introduce guardar el tipo efectivo con dos
---    decimales (media diezmilésima de la base). Sin ese margen una factura grande se rechazaría por
---    la precisión de su propio tipo.
+--    hay desglose esta regla se aparta: manda la 1, que juzga cada línea contra el tipo que la
+--    propia línea declara.
+--    ⚠️ CORREGIDO (verifactu#65). Esta nota afirmaba que en esa rama `tax_rate` es «el tipo
+--    EFECTIVO (`derive_tax_rate`)». Desde ERPlora/hub#1198 eso ya NO es cierto en el caso normal:
+--    con un desglose en ARRAY de un solo tipo, `derive_tax_rate` guarda el tipo DECLARADO (21,0) —
+--    y el recargo de equivalencia tampoco lo cambia, porque viaja en su propio par
+--    `surcharge_rate`/`surcharge_quota` (ADR-0186) y no crea un segundo tipo. El EFECTIVO
+--    (`cuota/base` a dos decimales) solo queda para la factura MIXTA —2+ tipos DISTINTOS— y para el
+--    desglose ilegible, que es justamente la fila que juzga esta regla. La restricción no cambia:
+--    se aparta exactamente igual, por `JSON_EXISTS(..., 'strict $[*]')`, así que ninguna fila pasa
+--    ni se rechaza distinto — era un defecto de esta nota, no de la guardia. Y la creencia que
+--    corrige es la cara: dar por hecho que la columna es SIEMPRE el efectivo es lo que hacía que
+--    esta regla no midiera nada (con el efectivo la desigualdad cuadra por construcción, hub#1198).
+--    Tolerancia: 1 céntimo de redondeo + el error que introduce guardar el tipo con dos decimales
+--    (media diezmilésima de la base) — en esta rama el tipo de la fila SÍ es el efectivo. Sin ese
+--    margen una factura grande se rechazaría por la precisión de su propio tipo.
 --    El `strict` de `$[*]` es imprescindible: en modo lax Postgres ENVUELVE un objeto en un array,
 --    así que un `'{}'` legacy PARECERÍA traer una línea y esta regla se apartaría dejando el hueco
 --    abierto. En strict eso es un error, y `FALSE ON ERROR` lo convierte en «no hay desglose» —

@@ -184,3 +184,119 @@ describe('a refused save says what was refused (verifactu#40)', () => {
     }
   });
 });
+
+// ── verifactu#62 — the SIGNING PERMISSION is named at the POINT OF USE ──────────────────────
+//
+// The core already does its half (hub#1191/#1171/#1119): an `invoice.created` refused by the
+// `certificate` capability dies on the first pass with `capability_denied`, and the hub's setup
+// checklist does not call `verifactu` configured while the grant is missing. What was missing is
+// this screen — the one place the owner actually turns VeriFactu ON. It took the switch, saved,
+// and said nothing, even though the «Business certificate (fiscal signing)» permission is OFF by
+// default in every hub whose modules did not enter through the Apps consent dialog (blueprint,
+// API, import: grants are deliberately not portable).
+//
+// Auto-granting is NOT the fix (ADR-0079: a person grants a capability; granting it on activation
+// would make the gate decoration). What the market does instead is ask at the point of use —
+// iOS/Android prompt when the feature needs the permission, Odoo and Business Central block the
+// fiscal activation step and SAY what is missing. So: the permission is listed as a prerequisite
+// next to the two that were already listed (taxpayer and certificate), each with the same «go
+// there» affordance, and the moment the runtime PROVES the refusal the row turns red.
+//
+// What this module cannot do, and why the row is neutral until proven otherwise: the grant state
+// is not readable from a module. `capabilities::enforce` runs in Rust in front of a NATIVE command
+// handler, `system_params` injects `:has_certificate`/`:is_demo_hub` but nothing about grants, and
+// the SDK exposes no capability API on purpose (`architecture/hub/module-capabilities.md`: a
+// browser-side identity may only SUBTRACT, never grant). Claiming «denied» before a refusal would
+// be inventing a fact — so the row states the requirement, and only a real `capability_denied`
+// turns it into a denial.
+/** The prerequisite row's status pill — the one whose label belongs to the capability block. */
+function capabilityPill(el: HTMLElement & { shadowRoot: ShadowRoot }): Element | undefined {
+  return [...el.shadowRoot.querySelectorAll('ok-status-pill')].find((p) =>
+    ['ui.capabilityPending', 'ui.capabilityDenied'].includes(p.getAttribute('label') ?? ''));
+}
+
+describe('the signing permission is named at the point of use (verifactu#62)', () => {
+  it('lists the permission as a prerequisite, with the way to grant it', async () => {
+    const el = await mount();
+    const text = el.shadowRoot.textContent ?? '';
+    expect(text, 'the screen never mentions the permission VeriFactu needs to sign').toContain('ui.capabilityTitle');
+    expect(text, 'the screen says what is missing but offers no way to fix it').toContain('ui.capabilityGoPermissions');
+    // Neutral until the runtime says otherwise: the module cannot read the grant, and painting a
+    // red «denied» it has not been told would be inventing a fact.
+    expect(capabilityPill(el)?.getAttribute('tone')).toBe('neutral');
+    expect(capabilityPill(el)?.getAttribute('label')).toBe('ui.capabilityPending');
+  });
+
+  it('the CTA lands on Settings → Permissions, not on Settings → General', async () => {
+    window.history.pushState({}, '', '/m/verifactu');
+    const el = await mount();
+    (el as unknown as { goToPermissions: () => void }).goToPermissions();
+    // `/settings` bare lands on the Hub tab (`resolveSettingsTab` degrades an unknown hash), which
+    // is the mistake verifactu#49 already paid for with the certificate link.
+    expect(window.location.pathname + window.location.hash).toBe('/settings#permissions');
+  });
+
+  it('names the refused capability instead of printing the runtime sentence', async () => {
+    (globalThis as Record<string, unknown>).erplora = {
+      ...((globalThis as Record<string, unknown>).erplora as object),
+      command: async () => {
+        throw new FakeErploraError(
+          'capability_denied',
+          'permiso del módulo `verifactu` denegado: requiere la capability `certificate`',
+        );
+      },
+    };
+    const el = await mount();
+    const wc = el as unknown as {
+      runTest: () => Promise<void>;
+      error: string;
+      capabilityDenied: boolean;
+      updateComplete: Promise<unknown>;
+    };
+    await wc.runTest();
+    await wc.updateComplete;
+
+    expect(wc.error, 'the refusal was not mapped to its catalogue key').toBe('ui.errCapabilityDenied');
+    // The catalogue KEY is allowed to contain the word (`ui.errCapabilityDenied`); what must never
+    // reach a person is the runtime's own sentence, which names the raw capability id.
+    expect(wc.error, 'the runtime prose reached the operator untranslated').not.toMatch(/permiso del módulo|`certificate`/i);
+    expect(wc.capabilityDenied, 'a proven refusal left the prerequisite row neutral').toBe(true);
+    // The pill carries its label as an ATTRIBUTE, like the two prerequisites above it, so this is
+    // what «the row turned red» means in the DOM.
+    expect(capabilityPill(el)?.getAttribute('label')).toBe('ui.capabilityDenied');
+    expect(capabilityPill(el)?.getAttribute('tone')).toBe('danger');
+  });
+
+  it('a save that turns VeriFactu ON says what still has to be granted for it to sign', async () => {
+    const el = await mount();
+    const wc = el as unknown as {
+      cfg: Record<string, unknown>;
+      save: (e: Event) => Promise<void>;
+      error: string;
+      updateComplete: Promise<unknown>;
+    };
+    wc.cfg = { ...wc.cfg, enabled: true };
+    await wc.save(new Event('submit'));
+    await wc.updateComplete;
+
+    expect(wc.error, 'the save must NOT fail: it is plain SQL and does not depend on the gate').toBe('');
+    expect(
+      el.shadowRoot.textContent ?? '',
+      'the switch was stored as ON and the screen said nothing about the permission',
+    ).toContain('ui.enabledNeedsPermission');
+  });
+
+  it('a save that leaves VeriFactu OFF does not nag about a permission nothing needs yet', async () => {
+    const el = await mount();
+    const wc = el as unknown as {
+      cfg: Record<string, unknown>;
+      save: (e: Event) => Promise<void>;
+      updateComplete: Promise<unknown>;
+    };
+    wc.cfg = { ...wc.cfg, enabled: false };
+    await wc.save(new Event('submit'));
+    await wc.updateComplete;
+
+    expect(el.shadowRoot.textContent ?? '').not.toContain('ui.enabledNeedsPermission');
+  });
+});

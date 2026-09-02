@@ -3459,6 +3459,13 @@ var es_default = {
     certNotConfigured: "no configurado",
     certHubHint: "El certificado fiscal se configura en Ajustes \u2192 Negocio (es un recurso del hub, no de este m\xF3dulo).",
     certGoSettings: "Ir a Ajustes",
+    capabilityTitle: "Permiso: Certificado del negocio (firma fiscal)",
+    capabilityPending: "se concede en Permisos",
+    capabilityDenied: "sin conceder",
+    capabilityHint: "VeriFactu firma y remite con el certificado del negocio, y el hub solo se lo presta a un m\xF3dulo que el due\xF1o haya autorizado. Se concede una vez en Ajustes \u2192 Permisos, y viene APAGADO en cualquier hub cuyos m\xF3dulos no entraran por el di\xE1logo de consentimiento de Apps (un blueprint, la API o una importaci\xF3n).",
+    capabilityGoPermissions: "Ir a Permisos",
+    enabledNeedsPermission: "VeriFactu est\xE1 activado. Para que pueda firmar y remitir, el permiso \xABCertificado del negocio (firma fiscal)\xBB tiene que estar concedido en Ajustes \u2192 Permisos.",
+    errCapabilityDenied: "VeriFactu no tiene permiso para firmar: falta conceder \xABCertificado del negocio (firma fiscal)\xBB. Conc\xE9delo en Ajustes \u2192 Permisos y vuelve a intentarlo.",
     recoveryTitle: "Recuperaci\xF3n de cadena",
     recChainStatus: "Integridad de la cadena",
     recValidate: "Validar cadena",
@@ -3667,6 +3674,13 @@ var en_default = {
     certNotConfigured: "not configured",
     certHubHint: "The fiscal certificate is configured in Settings \u2192 Business (it's a hub resource, not this module's).",
     certGoSettings: "Go to Settings",
+    capabilityTitle: "Permission: Business certificate (fiscal signing)",
+    capabilityPending: "granted in Permissions",
+    capabilityDenied: "not granted",
+    capabilityHint: "VeriFactu signs and sends with the business certificate, and the hub only lends it to a module the owner has allowed. It is granted once in Settings \u2192 Permissions, and it starts OFF in any hub whose modules were not installed through the Apps consent dialog (a blueprint, the API or an import).",
+    capabilityGoPermissions: "Go to Permissions",
+    enabledNeedsPermission: "VeriFactu is on. For it to sign and send, the \xABBusiness certificate (fiscal signing)\xBB permission has to be granted in Settings \u2192 Permissions.",
+    errCapabilityDenied: "VeriFactu is not allowed to sign: the \xABBusiness certificate (fiscal signing)\xBB permission is not granted. Grant it in Settings \u2192 Permissions and try again.",
     recoveryTitle: "Chain recovery",
     recChainStatus: "Chain integrity",
     recValidate: "Validate chain",
@@ -4822,12 +4836,14 @@ var DEMO_LOCKS = {
   demo_business_certificate_locked: "ui.errDemoCertificateLocked",
   demo_fiscal_identity_locked: "ui.errDemoIdentityLocked"
 };
+var CAPABILITY_DENIED = "capability_denied";
 function refusalKey(e5) {
   const code = typeof e5?.code === "string" ? e5.code : "";
   const message = e5 instanceof Error ? e5.message : "";
   if (DEMO_LOCKS[code]) return DEMO_LOCKS[code];
   const lockInText = Object.keys(DEMO_LOCKS).find((c5) => message.includes(c5));
   if (lockInText) return DEMO_LOCKS[lockInText];
+  if (code === CAPABILITY_DENIED || message.includes(CAPABILITY_DENIED)) return "ui.errCapabilityDenied";
   if (message.includes("config_save_requires_issuer")) return "ui.errIssuerRequired";
   if (message.includes("config_save_go_live_is_one_way")) return "ui.errGoLiveIsOneWay";
   if (message.includes("verifactu__gate")) return "ui.errGoLiveIsOneWay";
@@ -4855,6 +4871,8 @@ var ErpVerifactuSettings = class extends i3 {
     this.showProducer = false;
     this.creatingInvoice = false;
     this.invoiceCreated = false;
+    this.capabilityDenied = false;
+    this.savedEnabled = false;
     this.onLocaleChange = () => this.requestUpdate();
   }
   static {
@@ -4935,11 +4953,26 @@ var ErpVerifactuSettings = class extends i3 {
     window.history.pushState({}, "", "/settings#tax");
     window.dispatchEvent(new PopStateEvent("popstate"));
   }
+  /** Navigates to Settings → **Permissions** (`#permissions`), where the owner grants the module
+   *  capabilities (ADR-0079). Same module→shell navigation as {@link goToSettings}, and the hash
+   *  matters for the same reason (verifactu#49): `/settings` bare degrades to the Hub tab
+   *  (`resolveSettingsTab`), so the owner would do as told and land on a screen with nothing to
+   *  press. `permissions` is one of the shell's declared tabs — it is not a hash we invented. */
+  goToPermissions() {
+    window.history.pushState({}, "", "/settings#permissions");
+    window.dispatchEvent(new PopStateEvent("popstate"));
+  }
+  /** Records what a native command just proved about the capability grant. */
+  noteCapability(e5) {
+    const code = typeof e5?.code === "string" ? e5.code : "";
+    this.capabilityDenied = code === CAPABILITY_DENIED || e5 instanceof Error && e5.message.includes(CAPABILITY_DENIED);
+  }
   async save(ev) {
     ev.preventDefault();
     this.saving = true;
     this.error = "";
     this.saved = false;
+    this.savedEnabled = false;
     try {
       if (this.cfg.enabled && !(this.cfg.issuer_nif || "").trim()) {
         this.error = erplora5().t(CATALOG5, "ui.errIssuerRequired");
@@ -4961,6 +4994,7 @@ var ErpVerifactuSettings = class extends i3 {
         max_retries: Number(this.cfg.max_retries) || 10
       });
       this.saved = true;
+      this.savedEnabled = !!this.cfg.enabled;
       await this.refresh();
     } catch (e5) {
       const key = refusalKey(e5);
@@ -4975,8 +5009,10 @@ var ErpVerifactuSettings = class extends i3 {
     this.error = "";
     try {
       await erplora5().command("verifactu.diagnostics.run", { invoice_type: this.testType });
+      this.capabilityDenied = false;
       await this.loadDiag();
     } catch (e5) {
+      this.noteCapability(e5);
       const key = refusalKey(e5);
       this.error = key ? erplora5().t(CATALOG5, key) : (e5 instanceof Error ? e5.message : "") || erplora5().t(CATALOG5, "ui.errTestRun");
     } finally {
@@ -5073,6 +5109,17 @@ var ErpVerifactuSettings = class extends i3 {
       <h2>${t5("ui.settingsTitle")}</h2>
       ${this.error ? b2`<ok-inline-feedback tone="danger" icon="alert-circle-outline">${this.error}</ok-inline-feedback>` : A}
       ${this.saved ? b2`<ok-inline-feedback tone="success" icon="checkmark-circle-outline">${t5("ui.settingsSaved")}</ok-inline-feedback>` : A}
+      <!-- verifactu#62: saving with the switch ON succeeds even with the capability denied (the
+           save is plain SQL and must not depend on the gate), so the screen owes the owner the
+           step that is left. Only after a save that turned it ON — a permanent notice would be
+           noise in the hubs where the permission is granted, which the module cannot tell apart. -->
+      ${this.savedEnabled ? b2`<ok-inline-feedback tone="warning" icon="key-outline" heading=${t5("ui.capabilityTitle")}>
+            ${t5("ui.enabledNeedsPermission")}
+            <ion-button size="small" fill="outline" @click=${() => this.goToPermissions()}>
+              <ion-icon slot="start" name="open-outline"></ion-icon>
+              ${t5("ui.capabilityGoPermissions")}
+            </ion-button>
+          </ok-inline-feedback>` : A}
       <div class="cols">
         <form class="card" @submit=${(e5) => this.save(e5)}>
           <ion-list>
@@ -5136,6 +5183,29 @@ var ErpVerifactuSettings = class extends i3 {
                 </ion-button>
               </div>
             </ion-item>
+            <!-- Permiso módulo→host (ADR-0079), verifactu#62. Es el TERCER requisito para poder
+                 firmar, y hasta ahora era el único invisible: los otros dos ya se enseñan aquí
+                 arriba. La píldora es NEUTRA por defecto porque el módulo no puede leer el estado
+                 de la concesión (no hay system param ni API del SDK, a propósito); se pone en rojo
+                 cuando el runtime lo ha DENEGADO de verdad. Conceder sigue siendo cosa de una
+                 persona en Ajustes → Permisos: auto-concederlo dejaría el gate en decoración. -->
+            <ion-item lines="none">
+              <div class="cert">
+                <div class="cert-head">
+                  <ion-label>${t5("ui.capabilityTitle")}</ion-label>
+                  <ok-status-pill
+                    dot
+                    tone=${this.capabilityDenied ? "danger" : "neutral"}
+                    label=${this.capabilityDenied ? t5("ui.capabilityDenied") : t5("ui.capabilityPending")}
+                  ></ok-status-pill>
+                </div>
+                <p class="hint">${t5("ui.capabilityHint")}</p>
+                <ion-button size="small" fill="outline" @click=${() => this.goToPermissions()}>
+                  <ion-icon slot="start" name="open-outline"></ion-icon>
+                  ${t5("ui.capabilityGoPermissions")}
+                </ion-button>
+              </div>
+            </ion-item>
           </ion-list>
           <div class="card-actions">
             <ion-button type="submit" ?disabled=${this.saving || this.loading}>${this.saving ? t5("ui.saving") : t5("ui.save")}</ion-button>
@@ -5180,4 +5250,10 @@ __decorateClass([
 __decorateClass([
   r5()
 ], ErpVerifactuSettings.prototype, "invoiceCreated", 2);
+__decorateClass([
+  r5()
+], ErpVerifactuSettings.prototype, "capabilityDenied", 2);
+__decorateClass([
+  r5()
+], ErpVerifactuSettings.prototype, "savedEnabled", 2);
 define("erp-verifactu-settings", ErpVerifactuSettings);
