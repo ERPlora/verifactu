@@ -1707,6 +1707,7 @@ var _OkDataTable = class _OkDataTable2 extends i3 {
     this.page = 0;
     this.searchable = false;
     this.sortDir = "asc";
+    this.filterValues = {};
     this.title = "";
     this.views = false;
     this.exportable = false;
@@ -1724,6 +1725,7 @@ var _OkDataTable = class _OkDataTable2 extends i3 {
     this.clientSortDir = "asc";
     this.clientFilters = {};
     this.filterDraft = {};
+    this.serverFilters = {};
     this.panel = "none";
     this.viewMode = "table";
     this.viewChosenByUser = false;
@@ -2336,11 +2338,54 @@ var _OkDataTable = class _OkDataTable2 extends i3 {
   get hasFilterRow() {
     return this.filterColumns.length > 0;
   }
-  /** Nº de filtros activos (modo cliente) → badge del botón Filtros. */
+  /** Nº de filtros activos → badge del botón Filtros. En servidor cuenta `filterValues` (#106): sin
+   *  esto el embudo no daba NINGUNA señal de que la lista venía acotada. */
   get activeFilterCount() {
+    if (this.serverSide) {
+      return Object.keys(this.serverFilters).filter((k2) => this.serverFilterState(k2) !== void 0).length;
+    }
     return Object.values(this.clientFilters).filter(
       (f3) => f3.values && f3.values.size > 0 || f3.from || f3.to
     ).length;
+  }
+  // ── Estado de filtro VISIBLE (#106) ──────────────────────────────────────────────────────────
+  /** Traduce un valor de `filterValues` (la forma que emite `filterChange`) a la forma interna que
+   *  usan los `render*Filter`. `undefined` = ese filtro no está puesto. */
+  serverFilterState(key) {
+    const raw = this.serverFilters[key];
+    if (raw === void 0 || raw === null || raw === "") return void 0;
+    if (Array.isArray(raw)) {
+      const values = raw.filter((v3) => v3 !== null && v3 !== void 0 && v3 !== "").map((v3) => String(v3));
+      return values.length ? { values: new Set(values) } : void 0;
+    }
+    if (typeof raw === "object") {
+      const range = raw;
+      const from = range.from === null || range.from === void 0 || range.from === "" ? void 0 : String(range.from);
+      const to = range.to === null || range.to === void 0 || range.to === "" ? void 0 : String(range.to);
+      return from !== void 0 || to !== void 0 ? { from, to } : void 0;
+    }
+    return { values: /* @__PURE__ */ new Set([String(raw)]) };
+  }
+  /** Estado de filtro efectivo de una columna: servidor → `filterValues`/espejo; cliente → memoria. */
+  filterStateOf(key) {
+    return this.serverSide ? this.serverFilterState(key) : this.clientFilters[key];
+  }
+  /** Fija (o borra) el valor visible de un filtro en el espejo de servidor. */
+  setServerFilter(key, value) {
+    const next = { ...this.serverFilters };
+    const empty = value === void 0 || value === null || value === "" || Array.isArray(value) && value.length === 0;
+    if (empty) delete next[key];
+    else next[key] = value;
+    this.serverFilters = next;
+  }
+  /** Fija UN extremo de un rango en el espejo. Los dos extremos viajan en eventos SEPARADOS
+   *  (`{from}` y luego `{to}`), así que aquí se MEZCLA: reemplazar borraría el otro extremo. */
+  setServerRangeEdge(key, edge, value) {
+    const prev = this.serverFilters[key];
+    const base = prev && typeof prev === "object" && !Array.isArray(prev) ? { ...prev } : {};
+    base[edge] = value;
+    const alive = (v3) => v3 !== void 0 && v3 !== null && v3 !== "";
+    this.setServerFilter(key, alive(base.from) || alive(base.to) ? base : void 0);
   }
   /** Valor crudo de una columna para ordenar/filtrar (usa format si lo hay, si no row[key]). */
   rawValue(col, row) {
@@ -2430,15 +2475,18 @@ var _OkDataTable = class _OkDataTable2 extends i3 {
   }
   onFilterInput(col, ev) {
     const value = ev.target.value ?? "";
+    this.setServerFilter(col.key, value);
     this.emit("filterChange", { col: col.key, value });
   }
   onRangeInput(col, edge, ev) {
     const raw = ev.target.value ?? "";
     const v3 = raw === "" ? "" : Number(raw);
+    this.setServerRangeEdge(col.key, edge, v3);
     this.emit("filterChange", { col: col.key, value: { [edge]: v3 } });
   }
   onDateRangeInput(col, edge, ev) {
     const v3 = ev.target.value ?? "";
+    this.setServerRangeEdge(col.key, edge, v3);
     this.emit("filterChange", { col: col.key, value: { [edge]: v3 } });
   }
   // ── Filtros EN LÍNEA (toolbar) ────────────────────────────────────────────────────────────
@@ -2458,7 +2506,9 @@ var _OkDataTable = class _OkDataTable2 extends i3 {
   // `filterChange`; en cliente escribe `clientFilters` (multiselect ⇒ filtra por inclusión).
   onFilterSelect(col, value, multi) {
     if (this.serverSide) {
-      this.emit("filterChange", { col: col.key, value: value ?? (multi ? [] : "") });
+      const next = value ?? (multi ? [] : "");
+      this.setServerFilter(col.key, next);
+      this.emit("filterChange", { col: col.key, value: next });
       return;
     }
     if (multi) {
@@ -2472,6 +2522,7 @@ var _OkDataTable = class _OkDataTable2 extends i3 {
   onInlineRange(col, edge, ev) {
     const v3 = ev.target.value ?? "";
     if (this.serverSide) {
+      this.setServerRangeEdge(col.key, edge, v3);
       this.emit("filterChange", { col: col.key, value: { [edge]: v3 } });
       return;
     }
@@ -2502,6 +2553,7 @@ var _OkDataTable = class _OkDataTable2 extends i3 {
    */
   willUpdate(changed) {
     this.applyInitialView();
+    if (changed.has("filterValues")) this.serverFilters = { ...this.filterValues ?? {} };
     if (!this.serverSide && changed.has("rows") && this.mobileShown !== 0) this.mobileShown = 0;
   }
   applyInitialView() {
@@ -2524,9 +2576,11 @@ var _OkDataTable = class _OkDataTable2 extends i3 {
   renderFilterControl(col) {
     if (!col.filterable) return A;
     const type = col.filterType ?? "text";
+    const f3 = this.filterStateOf(col.key);
     if (type === "select" || type === "multiselect") {
       const multi = type === "multiselect";
       const opts = col.options ?? this.distinctValues(col).map((v3) => ({ value: v3, label: v3 }));
+      const current = this.selectValue(f3, multi);
       return b2`
         <ion-select
           label=${col.header}
@@ -2536,6 +2590,7 @@ var _OkDataTable = class _OkDataTable2 extends i3 {
           interface="modal"
           .interfaceOptions=${{ cssClass: "ok-overlay" }}
           placeholder=${this.t.select}
+          .value=${current}
           @ionChange=${(e5) => this.onFilterSelect(col, e5.detail.value, multi)}
         >
           ${multi ? A : b2`<ion-select-option value="">${this.t.select}</ion-select-option>`}
@@ -2551,8 +2606,10 @@ var _OkDataTable = class _OkDataTable2 extends i3 {
           <span class="flabel">${col.header}</span>
           <div class="frange">
             <ion-input type=${t5} fill="outline" mode="md" placeholder=${type === "daterange" ? this.t.from : this.t.gte}
+              .value=${f3?.from ?? ""}
               @ionInput=${(e5) => onEdge(col, "from", e5)}></ion-input>
             <ion-input type=${t5} fill="outline" mode="md" placeholder=${type === "daterange" ? this.t.to : this.t.lte}
+              .value=${f3?.to ?? ""}
               @ionInput=${(e5) => onEdge(col, "to", e5)}></ion-input>
           </div>
         </div>
@@ -2566,9 +2623,17 @@ var _OkDataTable = class _OkDataTable2 extends i3 {
         label=${col.header}
         label-placement="stacked"
         placeholder=${this.t.filterPlaceholder}
+        .value=${this.selectValue(f3, false)}
         @ionInput=${(e5) => this.onFilterInput(col, e5)}
       ></ion-input>
     `;
+  }
+  /** Valor para un control de un solo valor (`ion-select`/`ion-input`) o multi (`ion-select
+   *  multiple`) a partir del estado de filtro interno. '' / [] = sin filtro. */
+  selectValue(f3, multi) {
+    const values = [...f3?.values ?? /* @__PURE__ */ new Set()];
+    if (multi) return values;
+    return values.length ? values[0] : "";
   }
   // Controles de filtro COMPACTOS para la toolbar (modo `inlineFilters`). Solo select y rango de
   // fechas (los del screenshot); el resto de tipos siguen disponibles vía el drawer si no se activa
@@ -2583,11 +2648,11 @@ var _OkDataTable = class _OkDataTable2 extends i3 {
   }
   renderInlineFilter(col) {
     const type = col.filterType ?? "text";
-    const f3 = this.clientFilters[col.key];
+    const f3 = this.filterStateOf(col.key);
     if (type === "select" || type === "multiselect") {
       const multi = type === "multiselect";
       const opts = col.options ?? this.distinctValues(col).map((v3) => ({ value: v3, label: v3 }));
-      const current = multi ? [...f3?.values ?? /* @__PURE__ */ new Set()] : f3?.values && f3.values.size ? [...f3.values][0] : "";
+      const current = this.selectValue(f3, multi);
       return b2`
         <ion-select
           class="tk-filter"
@@ -2785,7 +2850,7 @@ var _OkDataTable = class _OkDataTable2 extends i3 {
                             ${this.toolButton("grid-outline", this.viewMode === "cards", () => this.setViewMode("cards"), this.t.viewCards)}
                           </span>
                         ` : A}
-                    ${this.hasFilterRow && !this.inlineFilters ? this.toolButton("funnel-outline", this.panel === "filters" || this.activeFilterCount > 0, () => this.toggle("filters"), this.t.filters, this.serverSide ? void 0 : this.activeFilterCount) : A}
+                    ${this.hasFilterRow && !this.inlineFilters ? this.toolButton("funnel-outline", this.panel === "filters" || this.activeFilterCount > 0, () => this.toggle("filters"), this.t.filters, this.activeFilterCount) : A}
                     ${this.effImport ? b2`
                           ${this.toolButton("cloud-upload-outline", false, () => this.renderRoot.querySelector(".tk-file")?.click(), this.t.importCsv)}
                           <input class="tk-file" type="file" accept=".csv,text/csv" hidden @change=${(e5) => this.onImportFile(e5)} />
@@ -3097,6 +3162,9 @@ __decorateClass2([
   n4({ attribute: "sort-dir" })
 ], _OkDataTable.prototype, "sortDir");
 __decorateClass2([
+  n4({ attribute: false })
+], _OkDataTable.prototype, "filterValues");
+__decorateClass2([
   n4()
 ], _OkDataTable.prototype, "title");
 __decorateClass2([
@@ -3168,6 +3236,9 @@ __decorateClass2([
 __decorateClass2([
   r5()
 ], _OkDataTable.prototype, "filterDraft");
+__decorateClass2([
+  r5()
+], _OkDataTable.prototype, "serverFilters");
 __decorateClass2([
   r5()
 ], _OkDataTable.prototype, "panel");
@@ -3459,6 +3530,26 @@ var es_default = {
     certNotConfigured: "no configurado",
     certHubHint: "El certificado fiscal se configura en Ajustes \u2192 Negocio (es un recurso del hub, no de este m\xF3dulo).",
     certGoSettings: "Ir a Ajustes",
+    routeTitle: "Env\xEDo a la Agencia Tributaria",
+    routeOwn: "con mi propio certificado",
+    routeDelegated: "lo hace ERPlora por ti",
+    routeLoading: "consultando\u2026",
+    routeUnknown: "no disponible",
+    routeUnknownHint: "Este hub todav\xEDa no publica la v\xEDa de env\xEDo. Actual\xEDzalo para verla aqu\xED; mientras tanto la pantalla solo informa de si tienes cargado un certificado propio.",
+    routeOwnHint: "Firmas y env\xEDas con tu certificado; no hace falta ning\xFAn otorgamiento a ERPlora.",
+    routeDelegatedHint: "ERPlora remite tus registros de facturaci\xF3n a la Agencia Tributaria en tu nombre, con su propio certificado. Tu otorgamiento firmado es lo que se lo permite.",
+    grantTitle: "Otorgamiento de representaci\xF3n",
+    grantVigente: "aprobado",
+    grantPendiente: "en revisi\xF3n",
+    grantRechazado: "devuelto",
+    grantRevocado: "revocado",
+    grantAbsent: "sin firmar",
+    grantSince: "\xDAltima actualizaci\xF3n",
+    grantHint: "Se firma en Ajustes \u2192 Negocio, donde ERPlora te prepara el modelo oficial y lo revisa una persona. Solo con el otorgamiento aprobado puede tu negocio pasar a producci\xF3n.",
+    certNotNeeded: "no hace falta en esta v\xEDa",
+    certOptionalHint: "En esta v\xEDa no necesitas certificado propio: ERPlora remite con el suyo. Sube uno solo si prefieres enviar t\xFA directamente.",
+    testDelegatedUnavailable: "La prueba en vivo necesita un certificado propio, as\xED que no est\xE1 disponible mientras ERPlora remite por ti.",
+    testNeedsOwnCertificate: "Sube el certificado del negocio en Ajustes \u2192 Negocio para poder ejecutar la prueba en vivo.",
     capabilityTitle: "Permiso: Certificado del negocio (firma fiscal)",
     capabilityPending: "se concede en Permisos",
     capabilityDenied: "sin conceder",
@@ -3674,6 +3765,26 @@ var en_default = {
     certNotConfigured: "not configured",
     certHubHint: "The fiscal certificate is configured in Settings \u2192 Business (it's a hub resource, not this module's).",
     certGoSettings: "Go to Settings",
+    routeTitle: "Filing with the tax authority",
+    routeOwn: "with my own certificate",
+    routeDelegated: "ERPlora does it for you",
+    routeLoading: "checking\u2026",
+    routeUnknown: "not available",
+    routeUnknownHint: "This hub does not publish the filing route yet. Update the hub to see it here; meanwhile the screen only reports whether a certificate of your own is loaded.",
+    routeOwnHint: "You sign and file with your own certificate; no authorisation to ERPlora is needed.",
+    routeDelegatedHint: "ERPlora files your invoicing records with the tax authority on your behalf, with its own certificate. Your signed authorisation is what allows it.",
+    grantTitle: "Representation authorisation",
+    grantVigente: "approved",
+    grantPendiente: "under review",
+    grantRechazado: "returned",
+    grantRevocado: "revoked",
+    grantAbsent: "not signed",
+    grantSince: "Last update",
+    grantHint: "It is signed in Settings \u2192 Business, where ERPlora prepares the official form and a person reviews it. Only an approved authorisation lets your business go live.",
+    certNotNeeded: "not needed on this route",
+    certOptionalHint: "On this route you do not need a certificate of your own: ERPlora files with its own. Upload one only if you would rather file directly.",
+    testDelegatedUnavailable: "The live test needs a certificate of your own, so it is not available while ERPlora files for you.",
+    testNeedsOwnCertificate: "Upload the business certificate in Settings \u2192 Business to run the live test.",
     capabilityTitle: "Permission: Business certificate (fiscal signing)",
     capabilityPending: "granted in Permissions",
     capabilityDenied: "not granted",
@@ -4837,6 +4948,15 @@ var DEMO_LOCKS = {
   demo_fiscal_identity_locked: "ui.errDemoIdentityLocked"
 };
 var CAPABILITY_DENIED = "capability_denied";
+var ROUTE_OWN = "own";
+var ROUTE_DELEGATED = "delegated";
+var GRANT_STATES = {
+  vigente: { key: "ui.grantVigente", tone: "success" },
+  pendiente: { key: "ui.grantPendiente", tone: "warning" },
+  rechazado: { key: "ui.grantRechazado", tone: "danger" },
+  revocado: { key: "ui.grantRevocado", tone: "danger" },
+  absent: { key: "ui.grantAbsent", tone: "warning" }
+};
 function refusalKey(e5) {
   const code = typeof e5?.code === "string" ? e5.code : "";
   const message = e5 instanceof Error ? e5.message : "";
@@ -4873,6 +4993,8 @@ var ErpVerifactuSettings = class extends i3 {
     this.invoiceCreated = false;
     this.capabilityDenied = false;
     this.savedEnabled = false;
+    this.transmission = null;
+    this.routeLoading = true;
     this.onLocaleChange = () => this.requestUpdate();
   }
   static {
@@ -4909,6 +5031,7 @@ var ErpVerifactuSettings = class extends i3 {
     super.connectedCallback();
     window.addEventListener("erplora:locale-changed", this.onLocaleChange);
     await this.refresh();
+    await this.loadRoute();
     await this.loadDiag();
   }
   disconnectedCallback() {
@@ -4927,6 +5050,55 @@ var ErpVerifactuSettings = class extends i3 {
     } finally {
       this.loading = false;
     }
+  }
+  /**
+   * Reads the road this hub is on from the CORE (hub#1416, `contracts/kernel/engine.snapshot`).
+   *
+   * A refusal is swallowed into `transmission = null` and NOT into `this.error`: that slot is the
+   * screen-wide one, and a fact this screen merely REFLECTS must not blank out the configuration
+   * the owner came here to change. The route block states «not available» in its own place, which
+   * is where a person can act on it.
+   */
+  async loadRoute() {
+    this.routeLoading = true;
+    try {
+      const rows = await erplora5().query("hub.fiscal.transmission");
+      const row = Array.isArray(rows) ? rows[0] : rows;
+      this.transmission = row ?? null;
+    } catch {
+      this.transmission = null;
+    } finally {
+      this.routeLoading = false;
+    }
+  }
+  /**
+   * `own` / `delegated` as the core said it, or `''` when nobody told us. Anything else the wire
+   * might carry collapses to `''` on purpose: an unrecognised word is «we do not know», never a
+   * road picked by this screen.
+   */
+  get route() {
+    const r6 = (this.transmission?.transmission_route ?? "").trim();
+    return r6 === ROUTE_OWN || r6 === ROUTE_DELEGATED ? r6 : "";
+  }
+  /**
+   * **Does this hub sign with a certificate of its OWN?** — ONE rule for the two places that ask
+   * it (the prerequisite pill and the live-test gate), because two derivations of the same fact
+   * is how a screen ends up contradicting itself.
+   *
+   * With the route known it IS the route: `route_of` answers `own` exactly when the hub holds its
+   * own `.p12`. Without it, the old `:has_certificate` reading — correct on any runtime that
+   * predates hub#1416, where that param was still `can_sign`, and the honest answer where we were
+   * told nothing.
+   */
+  get signsWithOwnCertificate() {
+    return this.route ? this.route === ROUTE_OWN : !!this.cfg.has_certificate;
+  }
+  /** The grant instant as a date in the caller's language, or `''` when there is none to show. */
+  grantDate() {
+    const iso = (this.transmission?.representation_at ?? "").trim();
+    if (!iso) return "";
+    const d3 = new Date(iso);
+    return Number.isNaN(d3.getTime()) ? iso : d3.toLocaleDateString(erplora5().locale || void 0);
   }
   async loadDiag() {
     try {
@@ -5083,12 +5255,18 @@ var ErpVerifactuSettings = class extends i3 {
           </ion-select>
         </ion-item>
         <div class="test-actions">
-          <ion-button @click=${() => this.runTest()} ?disabled=${this.testing || !this.cfg.has_certificate}>${this.testing ? t5("ui.testRunning") : t5("ui.testRun")}</ion-button>
+          <ion-button @click=${() => this.runTest()} ?disabled=${this.testing || !this.signsWithOwnCertificate}>${this.testing ? t5("ui.testRunning") : t5("ui.testRun")}</ion-button>
           <ion-button fill="outline" @click=${() => this.createTestInvoice()} ?disabled=${this.creatingInvoice || !canCreateInvoice}>${this.creatingInvoice ? t5("ui.testCreateInvoiceRunning") : t5("ui.testCreateInvoice")}</ion-button>
         </div>
         ${!isTesting ? b2`<p class="hint">${t5("ui.testInvoiceTestingOnly")}</p>` : A}
         ${this.invoiceCreated ? b2`<ok-inline-feedback tone="success" icon="checkmark-circle-outline">${t5("ui.testInvoiceCreated")}</ok-inline-feedback>` : A}
-        ${!this.cfg.has_certificate ? b2`<p class="hint">${t5("ui.certNotConfigured")} — ${t5("ui.certChoose")}</p>` : A}
+        <!-- Why the button is off, in the terms of the road this hub is actually on (verifactu#41).
+             It used to read «not configured — Choose file…», which was a file picker's label
+             pasted where a reason belongs: it named no road and pointed at nothing to press. On
+             the delegated road the diagnostic cannot answer at all — it still demands the core
+             identity (hub#1485) — so the screen says that instead of offering a button that
+             always fails. -->
+        ${this.signsWithOwnCertificate ? A : b2`<p class="hint">${t5(this.route === ROUTE_DELEGATED ? "ui.testDelegatedUnavailable" : "ui.testNeedsOwnCertificate")}</p>`}
         ${d3 ? b2`
               <ok-inline-feedback tone=${d3.cert_ok ? "success" : "danger"} heading=${t5("ui.testCert")} icon="ribbon-outline">${d3.cert_message ?? ""}</ok-inline-feedback>
               <div class="kv"><span class="k">${t5("ui.testEnv")}</span><code>${d3.environment ?? ""}</code></div>
@@ -5101,6 +5279,45 @@ var ErpVerifactuSettings = class extends i3 {
             ` : b2`<p class="hint">${t5("ui.testNoRun")}</p>`}
       </div>
     </div>`;
+  }
+  /**
+   * **Which road this hub's records take, and — on the delegated one — how its authorisation is
+   * doing** (verifactu#41, ADR-0320 §1). First row of the card on purpose: it is what explains
+   * everything under it, including why there is no certificate and why the live test is off.
+   *
+   * The module REFLECTS and does not own (ADR-0320 §5): the grant is signed in Ajustes → Negocio,
+   * where the runtime composes the official Anexo I with the real legal text and a person at
+   * ERPlora reviews it. A form here would be a second one, and a business cannot file a blank
+   * page it signed. So this block ends where every other prerequisite on this screen ends — with
+   * the same «go there» affordance.
+   */
+  renderRoute(t5) {
+    const route = this.route;
+    const pill = this.routeLoading ? { tone: "neutral", label: "ui.routeLoading" } : route === ROUTE_OWN ? { tone: "success", label: "ui.routeOwn" } : route === ROUTE_DELEGATED ? { tone: "info", label: "ui.routeDelegated" } : { tone: "neutral", label: "ui.routeUnknown" };
+    const hint = route === ROUTE_OWN ? "ui.routeOwnHint" : route === ROUTE_DELEGATED ? "ui.routeDelegatedHint" : "ui.routeUnknownHint";
+    const grant = route === ROUTE_DELEGATED ? GRANT_STATES[(this.transmission?.representation_status ?? "").trim()] ?? GRANT_STATES.absent : null;
+    const grantDate = grant ? this.grantDate() : "";
+    return b2`<ion-item lines="none">
+      <div class="cert">
+        <div class="cert-head">
+          <ion-label>${t5("ui.routeTitle")}</ion-label>
+          <ok-status-pill dot tone=${pill.tone} label=${t5(pill.label)}></ok-status-pill>
+        </div>
+        <p class="hint">${t5(hint)}</p>
+        ${grant ? b2`
+              <div class="cert-head">
+                <ion-label>${t5("ui.grantTitle")}</ion-label>
+                <ok-status-pill dot tone=${grant.tone} label=${t5(grant.key)}></ok-status-pill>
+              </div>
+              ${grantDate ? b2`<div class="kv"><span class="k">${t5("ui.grantSince")}</span><code>${grantDate}</code></div>` : A}
+              <p class="hint">${t5("ui.grantHint")}</p>
+            ` : A}
+        <ion-button size="small" fill="outline" @click=${() => this.goToSettings()}>
+          <ion-icon slot="start" name="open-outline"></ion-icon>
+          ${t5("ui.certGoSettings")}
+        </ion-button>
+      </div>
+    </ion-item>`;
   }
   render() {
     const t5 = (k2) => erplora5().t(CATALOG5, k2);
@@ -5123,6 +5340,7 @@ var ErpVerifactuSettings = class extends i3 {
       <div class="cols">
         <form class="card" @submit=${(e5) => this.save(e5)}>
           <ion-list>
+            ${this.renderRoute(t5)}
             <ion-item>
               <ion-toggle style=${GREEN} ?checked=${!!this.cfg.enabled} @ionChange=${(e5) => this.set("enabled", e5.target.checked)}>${t5("ui.enableVerifactu")}</ion-toggle>
             </ion-item>
@@ -5174,9 +5392,19 @@ var ErpVerifactuSettings = class extends i3 {
               <div class="cert">
                 <div class="cert-head">
                   <ion-label>${t5("ui.certPkcs12")}</ion-label>
-                  <ok-status-pill dot tone=${this.cfg.has_certificate ? "success" : "neutral"} label=${this.cfg.has_certificate ? t5("ui.certLoaded") : t5("ui.certNotConfigured")}></ok-status-pill>
+                  <!-- verifactu#41: the OWN certificate, read from the ROAD (route_of) and not
+                       from :has_certificate — which since hub#1489 answers can_transmit, «has a
+                       road», and is 1 on both. This pill was telling a business with zero
+                       certificates that its certificate was loaded. On the delegated road there
+                       is genuinely none and none is needed, which is a different sentence from
+                       «not configured». -->
+                  <ok-status-pill
+                    dot
+                    tone=${this.signsWithOwnCertificate ? "success" : "neutral"}
+                    label=${this.signsWithOwnCertificate ? t5("ui.certLoaded") : t5(this.route === ROUTE_DELEGATED ? "ui.certNotNeeded" : "ui.certNotConfigured")}
+                  ></ok-status-pill>
                 </div>
-                <p class="hint">${t5("ui.certHubHint")}</p>
+                <p class="hint">${t5(this.route === ROUTE_DELEGATED ? "ui.certOptionalHint" : "ui.certHubHint")}</p>
                 <ion-button size="small" fill="outline" @click=${() => this.goToSettings()}>
                   <ion-icon slot="start" name="open-outline"></ion-icon>
                   ${t5("ui.certGoSettings")}
@@ -5256,4 +5484,10 @@ __decorateClass([
 __decorateClass([
   r5()
 ], ErpVerifactuSettings.prototype, "savedEnabled", 2);
+__decorateClass([
+  r5()
+], ErpVerifactuSettings.prototype, "transmission", 2);
+__decorateClass([
+  r5()
+], ErpVerifactuSettings.prototype, "routeLoading", 2);
 define("erp-verifactu-settings", ErpVerifactuSettings);

@@ -33,6 +33,25 @@ interface VerifactuConfig {
   max_retries?: number;
 }
 
+/**
+ * One row of `hub.fiscal.transmission` (hub#1416) — the CORE's word about which of the two roads
+ * of ADR-0320 §1 this hub's records take, plus the state of the representation grant that
+ * authorises the delegated one. Frozen in `contracts/kernel/engine.snapshot`, so it is a promise
+ * the kernel keeps, not a private read.
+ *
+ * The module PAINTS it and never re-derives it. `:has_certificate` cannot answer this: since
+ * hub#1489 it is `certificate::can_transmit` — «has this hub a ROAD?» — and says `1` on both, so
+ * a business with no certificate at all used to read «loaded ✓» right here.
+ */
+interface FiscalTransmission {
+  /** `own` | `delegated`, the stable words of `certificate::route_of`. */
+  transmission_route?: string;
+  /** `vigente` | `pendiente` | `rechazado` | `revocado` | `absent`; `''` = never asked. */
+  representation_status?: string;
+  /** ISO instant of the last change of the grant, or `''`. */
+  representation_at?: string;
+}
+
 interface AeatResult {
   ok?: boolean;
   estado_envio?: string;
@@ -88,6 +107,32 @@ const DEMO_LOCKS: Record<string, string> = {
  * once the runtime has actually said so.
  */
 const CAPABILITY_DENIED = 'capability_denied';
+
+/**
+ * The two roads of ADR-0320 §1, by the STABLE words `certificate::route_of` publishes
+ * (`ROUTE_OWN`/`ROUTE_DELEGATED` in `crates/runtime/src/certificate.rs`). They cross the wire and
+ * this screen programs against them, so they are matched exactly and never parsed out of prose.
+ */
+const ROUTE_OWN = 'own';
+const ROUTE_DELEGATED = 'delegated';
+
+/**
+ * The grant states the core publishes (`fiscal_profile::REPRESENTATION_*`), each with the pill it
+ * earns. Keyed by the MACHINE value, like every other table on this screen (ADR-0055): the words
+ * are Spanish because the AEAT's are, and translating them here would be a second vocabulary.
+ *
+ * `absent` («asked, there is none») and `''` («never asked») land on the same row on purpose: the
+ * distinction is real for the runtime and meaningless to the owner, who has one thing to do in
+ * both. Anything the core adds later shows as `absent` rather than as an empty pill — the screen
+ * never invents a state it was not told.
+ */
+const GRANT_STATES: Record<string, { key: string; tone: string }> = {
+  vigente: { key: 'ui.grantVigente', tone: 'success' },
+  pendiente: { key: 'ui.grantPendiente', tone: 'warning' },
+  rechazado: { key: 'ui.grantRechazado', tone: 'danger' },
+  revocado: { key: 'ui.grantRevocado', tone: 'danger' },
+  absent: { key: 'ui.grantAbsent', tone: 'warning' },
+};
 
 /**
  * The catalogue key that explains a refusal, or `''` when we have nothing better than what the
@@ -198,12 +243,23 @@ export class ErpVerifactuSettings extends LitElement {
   /** VeriFactu was just saved as ON, so the screen owes the owner the remaining step. */
   @state() private savedEnabled = false;
 
+  /**
+   * What `hub.fiscal.transmission` answered (verifactu#41). `null` = the core did not answer —
+   * an older hub whose runtime predates hub#1416, or a read that refused — and then the screen
+   * says so instead of picking a road for the business.
+   */
+  @state() private transmission: FiscalTransmission | null = null;
+
+  /** The route read is in flight, so the pill says «checking» rather than «not available». */
+  @state() private routeLoading = true;
+
   private readonly onLocaleChange = (): void => this.requestUpdate();
 
   async connectedCallback() {
     super.connectedCallback();
     window.addEventListener('erplora:locale-changed', this.onLocaleChange);
     await this.refresh();
+    await this.loadRoute();
     await this.loadDiag();
   }
 
@@ -225,6 +281,59 @@ export class ErpVerifactuSettings extends LitElement {
     } finally {
       this.loading = false;
     }
+  }
+
+  /**
+   * Reads the road this hub is on from the CORE (hub#1416, `contracts/kernel/engine.snapshot`).
+   *
+   * A refusal is swallowed into `transmission = null` and NOT into `this.error`: that slot is the
+   * screen-wide one, and a fact this screen merely REFLECTS must not blank out the configuration
+   * the owner came here to change. The route block states «not available» in its own place, which
+   * is where a person can act on it.
+   */
+  private async loadRoute() {
+    this.routeLoading = true;
+    try {
+      const rows = await erplora().query<FiscalTransmission[] | FiscalTransmission | null>('hub.fiscal.transmission');
+      const row = Array.isArray(rows) ? rows[0] : rows;
+      this.transmission = row ?? null;
+    } catch {
+      this.transmission = null;
+    } finally {
+      this.routeLoading = false;
+    }
+  }
+
+  /**
+   * `own` / `delegated` as the core said it, or `''` when nobody told us. Anything else the wire
+   * might carry collapses to `''` on purpose: an unrecognised word is «we do not know», never a
+   * road picked by this screen.
+   */
+  private get route(): string {
+    const r = (this.transmission?.transmission_route ?? '').trim();
+    return r === ROUTE_OWN || r === ROUTE_DELEGATED ? r : '';
+  }
+
+  /**
+   * **Does this hub sign with a certificate of its OWN?** — ONE rule for the two places that ask
+   * it (the prerequisite pill and the live-test gate), because two derivations of the same fact
+   * is how a screen ends up contradicting itself.
+   *
+   * With the route known it IS the route: `route_of` answers `own` exactly when the hub holds its
+   * own `.p12`. Without it, the old `:has_certificate` reading — correct on any runtime that
+   * predates hub#1416, where that param was still `can_sign`, and the honest answer where we were
+   * told nothing.
+   */
+  private get signsWithOwnCertificate(): boolean {
+    return this.route ? this.route === ROUTE_OWN : !!this.cfg.has_certificate;
+  }
+
+  /** The grant instant as a date in the caller's language, or `''` when there is none to show. */
+  private grantDate(): string {
+    const iso = (this.transmission?.representation_at ?? '').trim();
+    if (!iso) return '';
+    const d = new Date(iso);
+    return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString(erplora().locale || undefined);
   }
 
   private async loadDiag() {
@@ -412,12 +521,20 @@ export class ErpVerifactuSettings extends LitElement {
           </ion-select>
         </ion-item>
         <div class="test-actions">
-          <ion-button @click=${() => this.runTest()} ?disabled=${this.testing || !this.cfg.has_certificate}>${this.testing ? t('ui.testRunning') : t('ui.testRun')}</ion-button>
+          <ion-button @click=${() => this.runTest()} ?disabled=${this.testing || !this.signsWithOwnCertificate}>${this.testing ? t('ui.testRunning') : t('ui.testRun')}</ion-button>
           <ion-button fill="outline" @click=${() => this.createTestInvoice()} ?disabled=${this.creatingInvoice || !canCreateInvoice}>${this.creatingInvoice ? t('ui.testCreateInvoiceRunning') : t('ui.testCreateInvoice')}</ion-button>
         </div>
         ${!isTesting ? html`<p class="hint">${t('ui.testInvoiceTestingOnly')}</p>` : nothing}
         ${this.invoiceCreated ? html`<ok-inline-feedback tone="success" icon="checkmark-circle-outline">${t('ui.testInvoiceCreated')}</ok-inline-feedback>` : nothing}
-        ${!this.cfg.has_certificate ? html`<p class="hint">${t('ui.certNotConfigured')} — ${t('ui.certChoose')}</p>` : nothing}
+        <!-- Why the button is off, in the terms of the road this hub is actually on (verifactu#41).
+             It used to read «not configured — Choose file…», which was a file picker's label
+             pasted where a reason belongs: it named no road and pointed at nothing to press. On
+             the delegated road the diagnostic cannot answer at all — it still demands the core
+             identity (hub#1485) — so the screen says that instead of offering a button that
+             always fails. -->
+        ${this.signsWithOwnCertificate
+          ? nothing
+          : html`<p class="hint">${t(this.route === ROUTE_DELEGATED ? 'ui.testDelegatedUnavailable' : 'ui.testNeedsOwnCertificate')}</p>`}
         ${d
           ? html`
               <ok-inline-feedback tone=${d.cert_ok ? 'success' : 'danger'} heading=${t('ui.testCert')} icon="ribbon-outline">${d.cert_message ?? ''}</ok-inline-feedback>
@@ -432,6 +549,62 @@ export class ErpVerifactuSettings extends LitElement {
           : html`<p class="hint">${t('ui.testNoRun')}</p>`}
       </div>
     </div>`;
+  }
+
+  /**
+   * **Which road this hub's records take, and — on the delegated one — how its authorisation is
+   * doing** (verifactu#41, ADR-0320 §1). First row of the card on purpose: it is what explains
+   * everything under it, including why there is no certificate and why the live test is off.
+   *
+   * The module REFLECTS and does not own (ADR-0320 §5): the grant is signed in Ajustes → Negocio,
+   * where the runtime composes the official Anexo I with the real legal text and a person at
+   * ERPlora reviews it. A form here would be a second one, and a business cannot file a blank
+   * page it signed. So this block ends where every other prerequisite on this screen ends — with
+   * the same «go there» affordance.
+   */
+  private renderRoute(t: (k: string) => string) {
+    const route = this.route;
+    const pill = this.routeLoading
+      ? { tone: 'neutral', label: 'ui.routeLoading' }
+      : route === ROUTE_OWN
+        ? { tone: 'success', label: 'ui.routeOwn' }
+        : route === ROUTE_DELEGATED
+          ? { tone: 'info', label: 'ui.routeDelegated' }
+          : { tone: 'neutral', label: 'ui.routeUnknown' };
+    const hint = route === ROUTE_OWN
+      ? 'ui.routeOwnHint'
+      : route === ROUTE_DELEGATED
+        ? 'ui.routeDelegatedHint'
+        : 'ui.routeUnknownHint';
+    // The grant only exists on the delegated road: with an own certificate nobody authorises
+    // anybody, so asking for one there would send the owner to a form they must not sign.
+    const grant = route === ROUTE_DELEGATED
+      ? GRANT_STATES[(this.transmission?.representation_status ?? '').trim()] ?? GRANT_STATES.absent
+      : null;
+    const grantDate = grant ? this.grantDate() : '';
+    return html`<ion-item lines="none">
+      <div class="cert">
+        <div class="cert-head">
+          <ion-label>${t('ui.routeTitle')}</ion-label>
+          <ok-status-pill dot tone=${pill.tone} label=${t(pill.label)}></ok-status-pill>
+        </div>
+        <p class="hint">${t(hint)}</p>
+        ${grant
+          ? html`
+              <div class="cert-head">
+                <ion-label>${t('ui.grantTitle')}</ion-label>
+                <ok-status-pill dot tone=${grant.tone} label=${t(grant.key)}></ok-status-pill>
+              </div>
+              ${grantDate ? html`<div class="kv"><span class="k">${t('ui.grantSince')}</span><code>${grantDate}</code></div>` : nothing}
+              <p class="hint">${t('ui.grantHint')}</p>
+            `
+          : nothing}
+        <ion-button size="small" fill="outline" @click=${() => this.goToSettings()}>
+          <ion-icon slot="start" name="open-outline"></ion-icon>
+          ${t('ui.certGoSettings')}
+        </ion-button>
+      </div>
+    </ion-item>`;
   }
 
   render() {
@@ -459,6 +632,7 @@ export class ErpVerifactuSettings extends LitElement {
       <div class="cols">
         <form class="card" @submit=${(e: Event) => this.save(e)}>
           <ion-list>
+            ${this.renderRoute(t)}
             <ion-item>
               <ion-toggle style=${GREEN} ?checked=${!!this.cfg.enabled} @ionChange=${(e: any) => this.set('enabled', e.target.checked)}>${t('ui.enableVerifactu')}</ion-toggle>
             </ion-item>
@@ -510,9 +684,21 @@ export class ErpVerifactuSettings extends LitElement {
               <div class="cert">
                 <div class="cert-head">
                   <ion-label>${t('ui.certPkcs12')}</ion-label>
-                  <ok-status-pill dot tone=${this.cfg.has_certificate ? 'success' : 'neutral'} label=${this.cfg.has_certificate ? t('ui.certLoaded') : t('ui.certNotConfigured')}></ok-status-pill>
+                  <!-- verifactu#41: the OWN certificate, read from the ROAD (route_of) and not
+                       from :has_certificate — which since hub#1489 answers can_transmit, «has a
+                       road», and is 1 on both. This pill was telling a business with zero
+                       certificates that its certificate was loaded. On the delegated road there
+                       is genuinely none and none is needed, which is a different sentence from
+                       «not configured». -->
+                  <ok-status-pill
+                    dot
+                    tone=${this.signsWithOwnCertificate ? 'success' : 'neutral'}
+                    label=${this.signsWithOwnCertificate
+                      ? t('ui.certLoaded')
+                      : t(this.route === ROUTE_DELEGATED ? 'ui.certNotNeeded' : 'ui.certNotConfigured')}
+                  ></ok-status-pill>
                 </div>
-                <p class="hint">${t('ui.certHubHint')}</p>
+                <p class="hint">${t(this.route === ROUTE_DELEGATED ? 'ui.certOptionalHint' : 'ui.certHubHint')}</p>
                 <ion-button size="small" fill="outline" @click=${() => this.goToSettings()}>
                   <ion-icon slot="start" name="open-outline"></ion-icon>
                   ${t('ui.certGoSettings')}

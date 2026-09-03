@@ -300,3 +300,190 @@ describe('the signing permission is named at the point of use (verifactu#62)', (
     expect(el.shadowRoot.textContent ?? '').not.toContain('ui.enabledNeedsPermission');
   });
 });
+
+// ── verifactu#41 — the screen says WHICH ROUTE the records take, in the RUNTIME's words ─────
+//
+// ADR-0320 gave the hub two mutually exclusive roads to the AEAT: `own` (it signs and files with
+// the business's own `.p12`) and `delegated` (the fiscal cell files on its behalf with ERPlora's
+// Sello, authorised by the signed Anexo I). This screen showed neither, and since hub#1489 it does
+// worse than omit — it LIES.
+//
+// `:has_certificate` used to be `certificate::can_sign` and was `0` for a hub on the cell road, so
+// «not configured» happened to be right. hub#1489 made it `can_transmit` — «has this hub a ROAD?»
+// — which answers `1` on BOTH roads. From that commit on, a business with zero certificates reads
+// «loaded ✓» on this screen, and «Send test» is offered on a road where the diagnostic cannot run
+// (hub#1485, still open: it demands the core identity).
+//
+// The word that DOES tell the two apart is `transmission_route`, from the core query
+// `hub.fiscal.transmission` (hub#1416, frozen in `contracts/kernel/engine.snapshot`). One rule,
+// `certificate::route_of`, answered by the core and PAINTED here — never a second deduction of the
+// same fact, which is how a screen and a production gate end up disagreeing about a business.
+//
+// The module reflects, it does not own: the grant is signed in Ajustes → Negocio (`/settings#tax`),
+// where the runtime composes the Anexo I and a person at ERPlora approves it (ADR-0320 §5).
+const DEFAULT_CONFIG = { issuer_nif: 'B12345678', environment: 'testing', has_certificate: 1 };
+
+/** Every grant state the core publishes (`fiscal_profile::REPRESENTATION_*`), by its label. */
+const GRANT_LABELS: Record<string, string> = {
+  vigente: 'ui.grantVigente',
+  pendiente: 'ui.grantPendiente',
+  rechazado: 'ui.grantRechazado',
+  revocado: 'ui.grantRevocado',
+  absent: 'ui.grantAbsent',
+};
+
+/** Mounts with the core query answering `row`; `null` = the runtime does not publish it. */
+async function mountWithRoute(row: Record<string, unknown> | null, cfg: Record<string, unknown> = {}) {
+  const asked: string[] = [];
+  (globalThis as Record<string, unknown>).erplora = {
+    ...((globalThis as Record<string, unknown>).erplora as object),
+    query: async (name: string) => {
+      asked.push(name);
+      if (name === 'verifactu.config.get') return [{ ...DEFAULT_CONFIG, ...cfg }];
+      if (name === 'hub.fiscal.transmission') return row ? [row] : [];
+      return [];
+    },
+  };
+  const el = await mount();
+  return { el, asked };
+}
+
+/** The pill that belongs to the OWN-certificate prerequisite row. */
+function certPill(el: HTMLElement & { shadowRoot: ShadowRoot }): Element | undefined {
+  return [...el.shadowRoot.querySelectorAll('ok-status-pill')].find((p) =>
+    ['ui.certLoaded', 'ui.certNotConfigured', 'ui.certNotNeeded'].includes(p.getAttribute('label') ?? ''));
+}
+
+/** The pill of the representation-grant row, whichever state it is in. */
+function grantPill(el: HTMLElement & { shadowRoot: ShadowRoot }): Element | undefined {
+  const states = Object.values(GRANT_LABELS);
+  return [...el.shadowRoot.querySelectorAll('ok-status-pill')].find((p) =>
+    states.includes(p.getAttribute('label') ?? ''));
+}
+
+/** The «Send test» button — the first action of the live-test card. */
+function testButton(el: HTMLElement & { shadowRoot: ShadowRoot }): Element | undefined {
+  return [...el.shadowRoot.querySelectorAll('.test-actions ion-button')][0];
+}
+
+describe('the filing route is read from the core, never deduced (verifactu#41)', () => {
+  it('asks `hub.fiscal.transmission` instead of deriving the route from :has_certificate', async () => {
+    const { asked } = await mountWithRoute({ transmission_route: 'own' });
+    expect(asked, 'the screen never asked the core which road this hub is on').toContain('hub.fiscal.transmission');
+  });
+
+  it('names the OWN route with the same words as Settings → Business', async () => {
+    const { el } = await mountWithRoute({ transmission_route: 'own' });
+    const text = el.shadowRoot.textContent ?? '';
+    expect(text, 'the screen does not say which road the records take').toContain('ui.routeTitle');
+    expect(text).toContain('ui.routeOwn');
+    expect(text, 'the own route was described as the delegated one').not.toContain('ui.routeDelegated');
+  });
+
+  it('names the DELEGATED route, and does not claim a certificate the business has not got', async () => {
+    // The hub#1489 case, exactly: a road (so `:has_certificate` is 1) and zero certificates.
+    const { el } = await mountWithRoute({ transmission_route: 'delegated', representation_status: 'vigente' });
+    expect(el.shadowRoot.textContent ?? '').toContain('ui.routeDelegated');
+    expect(certPill(el)?.getAttribute('label'), 'a hub with no .p12 was told its certificate is loaded')
+      .not.toBe('ui.certLoaded');
+    expect(certPill(el)?.getAttribute('tone'), 'the missing certificate was painted as a success').not.toBe('success');
+  });
+
+  it('shows the grant state and its date, ONLY on the delegated route', async () => {
+    const { el } = await mountWithRoute({
+      transmission_route: 'delegated',
+      representation_status: 'pendiente',
+      representation_at: '2026-08-11T09:00:00Z',
+    });
+    const text = el.shadowRoot.textContent ?? '';
+    expect(text, 'the grant state is missing on the road that depends on it').toContain('ui.grantTitle');
+    // The state travels as the pill's ATTRIBUTE, like every other prerequisite on this screen.
+    expect(grantPill(el)?.getAttribute('label')).toBe('ui.grantPendiente');
+    expect(text, 'the grant carries no date, so nobody can tell a fresh upload from a stale one')
+      .toContain('ui.grantSince');
+    expect(
+      [...el.shadowRoot.querySelectorAll('.kv code')].map((c) => c.textContent ?? ''),
+      'the grant date is labelled but never printed',
+    ).toContainEqual(expect.stringContaining('2026'));
+
+    const own = await mountWithRoute({ transmission_route: 'own', representation_status: 'absent' });
+    expect(own.el.shadowRoot.textContent ?? '', 'a hub with its own certificate was asked for a grant it does not need')
+      .not.toContain('ui.grantTitle');
+  });
+
+  it.each([
+    ['vigente', GRANT_LABELS.vigente, 'success'],
+    ['pendiente', GRANT_LABELS.pendiente, 'warning'],
+    ['rechazado', GRANT_LABELS.rechazado, 'danger'],
+    ['revocado', GRANT_LABELS.revocado, 'danger'],
+    ['absent', GRANT_LABELS.absent, 'warning'],
+    // `''` is «never asked» and `absent` is «asked, there is none». Same row: the difference is
+    // real for the runtime and means the same one thing to whoever has to sign it.
+    ['', GRANT_LABELS.absent, 'warning'],
+  ])('paints the grant state `%s` as %s', async (status, key, tone) => {
+    const { el } = await mountWithRoute({ transmission_route: 'delegated', representation_status: status });
+    const pill = [...el.shadowRoot.querySelectorAll('ok-status-pill')].find((p) => p.getAttribute('label') === key);
+    expect(pill, `the grant state \`${status}\` is not painted`).toBeTruthy();
+    expect(pill!.getAttribute('tone')).toBe(tone);
+  });
+
+  it('does not offer a live test the delegated road cannot answer (hub#1485)', async () => {
+    const { el } = await mountWithRoute({ transmission_route: 'delegated' });
+    expect(testButton(el)?.hasAttribute('disabled'), '«Send test» is offered on a road where the diagnostic fails')
+      .toBe(true);
+    expect(el.shadowRoot.textContent ?? '', 'the button is off and the screen does not say why')
+      .toContain('ui.testDelegatedUnavailable');
+  });
+
+  it('keeps the live test on the own road', async () => {
+    const { el } = await mountWithRoute({ transmission_route: 'own' });
+    expect(testButton(el)?.hasAttribute('disabled')).toBe(false);
+  });
+
+  it('the route CTA lands on Settings → Business (#tax), where the grant is signed', async () => {
+    window.history.pushState({}, '', '/m/verifactu');
+    const { el } = await mountWithRoute({ transmission_route: 'delegated' });
+    (el as unknown as { goToSettings: () => void }).goToSettings();
+    expect(window.location.pathname + window.location.hash).toBe('/settings#tax');
+  });
+
+  it('degrades to the old certificate reading when the runtime does not publish the route', async () => {
+    // An older hub has neither hub#1416 nor hub#1489, so `:has_certificate` is still `can_sign` —
+    // «own certificate», and the pre-hub#1489 rendering is the CORRECT one there. Inventing a route
+    // would be the second deduction this issue exists to remove.
+    const { el } = await mountWithRoute(null);
+    expect(el.shadowRoot.textContent ?? '', 'a route the core did not publish was made up').toContain('ui.routeUnknown');
+    expect(certPill(el)?.getAttribute('label')).toBe('ui.certLoaded');
+    expect(testButton(el)?.hasAttribute('disabled')).toBe(false);
+  });
+
+  it('survives a core query that refuses, without breaking the rest of the screen', async () => {
+    (globalThis as Record<string, unknown>).erplora = {
+      ...((globalThis as Record<string, unknown>).erplora as object),
+      query: async (name: string) => {
+        if (name === 'hub.fiscal.transmission') throw new FakeErploraError('query_not_found', 'hub.fiscal.transmission');
+        if (name === 'verifactu.config.get') return [DEFAULT_CONFIG];
+        return [];
+      },
+    };
+    const el = await mount();
+    const wc = el as unknown as { error: string };
+    expect(wc.error, 'a route the screen only REFLECTS took over the screen-wide error slot').toBe('');
+    expect(el.shadowRoot.textContent ?? '').toContain('ui.routeUnknown');
+  });
+
+  it('every string it paints has both catalogues (en + es)', async () => {
+    const en = (await import('../../../locales/en.json')).default as Record<string, Record<string, string>>;
+    const es = (await import('../../../locales/es.json')).default as Record<string, Record<string, string>>;
+    const added = [
+      'routeTitle', 'routeOwn', 'routeDelegated', 'routeLoading', 'routeUnknown', 'routeUnknownHint',
+      'routeOwnHint', 'routeDelegatedHint', 'grantTitle', 'grantVigente', 'grantPendiente',
+      'grantRechazado', 'grantRevocado', 'grantAbsent', 'grantSince', 'grantHint',
+      'certNotNeeded', 'certOptionalHint', 'testDelegatedUnavailable', 'testNeedsOwnCertificate',
+    ];
+    for (const k of added) {
+      expect(en.ui?.[k], `\`ui.${k}\` has no English source`).toBeTruthy();
+      expect(es.ui?.[k], `\`ui.${k}\` was never translated to Spanish`).toBeTruthy();
+    }
+  });
+});
