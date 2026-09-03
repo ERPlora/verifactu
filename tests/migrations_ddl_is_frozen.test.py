@@ -47,6 +47,7 @@ FROZEN = {
     "013_arithmetic_integrity.sql": "64425cdb28ff143b59d03727d70d04adac4520f70123f9933665f5a094c776e1",
     "014_rectification.sql": "2336f5bb686935bde7cfb4b032b180252b64fc877a0d6024300a74fbfdd24233",
     "015_quota_rate_check_needs_the_line_count.sql": "329d0a494bfa197de866a60d39c3313ef56bd4af69b87dd5cf2611ce1a9216dc",
+    "016_transmission_fingerprint.sql": "4426a4da2385bf5d826c2a332352629ce83c7d846f047aa5540195dee3689a2a",
 }
 
 
