@@ -118,8 +118,30 @@ The module's configuration (`verifactu.config.get`, saved with `verifactu.config
 | Certificate expiry | Read from the certificate |
 | Retry interval, max retries | How the contingency queue behaves |
 
-**The certificate is not configured here.** It is uploaded in **Settings → Business** and lives in the
-core. This screen only shows whether one is available.
+### The filing route (read-only)
+
+The first row states **which of the two roads of ADR-0320 this hub's records take**, and it is
+answered by the core query `hub.fiscal.transmission` — never derived here:
+
+| `transmission_route` | What it means | What the screen shows |
+|---|---|---|
+| `own` | The hub signs and files with the business's own `.p12` | The route, and the live test enabled |
+| `delegated` | ERPlora files on the business's behalf with its own certificate | The route, plus the **representation grant** (`vigente` / `pendiente` / `rechazado` / `revocado` / not signed) and the date of its last change |
+
+Do **not** derive the route from `:has_certificate`. Since ERPlora/hub#1489 that param is
+`certificate::can_transmit` — «has this hub a road?» — and answers `1` on **both** roads, so it
+cannot tell them apart. A hub whose runtime does not publish the core query says «not available»
+and falls back to the `:has_certificate` reading, which is the correct one on that older runtime.
+
+The grant is **signed in Settings → Business**, not here: the runtime composes the official Anexo I
+with the real legal text and a person at ERPlora reviews it. This module reflects, it does not own.
+
+**The certificate is not configured here** either. It is uploaded in **Settings → Business** and
+lives in the core. This screen only shows whether one is available — and on the delegated road it
+says so is *not needed*, rather than reporting it as missing.
+
+The **live test** («Send test») needs a certificate of the business's own, so it is disabled on the
+delegated road with its reason: the diagnostic still demands the core identity (ERPlora/hub#1485).
 
 The configuration never exposes certificate bytes or passwords — only flags saying whether they are
 present.

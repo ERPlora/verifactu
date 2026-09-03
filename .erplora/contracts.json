@@ -3,6 +3,7 @@
   "module": "verifactu",
   "consumes": {
     "queries": [
+      "hub.fiscal.transmission",
       "invoice.list",
       "verifactu.aeat.records.list",
       "verifactu.chain.status",
