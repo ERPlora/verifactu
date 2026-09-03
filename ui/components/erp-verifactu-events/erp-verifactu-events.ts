@@ -54,7 +54,7 @@ export class ErpVerifactuEvents extends LitElement {
     const t = (k: string): string => client.t(CATALOG, k);
     const translate: Translate = (catalog, key, params) => client.t(catalog, key, params);
     return [
-    { key: 'timestamp', header: t('ui.colWhen'), sortable: true, filterable: true, filterType: 'text' },
+    { key: 'timestamp', header: t('ui.colWhen'), sortable: true, filterable: true, filterType: 'daterange' },
     {
       key: 'severity',
       header: t('ui.colSeverity'),

@@ -47,7 +47,8 @@ OPS_FOR_FILTER_TYPE = {
     "select": {"eq"},
 }
 
-# A calendar date is filtered by a RANGE, never by a free-text box (verifactu#68).
+# A calendar date OR a full ISO-8601 instant is filtered by a RANGE, never by a free-text box
+# (verifactu#68).
 #
 # The pair above only checks that the control and the `op` AGREE. Both halves can agree and still
 # be the wrong control: `invoice_date` as `filterType: 'text'` + `op: "eq"` is internally consistent
@@ -55,15 +56,24 @@ OPS_FOR_FILTER_TYPE = {
 # `erp-verifactu-records`, over the SAME column of the SAME shape, offers a from/to. Two screens of
 # one module disagreeing about how a date is filtered is the thing the user notices.
 #
-# The criterion is the `_date` suffix, and it stops there ON PURPOSE. Every `_date` column in this
-# module is `TEXT` holding a date-only `YYYY-MM-DD` (`verifactu_record.invoice_date`,
-# `verifactu_aeat_record.invoice_date`), so a lexicographic `BETWEEN from AND to` is exact at both
-# ends. Full ISO-8601 INSTANTS (`timestamp`, `query_timestamp`, `next_attempt_at`) carry a time and
-# an offset, so `'2026-08-29T14:23:11+02:00' <= '2026-08-29'` is FALSE and a same-day range would
-# silently return nothing. Widening this rule to them needs the list engine to close the upper bound
-# on a timestamp column, which is kernel work, not a control swap — tracked in verifactu#70.
-DATE_COLUMN_SUFFIX = "_date"
+# Two shapes, one rule. `_date` columns are `TEXT` holding a date-only `YYYY-MM-DD`
+# (`verifactu_record.invoice_date`, `verifactu_aeat_record.invoice_date`); `_at`-suffixed columns
+# and `timestamp` are `TEXT` holding a full ISO-8601 instant (`verifactu_event.timestamp`,
+# `verifactu_contingency.next_attempt_at`, `verifactu_aeat_record.query_timestamp`). Both used to
+# need different rules, because a lexicographic `to <= '2026-08-29'` is exact for a bare date but
+# drops every instant later that same day (`'2026-08-29T14:23:11+02:00' <= '2026-08-29'` is
+# FALSE) — the range came back empty even with rows that day. That gap is closed: the list engine
+# now widens a bare-date `to` bound to the START of the next day before comparing
+# (`hub/crates/runtime/src/queries.rs`, verifactu#70), so both column shapes get the same,
+# correct, `daterange` control.
+DATE_COLUMN_SUFFIXES = ("_date", "_at")
+DATE_COLUMN_NAMES = {"timestamp"}
 DATE_FILTER_TYPE = "daterange"
+
+
+def is_date_column(name: str) -> bool:
+    return name.endswith(DATE_COLUMN_SUFFIXES) or name in DATE_COLUMN_NAMES
+
 
 failures: list[str] = []
 
@@ -142,7 +152,7 @@ def main() -> int:
             # `daterange` while leaving `op: "eq"` in the manifest has to keep failing — that pair
             # is the whole point of verifactu#68, and it is how the same column stayed broken
             # through #64.
-            if column.endswith(DATE_COLUMN_SUFFIX):
+            if is_date_column(column):
                 dates_checked += 1
                 if kind != DATE_FILTER_TYPE:
                     fail(
@@ -175,8 +185,9 @@ def main() -> int:
         )
     if not dates_checked:
         fail(
-            f"no filterable `*{DATE_COLUMN_SUFFIX}` column was inspected: the date rule would pass "
-            "while proving nothing (verifactu#68)"
+            "no filterable date/instant column was inspected (suffixes "
+            f"{DATE_COLUMN_SUFFIXES}, names {sorted(DATE_COLUMN_NAMES)}): the date rule would "
+            "pass while proving nothing (verifactu#68)"
         )
     print()
     if failures:
