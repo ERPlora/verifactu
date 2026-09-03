@@ -13,8 +13,12 @@ Requires `verifactu.view_verifactu` — an employee can read this.
   tax id and name, base, tax and total amounts, status, transmission timestamp, retry count, AEAT
   receipt code (CSV) or generation timestamp.
 
-Open a record for its full detail, including the exact XML that was sent, the AEAT response, the CSV
-and the QR.
+Open a record for its full detail: the invoice fields, the hash chain (its own hash and the
+previous one), the delivery fingerprint — `transmission_id` (the fiscal cell's
+`Idempotency-Key`, NOT always the record id: an automatic re-anchor presents the same record
+under `{id}-rechain-{anchor}`) and `xml_sha256` (the digest of the bytes that travelled, shown
+in full so support can compare it byte-for-byte with the cell's log) — and the AEAT response:
+code, message, CSV and QR (verifactu#86).
 
 ### How a record normally appears
 

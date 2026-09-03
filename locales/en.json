@@ -245,6 +245,26 @@
     "errDemoCertificateLocked": "This is a demo hub: it cannot hold its own business certificate, because the AEAT issues no fictitious one. ERPlora files your records with the tax authority on your behalf, always against the test environment. To use your own, create your own hub.",
     "errDemoIdentityLocked": "This is a demo hub: its tax ID and company name are fixed and cannot be edited, because the documents it issues are nobody's. To invoice under your own tax ID, create your own hub.",
     "errTestRun": "Could not run the test",
-    "errTestInvoice": "Could not create the test invoice"
+    "errTestInvoice": "Could not create the test invoice",
+    "back": "Back",
+    "errRecordNotFound": "Record not found",
+    "errLoadDetail": "Could not load the record",
+    "detailTitle": "Record {number}",
+    "fieldGeneratedAt": "Generated at",
+    "fieldTransmittedAt": "Transmitted at",
+    "chainSectionTitle": "Fingerprint chain",
+    "fieldPreviousHash": "Previous hash",
+    "deliveryFingerprintTitle": "Delivery fingerprint",
+    "fieldTransmissionId": "Transmission ID",
+    "fieldXmlSha256": "XML digest (SHA-256)",
+    "fieldXmlStoragePath": "XML file",
+    "fingerprintNotStamped": "Not stamped yet",
+    "aeatSectionTitle": "AEAT response",
+    "fieldAeatResponseCode": "Response code",
+    "fieldAeatResponseMessage": "Response message",
+    "fieldRetryCount": "Retries",
+    "fieldNextRetryAt": "Next retry at",
+    "fieldQrUrl": "QR",
+    "fieldQrUrlLink": "Open QR"
   }
 }

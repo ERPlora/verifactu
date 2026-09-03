@@ -246,7 +246,27 @@
     "errDemoCertificateLocked": "Este es un hub de demostración: no puede tener certificado propio del negocio, porque la AEAT no emite ninguno ficticio. ERPlora remite tus registros a la Agencia Tributaria en tu nombre, siempre contra el entorno de pruebas. Para usar el tuyo, crea tu propio hub.",
     "errDemoIdentityLocked": "Este es un hub de demostración: su NIF y su razón social son fijos y no se pueden editar, porque los documentos que emite no son de nadie. Para facturar con tu propio NIF, crea tu propio hub.",
     "errTestRun": "No se pudo ejecutar la prueba",
-    "errTestInvoice": "No se pudo crear la factura de prueba"
+    "errTestInvoice": "No se pudo crear la factura de prueba",
+    "back": "Volver",
+    "errRecordNotFound": "Registro no encontrado",
+    "errLoadDetail": "No se pudo cargar el registro",
+    "detailTitle": "Registro {number}",
+    "fieldGeneratedAt": "Generado el",
+    "fieldTransmittedAt": "Transmitido el",
+    "chainSectionTitle": "Cadena de huellas",
+    "fieldPreviousHash": "Huella anterior",
+    "deliveryFingerprintTitle": "Huella de la entrega",
+    "fieldTransmissionId": "ID de transmisión",
+    "fieldXmlSha256": "Digest del XML (SHA-256)",
+    "fieldXmlStoragePath": "Fichero XML",
+    "fingerprintNotStamped": "Aún sin estampar",
+    "aeatSectionTitle": "Respuesta de la AEAT",
+    "fieldAeatResponseCode": "Código de respuesta",
+    "fieldAeatResponseMessage": "Mensaje de respuesta",
+    "fieldRetryCount": "Reintentos",
+    "fieldNextRetryAt": "Próximo reintento",
+    "fieldQrUrl": "QR",
+    "fieldQrUrlLink": "Abrir QR"
   },
   "widgets": {
     "verifactu.pending": {
