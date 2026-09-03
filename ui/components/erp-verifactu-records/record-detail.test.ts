@@ -30,6 +30,8 @@ const ROW = { id: 'rec-1', invoice_number: 'FACT/2026/17', sequence_number: 17 }
 let detailRow: Record<string, unknown> | Array<Record<string, unknown>> | null = null;
 /** Makes `verifactu.records.get` fail, the way a dropped connection or a denied permission does. */
 let detailFails = false;
+/** Holds `verifactu.records.get` open until the test releases it — the only way to SEE the loading state. */
+let detailGate: Promise<void> | null = null;
 /** Every query the screen asked for, so the call itself can be asserted and not just its effect. */
 const asked: Array<{ name: string; params?: Record<string, unknown> }> = [];
 
@@ -72,10 +74,12 @@ beforeEach(() => {
   asked.length = 0;
   detailRow = fullRow();
   detailFails = false;
+  detailGate = null;
   (globalThis as Record<string, unknown>).erplora = {
     query: async (name: string, params?: Record<string, unknown>) => {
       asked.push({ name, params });
       if (name === 'verifactu.records.get') {
+        if (detailGate) await detailGate;
         if (detailFails) throw new Error('permission_denied');
         return detailRow;
       }
@@ -209,6 +213,45 @@ describe('the detail when it cannot be shown', () => {
     await openRow(el);
     expect(text(el)).toContain('ui.errRecordNotFound');
     expect(table(el), 'a missing record swallowed the list').not.toBeNull();
+  });
+});
+
+describe('while the detail is on its way', () => {
+  // A press that answers nothing invites a second press — and a second `records.get` for the same
+  // row. Loading is a state of THIS screen, exactly like error is: painted, not inferred from the
+  // list standing still (root CLAUDE.md «UI completa»: loading/empty/error, all three).
+  const settle = async (el: Mounted): Promise<void> => {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await (el as unknown as { updateComplete: Promise<unknown> }).updateComplete;
+  };
+  const loading = (el: Mounted): Element | null =>
+    el.shadowRoot.querySelector('[data-test="detail-loading"]');
+
+  it('says the record is loading, over the list, until records.get answers', async () => {
+    let release!: () => void;
+    detailGate = new Promise<void>((resolve) => (release = resolve));
+    const el = await mount();
+    await openRow(el);
+    expect(loading(el), 'nothing tells the user the record is on its way').not.toBeNull();
+    expect(text(el), 'the loading notice is not the translated one').toContain('ui.loading');
+    expect(table(el), 'the list vanished before the detail arrived').not.toBeNull();
+    release();
+    await settle(el);
+    expect(loading(el), 'the loading notice outlived the answer').toBeNull();
+    expect(text(el)).toContain(DIGEST);
+  });
+
+  it('a failed lookup takes the loading notice down with it', async () => {
+    let release!: () => void;
+    detailGate = new Promise<void>((resolve) => (release = resolve));
+    detailFails = true;
+    const el = await mount();
+    await openRow(el);
+    expect(loading(el)).not.toBeNull();
+    release();
+    await settle(el);
+    expect(loading(el), 'a failure left the screen «loading» forever').toBeNull();
+    expect(el.shadowRoot.querySelector('ok-inline-feedback[tone="danger"]')).not.toBeNull();
   });
 });
 

@@ -4476,6 +4476,7 @@ var _ErpVerifactuRecords = class _ErpVerifactuRecords extends i3 {
     this.invoiceCountFailed = false;
     this.detail = null;
     this.detailError = "";
+    this.detailLoading = false;
     // TODO-LIT: componentWillLoad → connectedCallback. Recuerda: connectedCallback se dispara
     // en CADA reconexión al DOM (no solo en el primer montaje). Si la init debe correr una
     // sola vez tras el primer render, considera firstUpdated() en su lugar.
@@ -4626,6 +4627,7 @@ var _ErpVerifactuRecords = class _ErpVerifactuRecords extends i3 {
    */
   async openDetail(id) {
     this.detailError = "";
+    this.detailLoading = true;
     try {
       const t5 = (k2) => erplora3().t(CATALOG3, k2);
       const row = await erplora3().query(
@@ -4640,6 +4642,8 @@ var _ErpVerifactuRecords = class _ErpVerifactuRecords extends i3 {
       this.detail = record;
     } catch (e5) {
       this.detailError = e5 instanceof Error ? e5.message : erplora3().t(CATALOG3, "ui.errLoadDetail");
+    } finally {
+      this.detailLoading = false;
     }
   }
   closeDetail() {
@@ -4726,6 +4730,7 @@ var _ErpVerifactuRecords = class _ErpVerifactuRecords extends i3 {
         </header>
         ${this.ctrl?.error ? b2`<p class="err">${this.ctrl.error}</p>` : A}
         ${this.detailError ? b2`<ok-inline-feedback tone="danger" icon="alert-circle-outline">${this.detailError}</ok-inline-feedback>` : A}
+        ${this.detailLoading ? b2`<ok-inline-feedback data-test="detail-loading" tone="neutral" icon="hourglass-outline">${t5("ui.loading")}</ok-inline-feedback>` : A}
         <!-- verifactu#59: an empty chain over a hub that HAS invoiced is an incident — an
              ungranted certificate capability, or a listener that died (hub#1119 / ADR-0399).
              The plain empty state reassures exactly when it should alarm, so the two are told
@@ -4769,6 +4774,9 @@ __decorateClass([
 __decorateClass([
   r5()
 ], _ErpVerifactuRecords.prototype, "detailError", 2);
+__decorateClass([
+  r5()
+], _ErpVerifactuRecords.prototype, "detailLoading", 2);
 var ErpVerifactuRecords = _ErpVerifactuRecords;
 define("erp-verifactu-records", ErpVerifactuRecords);
 

@@ -123,6 +123,13 @@ export class ErpVerifactuRecords extends LitElement {
   /** Set while `detail` stays `null` — a failed lookup or a missing record, shown over the list. */
   @state() private detailError = '';
 
+  /**
+   * True from the row press until `records.get` answers, whichever way. Painted over the list so
+   * the press is seen to do something — a silent press invites a second one, and a second
+   * `records.get` for the same row (verifactu#86).
+   */
+  @state() private detailLoading = false;
+
   private ctrl!: ListController<VerifactuRecord>;
 
   private unsub?: () => void;
@@ -276,6 +283,7 @@ export class ErpVerifactuRecords extends LitElement {
    */
   private async openDetail(id: string): Promise<void> {
     this.detailError = '';
+    this.detailLoading = true;
     try {
       const t = (k: string): string => erplora().t(CATALOG, k);
       const row = await erplora().query<VerifactuRecordDetail[] | VerifactuRecordDetail>(
@@ -290,6 +298,8 @@ export class ErpVerifactuRecords extends LitElement {
       this.detail = record;
     } catch (e) {
       this.detailError = e instanceof Error ? e.message : erplora().t(CATALOG, 'ui.errLoadDetail');
+    } finally {
+      this.detailLoading = false;
     }
   }
 
@@ -383,6 +393,9 @@ export class ErpVerifactuRecords extends LitElement {
         ${this.ctrl?.error ? html`<p class="err">${this.ctrl.error}</p>` : nothing}
         ${this.detailError
           ? html`<ok-inline-feedback tone="danger" icon="alert-circle-outline">${this.detailError}</ok-inline-feedback>`
+          : nothing}
+        ${this.detailLoading
+          ? html`<ok-inline-feedback data-test="detail-loading" tone="neutral" icon="hourglass-outline">${t('ui.loading')}</ok-inline-feedback>`
           : nothing}
         <!-- verifactu#59: an empty chain over a hub that HAS invoiced is an incident — an
              ungranted certificate capability, or a listener that died (hub#1119 / ADR-0399).
