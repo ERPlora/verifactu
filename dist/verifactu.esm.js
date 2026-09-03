@@ -3627,7 +3627,7 @@ var es_default = {
     recErrHash: "La huella debe tener 64 caracteres hexadecimales",
     errIssuerRequired: "No se puede activar VeriFactu sin obligado tributario: configura antes el NIF y la raz\xF3n social en Ajustes \u2192 Negocio.",
     errDemoEnvironmentLocked: "Este es un hub de demostraci\xF3n: siempre declara al entorno de pruebas de la AEAT, as\xED que no se puede pasar a producci\xF3n. Todo lo dem\xE1s funciona \u2014 los registros se encadenan y cada uno tiene su tique y su QR. Para facturar de verdad, crea tu propio hub.",
-    errDemoCertificateLocked: "Este es un hub de demostraci\xF3n: no puede tener certificado propio del negocio, porque la AEAT no emite ninguno ficticio. Firma con el certificado delegado de ERPlora contra el entorno de pruebas. Para usar el tuyo, crea tu propio hub.",
+    errDemoCertificateLocked: "Este es un hub de demostraci\xF3n: no puede tener certificado propio del negocio, porque la AEAT no emite ninguno ficticio. ERPlora remite tus registros a la Agencia Tributaria en tu nombre, siempre contra el entorno de pruebas. Para usar el tuyo, crea tu propio hub.",
     errDemoIdentityLocked: "Este es un hub de demostraci\xF3n: su NIF y su raz\xF3n social son fijos y no se pueden editar, porque los documentos que emite no son de nadie. Para facturar con tu propio NIF, crea tu propio hub.",
     errTestRun: "No se pudo ejecutar la prueba",
     errTestInvoice: "No se pudo crear la factura de prueba"
@@ -3895,7 +3895,7 @@ var en_default = {
     recErrHash: "The hash must be 64 hexadecimal characters",
     errIssuerRequired: "VeriFactu cannot be enabled without a taxpayer: set the tax ID and company name in Settings \u2192 Business first.",
     errDemoEnvironmentLocked: "This is a demo hub: it always files to the AEAT test environment, so it cannot be switched to production. Everything else works \u2014 records are chained, and each one gets its ticket and its QR. To invoice for real, create your own hub.",
-    errDemoCertificateLocked: "This is a demo hub: it cannot hold its own business certificate, because the AEAT issues no fictitious one. It signs with ERPlora's delegated certificate against the test environment. To use your own, create your own hub.",
+    errDemoCertificateLocked: "This is a demo hub: it cannot hold its own business certificate, because the AEAT issues no fictitious one. ERPlora files your records with the tax authority on your behalf, always against the test environment. To use your own, create your own hub.",
     errDemoIdentityLocked: "This is a demo hub: its tax ID and company name are fixed and cannot be edited, because the documents it issues are nobody's. To invoice under your own tax ID, create your own hub.",
     errTestRun: "Could not run the test",
     errTestInvoice: "Could not create the test invoice"
