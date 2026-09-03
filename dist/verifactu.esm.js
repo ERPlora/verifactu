@@ -3550,6 +3550,39 @@ var es_default = {
     certOptionalHint: "En esta v\xEDa no necesitas certificado propio: ERPlora remite con el suyo. Sube uno solo si prefieres enviar t\xFA directamente.",
     testDelegatedUnavailable: "La prueba en vivo necesita un certificado propio, as\xED que no est\xE1 disponible mientras ERPlora remite por ti.",
     testNeedsOwnCertificate: "Sube el certificado del negocio en Ajustes \u2192 Negocio para poder ejecutar la prueba en vivo.",
+    gatewayTitle: "Conexi\xF3n segura con ERPlora",
+    gatewayHint: "Para que ERPlora pueda remitir a la Agencia Tributaria en tu nombre, este hub y ERPlora se identifican con un certificado de este equipo. La clave privada se crea aqu\xED y nunca sale.",
+    gatewayCommonName: "Identificador de este hub",
+    gatewayValidUntil: "V\xE1lida hasta",
+    gwLoading: "consultando\u2026",
+    gwUnknown: "no disponible",
+    gwAbsent: "sin solicitar",
+    gwPending: "pendiente de firma",
+    gwActive: "activa",
+    gwExpiring: "caduca pronto",
+    gwExpired: "caducada",
+    gwUnknownHint: "No hemos podido preguntarle a este hub por su conexi\xF3n. Recarga la pantalla; si sigue pasando, el hub no est\xE1 respondiendo.",
+    gwAbsentHint: "Solic\xEDtala y ERPlora la prepara. Una persona de ERPlora la revisa y la firma, normalmente en 24-72 horas.",
+    gwPendingHint: "Ya est\xE1 solicitada. Falta que una persona de ERPlora la firme, normalmente en 24-72 horas; el hub la recoge solo en cuanto ocurra.",
+    gwExpiringHint: "Renu\xE9vala antes de que caduque: mientras est\xE9 caducada, ERPlora no puede remitir en tu nombre.",
+    gwExpiredHint: "ERPlora no puede remitir en tu nombre hasta que la renueves. Mientras tanto, tus registros esperan en la cola de contingencia.",
+    gwEnrol: "Solicitar la conexi\xF3n",
+    gwCheck: "Comprobar el estado",
+    gwRenew: "Renovar la conexi\xF3n",
+    gwWorking: "Trabajando\u2026",
+    gwFiled: "Solicitada. Una persona de ERPlora la revisa y la firma, normalmente en 24-72 horas.",
+    gwAwaitingReview: "Ya estaba solicitada y sigue en revisi\xF3n. Aqu\xED no hay nada m\xE1s que hacer.",
+    gwInstalled: "Conexi\xF3n activa. ERPlora ya puede remitir en tu nombre.",
+    gwRejected: "ERPlora ha devuelto la solicitud.",
+    gwOutOfBudget: "Demasiadas comprobaciones en una hora. El hub sigue intent\xE1ndolo solo; vuelve en unos minutos.",
+    gwOutcomeUnknown: "ERPlora ha contestado algo que esta pantalla no sabe leer. Comun\xEDcaselo al soporte.",
+    gwErrNoMachineCredential: "Este hub todav\xEDa no ha terminado de conectarse con ERPlora, as\xED que a\xFAn no puede solicitar nada. Int\xE9ntalo en unos minutos.",
+    gwErrCsrUnavailable: "Este hub no ha podido preparar la solicitud. Comun\xEDcaselo al soporte.",
+    gwErrCloudUnreachable: "No hemos podido contactar con ERPlora. El hub sigue intent\xE1ndolo solo; prueba otra vez en unos minutos.",
+    gwErrNotInstallable: "ERPlora ha firmado la conexi\xF3n pero este hub no ha podido instalarla. Comun\xEDcaselo al soporte con el c\xF3digo de abajo.",
+    gwErrRefused: "ERPlora ha rechazado la solicitud. El c\xF3digo de abajo dice por qu\xE9.",
+    gwErrNotAdmin: "Solo un administrador del hub puede solicitar esta conexi\xF3n.",
+    gwErrHttp: "El hub no ha respondido a la solicitud. Vuelve a intentarlo en un momento.",
     capabilityTitle: "Permiso: Certificado del negocio (firma fiscal)",
     capabilityPending: "se concede en Permisos",
     capabilityDenied: "sin conceder",
@@ -3785,6 +3818,39 @@ var en_default = {
     certOptionalHint: "On this route you do not need a certificate of your own: ERPlora files with its own. Upload one only if you would rather file directly.",
     testDelegatedUnavailable: "The live test needs a certificate of your own, so it is not available while ERPlora files for you.",
     testNeedsOwnCertificate: "Upload the business certificate in Settings \u2192 Business to run the live test.",
+    gatewayTitle: "Secure connection to ERPlora",
+    gatewayHint: "So that ERPlora can file with the tax authority on your behalf, this hub and ERPlora identify each other with a certificate of this device. The private key is created here and never leaves it.",
+    gatewayCommonName: "Identifier of this hub",
+    gatewayValidUntil: "Valid until",
+    gwLoading: "checking\u2026",
+    gwUnknown: "not available",
+    gwAbsent: "not requested",
+    gwPending: "waiting for signature",
+    gwActive: "active",
+    gwExpiring: "expiring soon",
+    gwExpired: "expired",
+    gwUnknownHint: "We could not ask this hub about its connection. Reload the screen; if it keeps happening, the hub is not answering.",
+    gwAbsentHint: "Request it and ERPlora prepares it. A person at ERPlora reviews and signs it, usually within 24-72 hours.",
+    gwPendingHint: "Already requested. A person at ERPlora still has to sign it, usually within 24-72 hours; the hub collects it on its own as soon as they do.",
+    gwExpiringHint: "Renew it before it expires: while it is expired, ERPlora cannot file on your behalf.",
+    gwExpiredHint: "ERPlora cannot file on your behalf until you renew it. In the meantime your records wait in the contingency queue.",
+    gwEnrol: "Request the connection",
+    gwCheck: "Check the status",
+    gwRenew: "Renew the connection",
+    gwWorking: "Working\u2026",
+    gwFiled: "Requested. A person at ERPlora reviews and signs it, usually within 24-72 hours.",
+    gwAwaitingReview: "It was already requested and is still under review. Nothing else to do here.",
+    gwInstalled: "Connection active. ERPlora can now file on your behalf.",
+    gwRejected: "ERPlora returned the request.",
+    gwOutOfBudget: "Too many checks in one hour. The hub keeps trying on its own; come back in a few minutes.",
+    gwOutcomeUnknown: "ERPlora answered something this screen cannot read. Report it to support.",
+    gwErrNoMachineCredential: "This hub has not finished connecting to ERPlora, so it cannot request anything yet. Try again in a few minutes.",
+    gwErrCsrUnavailable: "This hub could not prepare the request. Report it to support.",
+    gwErrCloudUnreachable: "We could not reach ERPlora. The hub keeps trying on its own; try again in a few minutes.",
+    gwErrNotInstallable: "ERPlora signed the connection but this hub could not install it. Report it to support with the code below.",
+    gwErrRefused: "ERPlora refused the request. The code below says why.",
+    gwErrNotAdmin: "Only an administrator of the hub can request this connection.",
+    gwErrHttp: "The hub did not answer the request. Try again in a moment.",
     capabilityTitle: "Permission: Business certificate (fiscal signing)",
     capabilityPending: "granted in Permissions",
     capabilityDenied: "not granted",
@@ -4935,6 +5001,71 @@ function toMicro2(qty) {
   return Math.round(qty * QUANTITY_SCALE2);
 }
 
+// ui/lib/gateway-identity.ts
+var GATEWAY_IDENTITY_PATH = "/api/business/gateway-identity";
+var GATEWAY_ENROL_PATH = "/api/business/gateway-identity/enrol";
+var HUB_SESSION_KEY = "erplora.hub_session";
+var EXPIRY_WARNING_DAYS = 30;
+function gatewayState(wire, nowMs) {
+  if (!wire) return "unknown";
+  if (!wire.has_certificate) return wire.has_key ? "pending" : "absent";
+  const iso = (wire.not_after ?? "").trim();
+  if (!iso) return "active";
+  const endOfDay = Date.parse(`${iso}T23:59:59Z`);
+  if (Number.isNaN(endOfDay)) return "active";
+  if (endOfDay < nowMs) return "expired";
+  return endOfDay - nowMs <= EXPIRY_WARNING_DAYS * 864e5 ? "expiring" : "active";
+}
+var OUTCOMES = {
+  filed: { key: "ui.gwFiled", tone: "success" },
+  awaiting_review: { key: "ui.gwAwaitingReview", tone: "info" },
+  installed: { key: "ui.gwInstalled", tone: "success" },
+  rejected: { key: "ui.gwRejected", tone: "danger" },
+  out_of_budget: { key: "ui.gwOutOfBudget", tone: "warning" }
+};
+function enrolOutcome(state) {
+  return OUTCOMES[state] ?? { key: "ui.gwOutcomeUnknown", tone: "warning" };
+}
+var REFUSAL_KEYS = {
+  "enrolment.no_machine_credential": "ui.gwErrNoMachineCredential",
+  "enrolment.csr_unavailable": "ui.gwErrCsrUnavailable",
+  "enrolment.cloud_unreachable": "ui.gwErrCloudUnreachable",
+  "enrolment.cloud_refused": "ui.gwErrCloudUnreachable",
+  "enrolment.no_issued_document": "ui.gwErrNotInstallable",
+  "enrolment.issued_not_base64": "ui.gwErrNotInstallable",
+  "enrolment.issued_without_ca": "ui.gwErrNotInstallable",
+  "enrolment.install_refused": "ui.gwErrNotInstallable"
+};
+function refusalKey(code) {
+  return REFUSAL_KEYS[code] ?? "ui.gwErrRefused";
+}
+function hubSession() {
+  try {
+    return globalThis.localStorage?.getItem(HUB_SESSION_KEY) ?? null;
+  } catch {
+    return null;
+  }
+}
+async function gatewayFetch(path, method) {
+  const headers = {};
+  const session = hubSession();
+  if (session) headers["X-Hub-Session"] = session;
+  let res;
+  try {
+    res = await fetch(path, { method, headers, credentials: "same-origin" });
+  } catch {
+    return { ok: false, status: 0, body: {} };
+  }
+  let body = {};
+  try {
+    const parsed = await res.json();
+    if (parsed && typeof parsed === "object") body = parsed;
+  } catch {
+    body = {};
+  }
+  return { ok: res.ok, status: res.status, body };
+}
+
 // ui/components/erp-verifactu-settings/erp-verifactu-settings.ts
 var CATALOG5 = { es: es_default, en: en_default };
 function erplora5() {
@@ -4950,6 +5081,14 @@ var DEMO_LOCKS = {
 var CAPABILITY_DENIED = "capability_denied";
 var ROUTE_OWN = "own";
 var ROUTE_DELEGATED = "delegated";
+var GATEWAY_STATES = {
+  unknown: { tone: "neutral", label: "ui.gwUnknown", hint: "ui.gwUnknownHint", action: null },
+  absent: { tone: "warning", label: "ui.gwAbsent", hint: "ui.gwAbsentHint", action: "ui.gwEnrol" },
+  pending: { tone: "warning", label: "ui.gwPending", hint: "ui.gwPendingHint", action: "ui.gwCheck" },
+  active: { tone: "success", label: "ui.gwActive", hint: "ui.gatewayHint", action: null },
+  expiring: { tone: "warning", label: "ui.gwExpiring", hint: "ui.gwExpiringHint", action: "ui.gwRenew" },
+  expired: { tone: "danger", label: "ui.gwExpired", hint: "ui.gwExpiredHint", action: "ui.gwRenew" }
+};
 var GRANT_STATES = {
   vigente: { key: "ui.grantVigente", tone: "success" },
   pendiente: { key: "ui.grantPendiente", tone: "warning" },
@@ -4957,7 +5096,7 @@ var GRANT_STATES = {
   revocado: { key: "ui.grantRevocado", tone: "danger" },
   absent: { key: "ui.grantAbsent", tone: "warning" }
 };
-function refusalKey(e5) {
+function refusalKey2(e5) {
   const code = typeof e5?.code === "string" ? e5.code : "";
   const message = e5 instanceof Error ? e5.message : "";
   if (DEMO_LOCKS[code]) return DEMO_LOCKS[code];
@@ -4995,6 +5134,10 @@ var ErpVerifactuSettings = class extends i3 {
     this.savedEnabled = false;
     this.transmission = null;
     this.routeLoading = true;
+    this.gateway = null;
+    this.gatewayLoading = true;
+    this.enrolling = false;
+    this.gatewayNotice = null;
     this.onLocaleChange = () => this.requestUpdate();
   }
   static {
@@ -5032,6 +5175,7 @@ var ErpVerifactuSettings = class extends i3 {
     window.addEventListener("erplora:locale-changed", this.onLocaleChange);
     await this.refresh();
     await this.loadRoute();
+    await this.loadGatewayIdentity();
     await this.loadDiag();
   }
   disconnectedCallback() {
@@ -5099,6 +5243,51 @@ var ErpVerifactuSettings = class extends i3 {
     if (!iso) return "";
     const d3 = new Date(iso);
     return Number.isNaN(d3.getTime()) ? iso : d3.toLocaleDateString(erplora5().locale || void 0);
+  }
+  /**
+   * Reads this hub's MACHINE identity from the core route (hub#1457).
+   *
+   * A failure lands in `gateway = null` and NOT in `this.error`: that slot belongs to the whole
+   * screen, and a side read must not blank out the configuration the owner came here to change.
+   * The section says «not available» in its own place, where a person can act on it.
+   */
+  async loadGatewayIdentity() {
+    this.gatewayLoading = true;
+    const reply = await gatewayFetch(GATEWAY_IDENTITY_PATH, "GET");
+    this.gateway = reply.ok ? reply.body : null;
+    this.gatewayLoading = false;
+  }
+  /**
+   * Asks the hub to enrol: it files the CSR in this hub's legal-document file at the control plane
+   * with its machine credential and collects the certificate once a person has signed it.
+   *
+   * Idempotent by contract — pressing it while a request is pending does not open a second review
+   * (the control plane deduplicates the same bytes) and, once approved, it installs. So the ONE
+   * button covers «request», «check» and «renew»; three buttons for one call would be three ways
+   * of spending the same allowance.
+   *
+   * The answer carries the fresh status in the same body, so the row updates from what the door
+   * just said rather than from a second round trip.
+   */
+  async enrolGateway() {
+    this.enrolling = true;
+    this.gatewayNotice = null;
+    try {
+      const reply = await gatewayFetch(GATEWAY_ENROL_PATH, "POST");
+      const body = reply.body;
+      if (reply.ok) {
+        const outcome = enrolOutcome(typeof body.state === "string" ? body.state : "");
+        const reason = typeof body.rejected_reason === "string" ? body.rejected_reason : "";
+        this.gatewayNotice = { ...outcome, detail: reason, mono: false };
+        this.gateway = body;
+        return;
+      }
+      const code = typeof body.code === "string" ? body.code : "";
+      const key = reply.status === 401 || reply.status === 403 ? "ui.gwErrNotAdmin" : code ? refusalKey(code) : "ui.gwErrHttp";
+      this.gatewayNotice = { key, tone: "danger", detail: code, mono: true };
+    } finally {
+      this.enrolling = false;
+    }
   }
   async loadDiag() {
     try {
@@ -5169,7 +5358,7 @@ var ErpVerifactuSettings = class extends i3 {
       this.savedEnabled = !!this.cfg.enabled;
       await this.refresh();
     } catch (e5) {
-      const key = refusalKey(e5);
+      const key = refusalKey2(e5);
       const message = e5 instanceof Error ? e5.message : "";
       this.error = key ? erplora5().t(CATALOG5, key) : message || erplora5().t(CATALOG5, "ui.errSaveConfig");
     } finally {
@@ -5185,7 +5374,7 @@ var ErpVerifactuSettings = class extends i3 {
       await this.loadDiag();
     } catch (e5) {
       this.noteCapability(e5);
-      const key = refusalKey(e5);
+      const key = refusalKey2(e5);
       this.error = key ? erplora5().t(CATALOG5, key) : (e5 instanceof Error ? e5.message : "") || erplora5().t(CATALOG5, "ui.errTestRun");
     } finally {
       this.testing = false;
@@ -5217,7 +5406,7 @@ var ErpVerifactuSettings = class extends i3 {
       });
       this.invoiceCreated = true;
     } catch (e5) {
-      const key = refusalKey(e5);
+      const key = refusalKey2(e5);
       this.error = key ? erplora5().t(CATALOG5, key) : (e5 instanceof Error ? e5.message : "") || erplora5().t(CATALOG5, "ui.errTestInvoice");
     } finally {
       this.creatingInvoice = false;
@@ -5319,6 +5508,48 @@ var ErpVerifactuSettings = class extends i3 {
       </div>
     </ion-item>`;
   }
+  /**
+   * **The secure connection with ERPlora** (verifactu#76): what this hub's MACHINE identity is, and
+   * the one thing there is to do about it.
+   *
+   * That identity is what lets the fiscal cell file on the business's behalf (ADR-0320 §1): the
+   * private key is born on the hub and never leaves it (ADR-0419), the CSR travels, and an operator
+   * signs it with the internal CA — offline, so a person is always in the loop. Until hub#1457 both
+   * legs were a human errand; the screen is the half that was still missing.
+   *
+   * There is deliberately NO way to forget the identity from here. `DELETE …/gateway-identity`
+   * exists and is the operator's rotation path, but it destroys the private key: a module screen
+   * must not be able to shut a business's road to the tax authority with one press.
+   */
+  renderGatewayIdentity(t5) {
+    const state = this.gatewayLoading ? null : gatewayState(this.gateway, Date.now());
+    const row = state ? GATEWAY_STATES[state] : { tone: "neutral", label: "ui.gwLoading", hint: "ui.gatewayHint", action: null };
+    const commonName = (this.gateway?.common_name ?? "").trim();
+    const validUntil = state === "active" || state === "expiring" || state === "expired" ? (this.gateway?.not_after ?? "").trim() : "";
+    const notice = this.gatewayNotice;
+    return b2`<ion-item lines="none">
+      <div class="cert">
+        <div class="cert-head">
+          <ion-label>${t5("ui.gatewayTitle")}</ion-label>
+          <ok-status-pill dot tone=${row.tone} label=${t5(row.label)}></ok-status-pill>
+        </div>
+        <p class="hint">${t5(row.hint)}</p>
+        ${commonName ? b2`<div class="kv"><span class="k">${t5("ui.gatewayCommonName")}</span><code>${commonName}</code></div>` : A}
+        ${validUntil ? b2`<div class="kv"><span class="k">${t5("ui.gatewayValidUntil")}</span><code>${validUntil}</code></div>` : A}
+        ${row.action ? b2`<ion-button
+              size="small"
+              fill="outline"
+              data-testid="gateway-enrol"
+              ?disabled=${this.enrolling}
+              @click=${() => this.enrolGateway()}
+            >${this.enrolling ? t5("ui.gwWorking") : t5(row.action)}</ion-button>` : A}
+        ${notice ? b2`<ok-inline-feedback tone=${notice.tone} icon="shield-checkmark-outline">
+              ${t5(notice.key)}
+              ${notice.detail ? notice.mono ? b2` <code>${notice.detail}</code>` : b2` ${notice.detail}` : A}
+            </ok-inline-feedback>` : A}
+      </div>
+    </ion-item>`;
+  }
   render() {
     const t5 = (k2) => erplora5().t(CATALOG5, k2);
     const issuerNif = (this.cfg.issuer_nif || "").trim();
@@ -5411,6 +5642,11 @@ var ErpVerifactuSettings = class extends i3 {
                 </ion-button>
               </div>
             </ion-item>
+            <!-- La identidad de MÁQUINA con la que la celda fiscal remite en nombre del negocio
+                 (verifactu#76, ADR-0320 §1 / ADR-0419). Va justo detrás del certificado propio
+                 porque es la otra mitad de la misma pregunta: con qué se identifica este hub
+                 cuando NO firma con el certificado del cliente. -->
+            ${this.renderGatewayIdentity(t5)}
             <!-- Permiso módulo→host (ADR-0079), verifactu#62. Es el TERCER requisito para poder
                  firmar, y hasta ahora era el único invisible: los otros dos ya se enseñan aquí
                  arriba. La píldora es NEUTRA por defecto porque el módulo no puede leer el estado
@@ -5490,4 +5726,16 @@ __decorateClass([
 __decorateClass([
   r5()
 ], ErpVerifactuSettings.prototype, "routeLoading", 2);
+__decorateClass([
+  r5()
+], ErpVerifactuSettings.prototype, "gateway", 2);
+__decorateClass([
+  r5()
+], ErpVerifactuSettings.prototype, "gatewayLoading", 2);
+__decorateClass([
+  r5()
+], ErpVerifactuSettings.prototype, "enrolling", 2);
+__decorateClass([
+  r5()
+], ErpVerifactuSettings.prototype, "gatewayNotice", 2);
 define("erp-verifactu-settings", ErpVerifactuSettings);

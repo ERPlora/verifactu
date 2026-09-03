@@ -143,6 +143,42 @@ says so is *not needed*, rather than reporting it as missing.
 The **live test** («Send test») needs a certificate of the business's own, so it is disabled on the
 delegated road with its reason: the diagnostic still demands the core identity (ERPlora/hub#1485).
 
+### Secure connection to ERPlora (the machine identity)
+
+On the **delegated** road the hub does not sign with the business's certificate — it identifies
+itself to ERPlora's fiscal cell with a **machine identity**: a private key born on the hub that
+**never leaves it**, plus a certificate an operator signs with the internal CA (ADR-0419), which is
+offline, so a person is always in the loop.
+
+The section shows what exists and offers the one thing there is to do:
+
+| State | What it means | The button |
+|---|---|---|
+| not requested | no key, no certificate | **Request the connection** |
+| waiting for signature | key present, certificate not — the CSR is filed and a person has to sign it | **Check the status** |
+| active | certificate installed, with room left | *(none — nothing to ask for)* |
+| expiring soon | valid, under 30 days left | **Renew the connection** |
+| expired | past its `notAfter`; records wait in the contingency queue | **Renew the connection** |
+| not available | the hub did not answer | *(none — pressing would spend the allowance on a hub that is silent)* |
+
+All three buttons are the **same idempotent call**, `POST /api/business/gateway-identity/enrol`
+(ERPlora/hub#1457): repeating it while a request is pending does not open a second review, and once
+approved it installs. The state is read from `GET /api/business/gateway-identity`.
+
+Both are **core routes**, and the screen reaches them the way the `printing` module already does —
+same origin, carrying the `X-Hub-Session` the shell keeps. The module SDK has no door for core REST
+(`coreRequest` is private by design), so that coupling is confined to one function,
+`ui/lib/gateway-identity.ts::gatewayFetch`: the day a proper door exists, that is the only seam to
+swap.
+
+**What this screen deliberately cannot do:** forget the identity. `DELETE …/gateway-identity` is the
+operator's rotation path and it destroys the private key — a module screen must not be able to shut
+a business's road to the tax authority with one press.
+
+Every answer of the enrol door resolves to a catalogue key by its **code**, never by its sentence
+(ADR-0055), and the raw code stays on screen next to the translation so support never loses which
+refusal it was.
+
 The configuration never exposes certificate bytes or passwords — only flags saying whether they are
 present.
 
