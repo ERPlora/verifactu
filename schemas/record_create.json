@@ -23,6 +23,11 @@
     },
     "tax_amount": { "type": "integer", "default": 0 },
     "total_amount": { "type": "integer", "default": 0 },
+    "line_count": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "How many invoice lines the tax_breakdown above aggregates. It is what makes an aggregated quota judgeable: the invoice module rounds the quota per line and adds up, so the admissible deviation from base x rate grows with the number of lines (4 lines of 0,50 EUR at 21 % aggregate to base 200 / quota 44, where the rate justifies 42). The automatic path counts them itself; through this door the caller is the one who knows. Omit it when you do not: the record is then judged as a one-line invoice, which is the safe side. It is a hint, not a field of the record - it reaches no column and no AEAT envelope, and it can never loosen the check past what the row constraint would accept anyway."
+    },
 
     "recipient_nif": {
       "type": "string",

@@ -73,6 +73,14 @@ ENGINE_COMPUTED = {
 # Read from the payload but never persisted: they build `Destinatarios` in the inline SOAP.
 NON_PERSISTED_PAYLOAD_FIELDS = {"recipient_nif", "recipient_name"}
 
+# Read from the payload, never persisted and not sent either: they only tell the engine HOW TO
+# JUDGE the amounts it was handed (hub#1391). `line_count` says how many invoice lines the
+# breakdown aggregates, which is what makes an aggregated quota judgeable at all: `invoice` rounds
+# per line and adds up, so the admissible deviation grows with the number of lines. The automatic
+# path counts them itself in its scoped read of the invoice; through THIS door there is no invoice
+# to count, and the caller is the one who knows.
+JUDGEMENT_ONLY_PAYLOAD_FIELDS = {"line_count"}
+
 failures: list[str] = []
 
 
@@ -123,8 +131,53 @@ def test_every_caller_supplied_field_is_declared():
 
     # Nothing else: a property that is neither a bound param nor one of the two SOAP-only fields
     # is a field nobody reads, and the caller cannot tell that from one that works.
-    orphans = sorted(declared - params - NON_PERSISTED_PAYLOAD_FIELDS)
+    orphans = sorted(
+        declared - params - NON_PERSISTED_PAYLOAD_FIELDS - JUDGEMENT_ONLY_PAYLOAD_FIELDS
+    )
     check("no declared field goes nowhere", [], orphans)
+
+
+def test_the_manual_door_can_say_how_many_lines_the_breakdown_aggregates():
+    """hub#1391 — the door that accepts a breakdown has to accept its line count too.
+
+    verifactu#58 let `tax_breakdown` through this door; the engine then judged that breakdown as if
+    the invoice had ONE line, because `create_record` had no count to read and fell back to one.
+    The canonical ticket — 4 lines of 0,50 € at 21 %, `round_half_up(10,5) = 11` four times, so the
+    aggregate is `base 200 / quota 44` where the rate justifies 42 — was refused with
+    `quota_rate_mismatch` over a 2-cent deviation, while the row `CHECK` of migration `015` accepts
+    exactly that shape. The engine was STRICTER than the table in the very case the table went out
+    of its way to let through, and only through this door.
+
+    The field is a plain hint, not a knob on the record: it reaches no column and no envelope. And
+    it is deliberately NOT trusted — the caller writes it, so an inflated count could only buy
+    tolerance up to the second ceiling the engine already applies (`|expected| + 1`, the same one
+    `015` measures), which is what keeps this door from ever being laxer than the table.
+
+    Absent means "nobody knows", and then the record is judged as a one-line invoice — so there is
+    no `default`: a default would turn "unknown" into a claim.
+    """
+    schema = json.loads(SCHEMA.read_text())
+    props = schema.get("properties", {})
+    required = set(schema.get("required", []))
+
+    spec = props.get("line_count")
+    if spec is None:
+        check("`line_count` is declared", True, False)
+        return
+
+    check("`line_count` is an integer", "integer", spec.get("type"))
+    check("`line_count` cannot be zero or negative", 1, spec.get("minimum"))
+    check("`line_count` is not required", False, "line_count" in required)
+    check(
+        "`line_count` has NO default: absent means unknown, not one",
+        True,
+        "default" not in spec,
+    )
+    check(
+        "`line_count` explains itself to the assistant, which reads this schema as its tool",
+        True,
+        len(spec.get("description", "")) > 60,
+    )
 
 
 def test_the_new_fields_cannot_change_an_existing_call():
@@ -156,6 +209,9 @@ def test_the_new_fields_cannot_change_an_existing_call():
 def main() -> int:
     print("== the public payload contract of `verifactu.records.create` ==")
     test_every_caller_supplied_field_is_declared()
+    print()
+    print("== the manual door can say how many lines the breakdown aggregates (hub#1391) ==")
+    test_the_manual_door_can_say_how_many_lines_the_breakdown_aggregates()
     print()
     print("== declaring a field cannot move an existing caller ==")
     test_the_new_fields_cannot_change_an_existing_call()
