@@ -266,10 +266,11 @@ def test_a_demo_hub_can_turn_verifactu_on_and_it_stays_on() -> None:
     check("the effective issuer is the hub's", DEMO_TAX_ID, row.get("issuer_nif"))
     check("the effective issuer name is the hub's", DEMO_LEGAL_NAME, row.get("issuer_name"))
     check("the environment stayed in the sandbox", "testing", row.get("environment"))
-    # The demo carries the DELEGATED certificate like any other hub (`set_delegated`, hub#317);
-    # only an OWN one is refused (`demo_business_certificate_locked`). So the screen must be able
-    # to see one.
-    check("the certificate the runtime probed is reported", 1, row.get("has_certificate"))
+    # The demo carries NO certificate: the delegated slot was retired (hub#1435) and an OWN one
+    # is refused (`demo_business_certificate_locked`). `has_certificate` answers «can this hub
+    # transmit» (hub#1489), and on the delegated road that is 1 — ERPlora's fiscal cell files for
+    # it. So the screen must still be able to see a road.
+    check("the road the runtime probed is reported", 1, row.get("has_certificate"))
 
 
 def test_a_hub_with_no_taxpayer_is_refused_and_the_refusal_names_itself() -> None:

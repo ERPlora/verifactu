@@ -89,18 +89,24 @@ module only asks the core two things: *is there something to sign with*, and *wh
 it*. The private key and the password never cross into the module — the core does all the PKCS#12
 cryptography.
 
-There are **two slots**:
+There is **one slot**: the business's own certificate. A hub holds that one or none at all —
+ERPlora's key is never handed down to it.
 
-| Slot | Whose | Used when |
+Which is why a hub with **no** certificate still bills. The certificate does not decide whether the
+records reach the AEAT; it decides **by which of the two exclusive roads** they do:
+
+| Road | Who signs | When |
 |---|---|---|
-| **own** | The customer's own certificate | Whenever it has been uploaded |
-| **delegated** | ERPlora's, distributed by the control plane | As a **fallback** when there is no own certificate |
+| `own` | The business, with the certificate it uploaded | Whenever one has been uploaded |
+| `delegated` | ERPlora's fiscal cell, with its own Seal, on the business's behalf | When there is no own certificate |
 
-It is a fallback, not a choice. And a hub whose only certificate is the delegated one **does bill** —
-ERPlora signs on its behalf.
+On the delegated road nothing of ERPlora's reaches the hub: the hub builds the record and the cell
+transmits it, so that key never leaves the platform. What the hub needs there is not a certificate
+but the **signed authorisation** (Anexo I) and the secure connection of Settings → VeriFactu.
 
-The certificate kind also decides **which AEAT endpoint** is used: an own certificate goes to the
-ordinary endpoint, a delegated one to the entity-seal endpoint. Environment and certificate resolve
+The certificate's kind also decides **which AEAT endpoint** the hub uses on the own road: one
+carrying a natural person enters through the ordinary endpoint, an entity seal through the seal's.
+On the delegated road the cell picks it, with its own Seal. Environment and certificate resolve
 together, in one place.
 
 ## Access to the certificate and to the AEAT is granted, not assumed

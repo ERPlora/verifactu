@@ -6,9 +6,6 @@
   decides which tax authority sees real sales. Moving it into the core is pending.
 - **The guard only counts `accepted` records.** While a record is `transmitted` and the answer has not
   come back, the environment toggle can still go backwards.
-- **The `Representante` block is pending for delegated certificates.** A hub signing with the
-  delegated certificate transmits through the right endpoint but without that block, and the AEAT
-  rejects it. This must be closed **before the first real delegated hub**.
 - **Certificate passwords are stored in clear.** Encryption at rest is still pending.
 - **The standalone "send test" and the config issuer field still use the module's own data** instead
   of the hub's global business identity. The invoice flow already uses the global one.
@@ -26,7 +23,7 @@
 | `ck_verifactu_record_quota_matches_row_rate` | No readable breakdown, and the quota does not match the row's own `tax_rate` | Same — nothing was sealed, no sequence number was spent |
 | `ck_verifactu_record_ordinary_total_not_negative` | An `F1`/`F2`/`F3` totalling below zero | A negative amount is a corrective invoice (`R1`…`R5`), issued by `invoice.rectify` |
 | Capability denied | The `certificate` or `network` grant is missing | Grant them in Settings → Permissions |
-| Signing failed, no certificate | Neither an own nor a delegated certificate is available | Upload one in Settings → Business, or wait for the delegated one — the error names both halves on purpose |
+| No road to the AEAT | The hub has neither an own certificate nor the delegated route enrolled, so its records are chained but stay `pending` | Upload a certificate in Settings → Business, or complete the secure connection with ERPlora in Settings → VeriFactu |
 
 Note the guard style: a violated assert **rolls the entire command back**, including the event that
 would have gone to the outbox. Nothing half-happens.
@@ -124,7 +121,9 @@ is **read-only**.
 **`invoice` is required** and is installed with VeriFactu. Without it nothing emits the invoice
 events, so no record is ever created.
 
-**The certificate is a core resource**, not a module dependency. Without one:
+**The road to the AEAT is a core resource**, not a module dependency. A hub transmits with
+either of the two — its own certificate, or the delegated route enrolled with ERPlora. With
+neither:
 
 - records are created and chained normally;
 - but they stay `pending` — nothing is transmitted.
@@ -138,8 +137,9 @@ unsent, and that applies to a cascade too.
 ## When something looks wrong
 
 **"Invoices are not reaching the AEAT."** Walk it in order: is the module **enabled**? Is there a
-**certificate** (own or delegated)? Are the **capabilities granted**? Is the record `pending` (no
-certificate) or in **contingency** (network)? Read the events log — every failure writes one.
+**road** — an own certificate, or the delegated route enrolled? Are the **capabilities
+granted**? Is the record `pending` (no road) or in **contingency** (network)? Read the events log
+— every failure writes one.
 
 **"A record is stuck in contingency."** Check its last error and its next attempt time. The queue
 drains every 5 minutes with backoff; forcing a retry is available. If it exhausted the retries it is
