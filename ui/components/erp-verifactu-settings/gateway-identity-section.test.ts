@@ -135,6 +135,19 @@ describe('the gateway identity is shown and asked for from this screen (verifact
     expect(gwPill(el)?.getAttribute('label'), 'the row still says «no identity» after filing one').toBe('ui.gwPending');
   });
 
+  it('a CLICK on the painted button spends the door — the handler is wired, not just reachable', async () => {
+    // `press()` calls the method; this one clicks the ELEMENT. Without it, a mutant that unbinds
+    // `@click` keeps every other test green while shipping a button that does nothing.
+    serve({ has_key: false, has_certificate: false, common_name: 'hub-h1.fiscal.erplora.internal' }, {
+      body: { state: 'filed', version: 1, has_key: true, has_certificate: false, common_name: 'hub-h1.fiscal.erplora.internal' },
+    });
+    const el = await mount();
+    (gwButton(el) as HTMLElement).click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await (el as unknown as { updateComplete: Promise<unknown> }).updateComplete;
+    expect(calls.filter((c) => c.path === ENROL && c.method === 'POST'), 'the painted button is not wired to the enrol call').toHaveLength(1);
+  });
+
   it('a rejection shows the reason the person wrote, not a generic failure', async () => {
     serve({ has_key: true, has_certificate: false, common_name: 'hub-h1.fiscal.erplora.internal' }, {
       body: { state: 'rejected', version: 2, rejected_reason: 'el NIF del CSR no coincide', has_key: true, has_certificate: false },
