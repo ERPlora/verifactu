@@ -4,6 +4,16 @@ import { define } from '@erplora/outfitkit/define';
 import '@erplora/outfitkit/ok-status-pill';
 import '@erplora/outfitkit/ok-inline-feedback';
 import { toMicro } from '../../lib/quantity';
+import {
+  GATEWAY_ENROL_PATH,
+  GATEWAY_IDENTITY_PATH,
+  type GatewayIdentityWire,
+  type GatewayState,
+  enrolOutcome,
+  gatewayFetch,
+  gatewayState,
+  refusalKey as gatewayRefusalKey,
+} from '../../lib/gateway-identity';
 import esLocale from '../../../locales/es.json';
 import enLocale from '../../../locales/en.json';
 const CATALOG: Record<string, unknown> = { es: esLocale, en: enLocale };
@@ -126,6 +136,24 @@ const ROUTE_DELEGATED = 'delegated';
  * both. Anything the core adds later shows as `absent` rather than as an empty pill — the screen
  * never invents a state it was not told.
  */
+/**
+ * The pill and the sentence each state of the MACHINE identity earns (verifactu#76). Keyed by the
+ * state {@link gatewayState} derives, so the table that decides and the table that paints cannot
+ * drift apart.
+ *
+ * `action` is the ONE thing there is to ask for, or `null` when there is nothing: an identity that
+ * works needs no button, and one whose door could not even be read must not be offered a shot in
+ * the dark — pressing it would spend an allowance on a hub that is not answering.
+ */
+const GATEWAY_STATES: Record<GatewayState, { tone: string; label: string; hint: string; action: string | null }> = {
+  unknown: { tone: 'neutral', label: 'ui.gwUnknown', hint: 'ui.gwUnknownHint', action: null },
+  absent: { tone: 'warning', label: 'ui.gwAbsent', hint: 'ui.gwAbsentHint', action: 'ui.gwEnrol' },
+  pending: { tone: 'warning', label: 'ui.gwPending', hint: 'ui.gwPendingHint', action: 'ui.gwCheck' },
+  active: { tone: 'success', label: 'ui.gwActive', hint: 'ui.gatewayHint', action: null },
+  expiring: { tone: 'warning', label: 'ui.gwExpiring', hint: 'ui.gwExpiringHint', action: 'ui.gwRenew' },
+  expired: { tone: 'danger', label: 'ui.gwExpired', hint: 'ui.gwExpiredHint', action: 'ui.gwRenew' },
+};
+
 const GRANT_STATES: Record<string, { key: string; tone: string }> = {
   vigente: { key: 'ui.grantVigente', tone: 'success' },
   pendiente: { key: 'ui.grantPendiente', tone: 'warning' },
@@ -253,6 +281,25 @@ export class ErpVerifactuSettings extends LitElement {
   /** The route read is in flight, so the pill says «checking» rather than «not available». */
   @state() private routeLoading = true;
 
+  /**
+   * What the hub answered about its MACHINE identity (verifactu#76). `null` = we could not ask —
+   * and then the screen says so instead of guessing at a state.
+   */
+  @state() private gateway: GatewayIdentityWire | null = null;
+
+  /** The identity read is in flight, so the pill says «checking» rather than «not available». */
+  @state() private gatewayLoading = true;
+
+  /** An enrolment is being asked for: the button is busy and cannot be pressed twice. */
+  @state() private enrolling = false;
+
+  /**
+   * What the enrol door said last, already resolved to a sentence and a tone. `detail` is the
+   * extra a person needs beside it, and `mono` says which of the two kinds it is: a reviewer's
+   * own words (prose) or a machine code to quote to support (monospace).
+   */
+  @state() private gatewayNotice: { key: string; tone: string; detail: string; mono: boolean } | null = null;
+
   private readonly onLocaleChange = (): void => this.requestUpdate();
 
   async connectedCallback() {
@@ -260,6 +307,7 @@ export class ErpVerifactuSettings extends LitElement {
     window.addEventListener('erplora:locale-changed', this.onLocaleChange);
     await this.refresh();
     await this.loadRoute();
+    await this.loadGatewayIdentity();
     await this.loadDiag();
   }
 
@@ -334,6 +382,65 @@ export class ErpVerifactuSettings extends LitElement {
     if (!iso) return '';
     const d = new Date(iso);
     return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString(erplora().locale || undefined);
+  }
+
+  /**
+   * Reads this hub's MACHINE identity from the core route (hub#1457).
+   *
+   * A failure lands in `gateway = null` and NOT in `this.error`: that slot belongs to the whole
+   * screen, and a side read must not blank out the configuration the owner came here to change.
+   * The section says «not available» in its own place, where a person can act on it.
+   */
+  private async loadGatewayIdentity() {
+    this.gatewayLoading = true;
+    const reply = await gatewayFetch(GATEWAY_IDENTITY_PATH, 'GET');
+    this.gateway = reply.ok ? (reply.body as GatewayIdentityWire) : null;
+    this.gatewayLoading = false;
+  }
+
+  /**
+   * Asks the hub to enrol: it files the CSR in this hub's legal-document file at the control plane
+   * with its machine credential and collects the certificate once a person has signed it.
+   *
+   * Idempotent by contract — pressing it while a request is pending does not open a second review
+   * (the control plane deduplicates the same bytes) and, once approved, it installs. So the ONE
+   * button covers «request», «check» and «renew»; three buttons for one call would be three ways
+   * of spending the same allowance.
+   *
+   * The answer carries the fresh status in the same body, so the row updates from what the door
+   * just said rather than from a second round trip.
+   */
+  private async enrolGateway() {
+    this.enrolling = true;
+    this.gatewayNotice = null;
+    try {
+      const reply = await gatewayFetch(GATEWAY_ENROL_PATH, 'POST');
+      const body = reply.body;
+      if (reply.ok) {
+        const outcome = enrolOutcome(typeof body.state === 'string' ? body.state : '');
+        // A rejection carries the reason the reviewer WROTE. It is prose for this customer, so it
+        // is shown as prose — the operator took the trouble to say why, and a monospaced blob
+        // reads like a fault code nobody can act on.
+        const reason = typeof body.rejected_reason === 'string' ? body.rejected_reason : '';
+        this.gatewayNotice = { ...outcome, detail: reason, mono: false };
+        // The door answers with `has_key`/`has_certificate`/`not_after` alongside the outcome.
+        this.gateway = body as GatewayIdentityWire;
+        return;
+      }
+      // 401 is the admin gate of `POST …/enrol`; a refusal the runtime NAMED is 422 with a code
+      // (ADR-0055). Anything else is the hub not answering, which is still an answer to show.
+      const code = typeof body.code === 'string' ? body.code : '';
+      const key = reply.status === 401 || reply.status === 403
+        ? 'ui.gwErrNotAdmin'
+        : code
+          ? gatewayRefusalKey(code)
+          : 'ui.gwErrHttp';
+      // The CODE stays visible even once translated: it is the word support and the control plane
+      // share, and collapsing several codes into one sentence must not lose which one it was.
+      this.gatewayNotice = { key, tone: 'danger', detail: code, mono: true };
+    } finally {
+      this.enrolling = false;
+    }
   }
 
   private async loadDiag() {
@@ -607,6 +714,61 @@ export class ErpVerifactuSettings extends LitElement {
     </ion-item>`;
   }
 
+  /**
+   * **The secure connection with ERPlora** (verifactu#76): what this hub's MACHINE identity is, and
+   * the one thing there is to do about it.
+   *
+   * That identity is what lets the fiscal cell file on the business's behalf (ADR-0320 §1): the
+   * private key is born on the hub and never leaves it (ADR-0419), the CSR travels, and an operator
+   * signs it with the internal CA — offline, so a person is always in the loop. Until hub#1457 both
+   * legs were a human errand; the screen is the half that was still missing.
+   *
+   * There is deliberately NO way to forget the identity from here. `DELETE …/gateway-identity`
+   * exists and is the operator's rotation path, but it destroys the private key: a module screen
+   * must not be able to shut a business's road to the tax authority with one press.
+   */
+  private renderGatewayIdentity(t: (k: string) => string) {
+    const state = this.gatewayLoading ? null : gatewayState(this.gateway, Date.now());
+    const row = state
+      ? GATEWAY_STATES[state]
+      : { tone: 'neutral', label: 'ui.gwLoading', hint: 'ui.gatewayHint', action: null };
+    const commonName = (this.gateway?.common_name ?? '').trim();
+    const validUntil = state === 'active' || state === 'expiring' || state === 'expired'
+      ? (this.gateway?.not_after ?? '').trim()
+      : '';
+    const notice = this.gatewayNotice;
+    return html`<ion-item lines="none">
+      <div class="cert">
+        <div class="cert-head">
+          <ion-label>${t('ui.gatewayTitle')}</ion-label>
+          <ok-status-pill dot tone=${row.tone} label=${t(row.label)}></ok-status-pill>
+        </div>
+        <p class="hint">${t(row.hint)}</p>
+        ${commonName ? html`<div class="kv"><span class="k">${t('ui.gatewayCommonName')}</span><code>${commonName}</code></div>` : nothing}
+        ${validUntil ? html`<div class="kv"><span class="k">${t('ui.gatewayValidUntil')}</span><code>${validUntil}</code></div>` : nothing}
+        ${row.action
+          ? html`<ion-button
+              size="small"
+              fill="outline"
+              data-testid="gateway-enrol"
+              ?disabled=${this.enrolling}
+              @click=${() => this.enrolGateway()}
+            >${this.enrolling ? t('ui.gwWorking') : t(row.action)}</ion-button>`
+          : nothing}
+        ${notice
+          ? html`<ok-inline-feedback tone=${notice.tone} icon="shield-checkmark-outline">
+              ${t(notice.key)}
+              ${notice.detail
+                ? notice.mono
+                  ? html` <code>${notice.detail}</code>`
+                  : html` ${notice.detail}`
+                : nothing}
+            </ok-inline-feedback>`
+          : nothing}
+      </div>
+    </ion-item>`;
+  }
+
   render() {
     const t = (k: string): string => erplora().t(CATALOG, k);
     // Emisor EFECTIVO: `config.get` ya resuelve la identidad fiscal del hub cuando la columna del
@@ -705,6 +867,11 @@ export class ErpVerifactuSettings extends LitElement {
                 </ion-button>
               </div>
             </ion-item>
+            <!-- La identidad de MÁQUINA con la que la celda fiscal remite en nombre del negocio
+                 (verifactu#76, ADR-0320 §1 / ADR-0419). Va justo detrás del certificado propio
+                 porque es la otra mitad de la misma pregunta: con qué se identifica este hub
+                 cuando NO firma con el certificado del cliente. -->
+            ${this.renderGatewayIdentity(t)}
             <!-- Permiso módulo→host (ADR-0079), verifactu#62. Es el TERCER requisito para poder
                  firmar, y hasta ahora era el único invisible: los otros dos ya se enseñan aquí
                  arriba. La píldora es NEUTRA por defecto porque el módulo no puede leer el estado
