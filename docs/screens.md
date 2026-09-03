@@ -150,6 +150,13 @@ itself to ERPlora's fiscal cell with a **machine identity**: a private key born 
 **never leaves it**, plus a certificate an operator signs with the internal CA (ADR-0419), which is
 offline, so a person is always in the loop.
 
+**It is only painted on the road that uses it.** A hub holding its own `.p12` reaches the AEAT by
+itself (`certificate::route_of` → `own`), never goes through the cell, and its machine identity
+takes part in nothing: the section is not shown to it and the door is **not even read**
+(verifactu#82). The rule is «hide it only when the core has *said* `own`» — a runtime that does not
+publish `hub.fiscal.transmission` still sees it, because the unknown road counts as delegated here
+and hiding it would take away the only way that hub has to enrol.
+
 The section shows what exists and offers the one thing there is to do:
 
 | State | What it means | The button |

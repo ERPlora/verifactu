@@ -5175,7 +5175,8 @@ var ErpVerifactuSettings = class extends i3 {
     window.addEventListener("erplora:locale-changed", this.onLocaleChange);
     await this.refresh();
     await this.loadRoute();
-    await this.loadGatewayIdentity();
+    if (this.usesGatewayIdentity) await this.loadGatewayIdentity();
+    else this.gatewayLoading = false;
     await this.loadDiag();
   }
   disconnectedCallback() {
@@ -5236,6 +5237,22 @@ var ErpVerifactuSettings = class extends i3 {
    */
   get signsWithOwnCertificate() {
     return this.route ? this.route === ROUTE_OWN : !!this.cfg.has_certificate;
+  }
+  /**
+   * **Does the fiscal cell speak for this hub?** — ONE rule for the two places that ask it (the
+   * read on open and the section itself), because a screen that fetches what it never paints is
+   * how a pointless call to the core survives a review.
+   *
+   * The machine identity is what the cell presents when it files IN THE NAME of the business
+   * (ADR-0320 §1 / ADR-0419); a hub holding its own `.p12` reaches the AEAT by itself and its
+   * identity takes part in nothing, so showing it there is technical noise on a business screen.
+   *
+   * Hidden ONLY when the core has SAID `own`, never «shown only when it said `delegated`»: a
+   * runtime that does not publish `hub.fiscal.transmission` can perfectly well be on the cell, and
+   * hiding the section from it would take away its only way to enrol (verifactu#82).
+   */
+  get usesGatewayIdentity() {
+    return this.route !== ROUTE_OWN;
   }
   /** The grant instant as a date in the caller's language, or `''` when there is none to show. */
   grantDate() {
@@ -5642,11 +5659,13 @@ var ErpVerifactuSettings = class extends i3 {
                 </ion-button>
               </div>
             </ion-item>
-            <!-- La identidad de MÁQUINA con la que la celda fiscal remite en nombre del negocio
-                 (verifactu#76, ADR-0320 §1 / ADR-0419). Va justo detrás del certificado propio
-                 porque es la otra mitad de la misma pregunta: con qué se identifica este hub
-                 cuando NO firma con el certificado del cliente. -->
-            ${this.renderGatewayIdentity(t5)}
+            <!-- The MACHINE identity the fiscal cell files with in the name of the business
+                 (verifactu#76, ADR-0320 §1 / ADR-0419). Right behind the own certificate because
+                 it is the other half of the same question: what this hub identifies itself with
+                 when it does NOT sign with the customer's certificate — which is also why the
+                 OWN road does not get it at all (verifactu#82). NOTE: no backticks inside an HTML
+                 comment of a Lit template, they break the bundle's parser. -->
+            ${this.usesGatewayIdentity ? this.renderGatewayIdentity(t5) : A}
             <!-- Permiso módulo→host (ADR-0079), verifactu#62. Es el TERCER requisito para poder
                  firmar, y hasta ahora era el único invisible: los otros dos ya se enseñan aquí
                  arriba. La píldora es NEUTRA por defecto porque el módulo no puede leer el estado
