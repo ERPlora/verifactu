@@ -120,10 +120,9 @@ docs/                         # documentación de usuario + corpus del asistente
 ## Estado y trabajo abierto
 
 El estado vive en las **Issues de este repo**, no aquí. Huecos documentados en `docs/limits.md`:
-R1 **vive dentro del módulo** (se va con él) y solo cuenta `accepted`; falta el bloque
-`Representante` para el certificado **delegado** (requisito **antes del primer hub delegado real**);
-las contraseñas de certificado siguen **en claro**; y el «enviar prueba» standalone aún usa el emisor
-propio del módulo en vez de la identidad global del hub.
+R1 **vive dentro del módulo** (se va con él) y solo cuenta `accepted`; las contraseñas de
+certificado siguen **en claro**; y el «enviar prueba» standalone aún usa el emisor propio del módulo
+en vez de la identidad global del hub.
 
 Doc de arquitectura: `architecture/modules/verifactu.md` + diseño en
 `architecture/saas/verifactu-gateway.md` (ADR-0202). Cargarlos antes de tocar el módulo.
