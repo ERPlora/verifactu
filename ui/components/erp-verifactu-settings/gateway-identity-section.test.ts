@@ -212,3 +212,64 @@ describe('the gateway identity is shown and asked for from this screen (verifact
     }
   });
 });
+
+// ── verifactu#82 — the section belongs to the DELEGATED road only ────────────────────────────
+//
+// The machine identity is what the fiscal cell presents when it files IN THE NAME of the business
+// (ADR-0320 §1 / ADR-0419). A hub that holds its own `.p12` reaches the AEAT by itself
+// (`certificate::route_of` → `own`) and never goes through the cell, so its identity takes part in
+// nothing: showing it is technical noise on a business screen, and reading it is a call whose
+// answer is thrown away.
+//
+// The rule is «hide it only when the core has SAID `own`», never «show it only when it has said
+// `delegated`»: a runtime that does not publish `hub.fiscal.transmission` can perfectly well be on
+// the cell, and hiding the section there would take away its only way to enrol.
+
+/** Mounts with the core route query answering `route`; `''` = the runtime does not publish it. */
+async function mountWithRoute(route: string) {
+  const base = (globalThis as Record<string, unknown>).erplora as Record<string, unknown>;
+  (globalThis as Record<string, unknown>).erplora = {
+    ...base,
+    query: async (name: string) => {
+      if (name === 'verifactu.config.get') {
+        return [{ issuer_nif: 'B12345678', environment: 'testing', has_certificate: 1 }];
+      }
+      if (name === 'hub.fiscal.transmission') return route ? [{ transmission_route: route }] : [];
+      return [];
+    },
+  };
+  return mount();
+}
+
+describe('the machine identity is only shown on the road that uses it (verifactu#82)', () => {
+  it('a hub with its OWN certificate is not shown the section, nor is the door read for it', async () => {
+    const el = await mountWithRoute('own');
+    expect(el.shadowRoot.textContent ?? '', 'a hub that files with its own .p12 was shown the cell identity')
+      .not.toContain('ui.gatewayTitle');
+    expect(gwPill(el), 'the identity pill was painted on a road that has no identity').toBeUndefined();
+    expect(gwButton(el), 'an own-certificate hub was offered an enrolment it must never need').toBeUndefined();
+    expect(calls.map((c) => c.path), 'the screen read an identity it was never going to paint')
+      .not.toContain(IDENTITY);
+    expect(el.shadowRoot.textContent ?? '', 'the rest of the screen went away with the section')
+      .toContain('ui.enableVerifactu');
+  });
+
+  it('a DELEGATED hub sees it whole, exactly as before', async () => {
+    const el = await mountWithRoute('delegated');
+    expect(calls.map((c) => c.path), 'the screen never asked the hub about its machine identity')
+      .toContain(IDENTITY);
+    expect(el.shadowRoot.textContent ?? '').toContain('ui.gatewayTitle');
+    expect(gwPill(el)?.getAttribute('label')).toBe('ui.gwAbsent');
+    expect(gwButton(el)?.textContent, 'the road that needs an identity was not offered the enrolment')
+      .toContain('ui.gwEnrol');
+  });
+
+  it('a runtime that does not publish the route SEES it — unknown counts as delegated, never as hidden', async () => {
+    const el = await mountWithRoute('');
+    expect(calls.map((c) => c.path), 'a hub whose road nobody stated was not even asked for its identity')
+      .toContain(IDENTITY);
+    expect(el.shadowRoot.textContent ?? '', 'not knowing the road closed the only way this hub has to enrol')
+      .toContain('ui.gatewayTitle');
+    expect(gwButton(el)?.textContent).toContain('ui.gwEnrol');
+  });
+});
