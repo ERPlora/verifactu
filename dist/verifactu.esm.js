@@ -3630,7 +3630,27 @@ var es_default = {
     errDemoCertificateLocked: "Este es un hub de demostraci\xF3n: no puede tener certificado propio del negocio, porque la AEAT no emite ninguno ficticio. ERPlora remite tus registros a la Agencia Tributaria en tu nombre, siempre contra el entorno de pruebas. Para usar el tuyo, crea tu propio hub.",
     errDemoIdentityLocked: "Este es un hub de demostraci\xF3n: su NIF y su raz\xF3n social son fijos y no se pueden editar, porque los documentos que emite no son de nadie. Para facturar con tu propio NIF, crea tu propio hub.",
     errTestRun: "No se pudo ejecutar la prueba",
-    errTestInvoice: "No se pudo crear la factura de prueba"
+    errTestInvoice: "No se pudo crear la factura de prueba",
+    back: "Volver",
+    errRecordNotFound: "Registro no encontrado",
+    errLoadDetail: "No se pudo cargar el registro",
+    detailTitle: "Registro {number}",
+    fieldGeneratedAt: "Generado el",
+    fieldTransmittedAt: "Transmitido el",
+    chainSectionTitle: "Cadena de huellas",
+    fieldPreviousHash: "Huella anterior",
+    deliveryFingerprintTitle: "Huella de la entrega",
+    fieldTransmissionId: "ID de transmisi\xF3n",
+    fieldXmlSha256: "Digest del XML (SHA-256)",
+    fieldXmlStoragePath: "Fichero XML",
+    fingerprintNotStamped: "A\xFAn sin estampar",
+    aeatSectionTitle: "Respuesta de la AEAT",
+    fieldAeatResponseCode: "C\xF3digo de respuesta",
+    fieldAeatResponseMessage: "Mensaje de respuesta",
+    fieldRetryCount: "Reintentos",
+    fieldNextRetryAt: "Pr\xF3ximo reintento",
+    fieldQrUrl: "QR",
+    fieldQrUrlLink: "Abrir QR"
   },
   widgets: {
     "verifactu.pending": {
@@ -3898,7 +3918,27 @@ var en_default = {
     errDemoCertificateLocked: "This is a demo hub: it cannot hold its own business certificate, because the AEAT issues no fictitious one. ERPlora files your records with the tax authority on your behalf, always against the test environment. To use your own, create your own hub.",
     errDemoIdentityLocked: "This is a demo hub: its tax ID and company name are fixed and cannot be edited, because the documents it issues are nobody's. To invoice under your own tax ID, create your own hub.",
     errTestRun: "Could not run the test",
-    errTestInvoice: "Could not create the test invoice"
+    errTestInvoice: "Could not create the test invoice",
+    back: "Back",
+    errRecordNotFound: "Record not found",
+    errLoadDetail: "Could not load the record",
+    detailTitle: "Record {number}",
+    fieldGeneratedAt: "Generated at",
+    fieldTransmittedAt: "Transmitted at",
+    chainSectionTitle: "Fingerprint chain",
+    fieldPreviousHash: "Previous hash",
+    deliveryFingerprintTitle: "Delivery fingerprint",
+    fieldTransmissionId: "Transmission ID",
+    fieldXmlSha256: "XML digest (SHA-256)",
+    fieldXmlStoragePath: "XML file",
+    fingerprintNotStamped: "Not stamped yet",
+    aeatSectionTitle: "AEAT response",
+    fieldAeatResponseCode: "Response code",
+    fieldAeatResponseMessage: "Response message",
+    fieldRetryCount: "Retries",
+    fieldNextRetryAt: "Next retry at",
+    fieldQrUrl: "QR",
+    fieldQrUrlLink: "Open QR"
   }
 };
 
@@ -4130,7 +4170,7 @@ var ErpVerifactuEvents = class extends i3 {
     const t5 = (k2) => client.t(CATALOG2, k2);
     const translate = (catalog, key, params) => client.t(catalog, key, params);
     return [
-      { key: "timestamp", header: t5("ui.colWhen"), sortable: true, filterable: true, filterType: "daterange" },
+      { key: "timestamp", header: t5("ui.colWhen"), sortable: true, filterable: true, filterType: "text" },
       {
         key: "severity",
         header: t5("ui.colSeverity"),
@@ -4428,12 +4468,15 @@ var STATUS_COLOR = {
   rejected: "danger",
   error: "danger"
 };
-var ErpVerifactuRecords = class extends i3 {
+var _ErpVerifactuRecords = class _ErpVerifactuRecords extends i3 {
   constructor() {
     super(...arguments);
     this.tick = 0;
     this.invoiceTotal = null;
     this.invoiceCountFailed = false;
+    this.detail = null;
+    this.detailError = "";
+    this.detailLoading = false;
     // TODO-LIT: componentWillLoad → connectedCallback. Recuerda: connectedCallback se dispara
     // en CADA reconexión al DOM (no solo en el primer montaje). Si la init debe correr una
     // sola vez tras el primer render, considera firstUpdated() en su lugar.
@@ -4447,6 +4490,12 @@ var ErpVerifactuRecords = class extends i3 {
     .err { color:#d9480f; font-weight:600; }
     ok-inline-feedback { display:block; margin-bottom:.75rem; }
     ok-inline-feedback ion-button { min-height:44px; }
+    dl.grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); gap:.75rem 1.5rem; margin:0 0 1rem; }
+    dl.grid dt { font-size:.75rem; text-transform:uppercase; letter-spacing:.02em; color: var(--ion-color-medium, #6b6b6b); margin:0; }
+    dl.grid dd { margin:.15rem 0 0; }
+    section.fingerprint { border:1px solid var(--ion-color-light-shade, #e0e0e0); border-radius:8px; padding:.75rem 1rem; margin-bottom:1rem; }
+    section.fingerprint h3 { margin:0 0 .5rem; font-size:.95rem; }
+    code { font-family: ui-monospace, monospace; font-size:.8rem; word-break: break-all; }
   `;
   }
   get columns() {
@@ -4571,13 +4620,117 @@ var ErpVerifactuRecords = class extends i3 {
     window.history.pushState({}, "", path);
     window.dispatchEvent(new PopStateEvent("popstate"));
   }
+  /**
+   * Opens the detail of one record (verifactu#86) — the door `record.get` never had a screen
+   * behind before this. Mirrors `invoice`'s `openDetail`: on failure or a missing row, `detail`
+   * stays `null` (the list keeps rendering) and `detailError` carries what to say about it.
+   */
+  async openDetail(id) {
+    this.detailError = "";
+    this.detailLoading = true;
+    try {
+      const t5 = (k2) => erplora3().t(CATALOG3, k2);
+      const row = await erplora3().query(
+        "verifactu.records.get",
+        { record_id: id }
+      );
+      const record = Array.isArray(row) ? row[0] : row;
+      if (!record) {
+        this.detailError = t5("ui.errRecordNotFound");
+        return;
+      }
+      this.detail = record;
+    } catch (e5) {
+      this.detailError = e5 instanceof Error ? e5.message : erplora3().t(CATALOG3, "ui.errLoadDetail");
+    } finally {
+      this.detailLoading = false;
+    }
+  }
+  closeDetail() {
+    this.detail = null;
+    this.detailError = "";
+  }
+  /** A hash, truncated for a screen — the same 16-char convention `erp-verifactu-recovery` uses. */
+  static shortHash(hash) {
+    return hash ? `${hash.slice(0, 16)}\u2026` : "\u2014";
+  }
+  renderDetail() {
+    const t5 = (k2, params) => erplora3().t(CATALOG3, k2, params);
+    const d3 = this.detail;
+    const statusLabels = {
+      pending: t5("ui.statusPending"),
+      transmitted: t5("ui.statusTransmitted"),
+      accepted: t5("ui.statusAccepted"),
+      rejected: t5("ui.statusRejected"),
+      error: t5("ui.statusError"),
+      retry: t5("ui.statusRetry")
+    };
+    const typeLabels = {
+      alta: t5("ui.recTypeAlta"),
+      anulacion: t5("ui.recTypeAnulacion")
+    };
+    return b2`<div>
+      <header>
+        <h2>${t5("ui.detailTitle", { number: d3.invoice_number })}</h2>
+        <ion-badge color=${STATUS_COLOR[d3.status] ?? "medium"}>${statusLabels[d3.status] ?? d3.status}</ion-badge>
+        <ion-button data-test="detail-back" fill="outline" color="medium" @click=${() => this.closeDetail()}>
+          ← ${t5("ui.back")}
+        </ion-button>
+      </header>
+      <dl class="grid">
+        <div><dt>${t5("ui.colSeq")}</dt><dd>${d3.sequence_number}</dd></div>
+        <div><dt>${t5("ui.colDate")}</dt><dd>${d3.invoice_date}</dd></div>
+        <div><dt>${t5("ui.colType")}</dt><dd>${typeLabels[d3.record_type] ?? d3.record_type}</dd></div>
+        <div><dt>${t5("ui.colInvoiceType")}</dt><dd>${d3.invoice_type}</dd></div>
+        <div><dt>${t5("ui.colIssuer")}</dt><dd>${d3.issuer_name} (${d3.issuer_nif})</dd></div>
+        <div><dt>${t5("ui.colTotal")}</dt><dd>${Number(d3.total_amount).toFixed(2)}</dd></div>
+        <div><dt>${t5("ui.fieldGeneratedAt")}</dt><dd>${d3.generation_timestamp}</dd></div>
+        <div><dt>${t5("ui.fieldTransmittedAt")}</dt><dd>${d3.transmission_timestamp || "\u2014"}</dd></div>
+      </dl>
+      <section class="fingerprint">
+        <h3>${t5("ui.chainSectionTitle")}</h3>
+        <dl class="grid">
+          <div><dt>${t5("ui.recColHuella")}</dt><dd><code>${_ErpVerifactuRecords.shortHash(d3.record_hash)}</code></dd></div>
+          <div><dt>${t5("ui.fieldPreviousHash")}</dt><dd><code>${_ErpVerifactuRecords.shortHash(d3.previous_hash)}</code></dd></div>
+        </dl>
+      </section>
+      <section class="fingerprint">
+        <h3>${t5("ui.deliveryFingerprintTitle")}</h3>
+        <dl class="grid">
+          <div>
+            <dt>${t5("ui.fieldTransmissionId")}</dt>
+            <dd data-test="fingerprint">${d3.transmission_id ? b2`<code>${d3.transmission_id}</code>` : t5("ui.fingerprintNotStamped")}</dd>
+          </div>
+          <div>
+            <dt>${t5("ui.fieldXmlSha256")}</dt>
+            <dd data-test="fingerprint">${d3.xml_sha256 ? b2`<code>${d3.xml_sha256}</code>` : t5("ui.fingerprintNotStamped")}</dd>
+          </div>
+          <div><dt>${t5("ui.fieldXmlStoragePath")}</dt><dd>${d3.xml_storage_path || "\u2014"}</dd></div>
+        </dl>
+      </section>
+      <section class="fingerprint">
+        <h3>${t5("ui.aeatSectionTitle")}</h3>
+        <dl class="grid">
+          <div><dt>${t5("ui.recColCsv")}</dt><dd>${d3.aeat_csv || "\u2014"}</dd></div>
+          <div><dt>${t5("ui.fieldAeatResponseCode")}</dt><dd>${d3.aeat_response_code || "\u2014"}</dd></div>
+          <div><dt>${t5("ui.fieldAeatResponseMessage")}</dt><dd>${d3.aeat_response_message || "\u2014"}</dd></div>
+          <div><dt>${t5("ui.fieldRetryCount")}</dt><dd>${d3.retry_count}</dd></div>
+          <div><dt>${t5("ui.fieldNextRetryAt")}</dt><dd>${d3.next_retry_at || "\u2014"}</dd></div>
+          ${d3.qr_url ? b2`<div><dt>${t5("ui.fieldQrUrl")}</dt><dd><a href=${d3.qr_url} target="_blank" rel="noopener">${t5("ui.fieldQrUrlLink")}</a></dd></div>` : A}
+        </dl>
+      </section>
+    </div>`;
+  }
   render() {
+    if (this.detail) return this.renderDetail();
     const t5 = (k2, params) => erplora3().t(CATALOG3, k2, params);
     return b2`<div>
         <header>
           <h2>${t5("ui.recordsTitle")}</h2>
         </header>
         ${this.ctrl?.error ? b2`<p class="err">${this.ctrl.error}</p>` : A}
+        ${this.detailError ? b2`<ok-inline-feedback tone="danger" icon="alert-circle-outline">${this.detailError}</ok-inline-feedback>` : A}
+        ${this.detailLoading ? b2`<ok-inline-feedback data-test="detail-loading" tone="neutral" icon="hourglass-outline">${t5("ui.loading")}</ok-inline-feedback>` : A}
         <!-- verifactu#59: an empty chain over a hub that HAS invoiced is an incident — an
              ungranted certificate capability, or a listener that died (hub#1119 / ADR-0399).
              The plain empty state reassures exactly when it should alarm, so the two are told
@@ -4601,19 +4754,30 @@ var ErpVerifactuRecords = class extends i3 {
         ${this.invoiceCountFailed && (this.ctrl?.total ?? 0) === 0 ? b2`<ok-inline-feedback tone="warning" icon="help-circle-outline">
               ${t5("ui.recordsSealingUnknown")}
             </ok-inline-feedback>` : A}
-        <ok-data-table .serverSide=${true} .views=${true} .cardTitle=${(row) => String(row.invoice_number ?? row.sequence_number ?? "")} .columns=${this.columns} .rows=${this.ctrl?.rows ?? []} .total=${this.ctrl?.total ?? 0} .page=${this.ctrl?.state.page ?? 0} .pageSize=${this.ctrl?.state.pageSize ?? 50} .sort=${this.ctrl?.state.sort} .sortDir=${this.ctrl?.state.dir ?? "asc"} .searchable=${true} .searchPlaceholder=${t5("ui.recordsSearchPlaceholder")} .emptyMessage=${this.emptyMessage(t5)} @pageChange=${(e5) => this.ctrl.setPage(e5.detail)} @sortChange=${(e5) => this.ctrl.setSort(e5.detail.sort, e5.detail.dir)} @searchChange=${(e5) => this.ctrl.setSearch(e5.detail)} @filterChange=${(e5) => this.ctrl.setFilter(e5.detail.col, e5.detail.value)}></ok-data-table>
+        <!-- rowClickable opens the detail verifactu#86 adds: record.get had no screen behind it. -->
+        <ok-data-table .serverSide=${true} .views=${true} .rowClickable=${true} .cardTitle=${(row) => String(row.invoice_number ?? row.sequence_number ?? "")} .columns=${this.columns} .rows=${this.ctrl?.rows ?? []} .total=${this.ctrl?.total ?? 0} .page=${this.ctrl?.state.page ?? 0} .pageSize=${this.ctrl?.state.pageSize ?? 50} .sort=${this.ctrl?.state.sort} .sortDir=${this.ctrl?.state.dir ?? "asc"} .searchable=${true} .searchPlaceholder=${t5("ui.recordsSearchPlaceholder")} .emptyMessage=${this.emptyMessage(t5)} @rowClick=${(e5) => this.openDetail(String(e5.detail.row.id))} @pageChange=${(e5) => this.ctrl.setPage(e5.detail)} @sortChange=${(e5) => this.ctrl.setSort(e5.detail.sort, e5.detail.dir)} @searchChange=${(e5) => this.ctrl.setSearch(e5.detail)} @filterChange=${(e5) => this.ctrl.setFilter(e5.detail.col, e5.detail.value)}></ok-data-table>
       </div>`;
   }
 };
 __decorateClass([
   r5()
-], ErpVerifactuRecords.prototype, "tick", 2);
+], _ErpVerifactuRecords.prototype, "tick", 2);
 __decorateClass([
   r5()
-], ErpVerifactuRecords.prototype, "invoiceTotal", 2);
+], _ErpVerifactuRecords.prototype, "invoiceTotal", 2);
 __decorateClass([
   r5()
-], ErpVerifactuRecords.prototype, "invoiceCountFailed", 2);
+], _ErpVerifactuRecords.prototype, "invoiceCountFailed", 2);
+__decorateClass([
+  r5()
+], _ErpVerifactuRecords.prototype, "detail", 2);
+__decorateClass([
+  r5()
+], _ErpVerifactuRecords.prototype, "detailError", 2);
+__decorateClass([
+  r5()
+], _ErpVerifactuRecords.prototype, "detailLoading", 2);
+var ErpVerifactuRecords = _ErpVerifactuRecords;
 define("erp-verifactu-records", ErpVerifactuRecords);
 
 // ui/components/erp-verifactu-recovery/erp-verifactu-recovery.ts
@@ -5175,7 +5339,8 @@ var ErpVerifactuSettings = class extends i3 {
     window.addEventListener("erplora:locale-changed", this.onLocaleChange);
     await this.refresh();
     await this.loadRoute();
-    await this.loadGatewayIdentity();
+    if (this.usesGatewayIdentity) await this.loadGatewayIdentity();
+    else this.gatewayLoading = false;
     await this.loadDiag();
   }
   disconnectedCallback() {
@@ -5236,6 +5401,22 @@ var ErpVerifactuSettings = class extends i3 {
    */
   get signsWithOwnCertificate() {
     return this.route ? this.route === ROUTE_OWN : !!this.cfg.has_certificate;
+  }
+  /**
+   * **Does the fiscal cell speak for this hub?** — ONE rule for the two places that ask it (the
+   * read on open and the section itself), because a screen that fetches what it never paints is
+   * how a pointless call to the core survives a review.
+   *
+   * The machine identity is what the cell presents when it files IN THE NAME of the business
+   * (ADR-0320 §1 / ADR-0419); a hub holding its own `.p12` reaches the AEAT by itself and its
+   * identity takes part in nothing, so showing it there is technical noise on a business screen.
+   *
+   * Hidden ONLY when the core has SAID `own`, never «shown only when it said `delegated`»: a
+   * runtime that does not publish `hub.fiscal.transmission` can perfectly well be on the cell, and
+   * hiding the section from it would take away its only way to enrol (verifactu#82).
+   */
+  get usesGatewayIdentity() {
+    return this.route !== ROUTE_OWN;
   }
   /** The grant instant as a date in the caller's language, or `''` when there is none to show. */
   grantDate() {
@@ -5642,11 +5823,13 @@ var ErpVerifactuSettings = class extends i3 {
                 </ion-button>
               </div>
             </ion-item>
-            <!-- La identidad de MÁQUINA con la que la celda fiscal remite en nombre del negocio
-                 (verifactu#76, ADR-0320 §1 / ADR-0419). Va justo detrás del certificado propio
-                 porque es la otra mitad de la misma pregunta: con qué se identifica este hub
-                 cuando NO firma con el certificado del cliente. -->
-            ${this.renderGatewayIdentity(t5)}
+            <!-- The MACHINE identity the fiscal cell files with in the name of the business
+                 (verifactu#76, ADR-0320 §1 / ADR-0419). Right behind the own certificate because
+                 it is the other half of the same question: what this hub identifies itself with
+                 when it does NOT sign with the customer's certificate — which is also why the
+                 OWN road does not get it at all (verifactu#82). NOTE: no backticks inside an HTML
+                 comment of a Lit template, they break the bundle's parser. -->
+            ${this.usesGatewayIdentity ? this.renderGatewayIdentity(t5) : A}
             <!-- Permiso módulo→host (ADR-0079), verifactu#62. Es el TERCER requisito para poder
                  firmar, y hasta ahora era el único invisible: los otros dos ya se enseñan aquí
                  arriba. La píldora es NEUTRA por defecto porque el módulo no puede leer el estado

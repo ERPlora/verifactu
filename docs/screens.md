@@ -13,8 +13,12 @@ Requires `verifactu.view_verifactu` — an employee can read this.
   tax id and name, base, tax and total amounts, status, transmission timestamp, retry count, AEAT
   receipt code (CSV) or generation timestamp.
 
-Open a record for its full detail, including the exact XML that was sent, the AEAT response, the CSV
-and the QR.
+Open a record for its full detail: the invoice fields, the hash chain (its own hash and the
+previous one), the delivery fingerprint — `transmission_id` (the fiscal cell's
+`Idempotency-Key`, NOT always the record id: an automatic re-anchor presents the same record
+under `{id}-rechain-{anchor}`) and `xml_sha256` (the digest of the bytes that travelled, shown
+in full so support can compare it byte-for-byte with the cell's log) — and the AEAT response:
+code, message, CSV and QR (verifactu#86).
 
 ### How a record normally appears
 
@@ -149,6 +153,13 @@ On the **delegated** road the hub does not sign with the business's certificate 
 itself to ERPlora's fiscal cell with a **machine identity**: a private key born on the hub that
 **never leaves it**, plus a certificate an operator signs with the internal CA (ADR-0419), which is
 offline, so a person is always in the loop.
+
+**It is only painted on the road that uses it.** A hub holding its own `.p12` reaches the AEAT by
+itself (`certificate::route_of` → `own`), never goes through the cell, and its machine identity
+takes part in nothing: the section is not shown to it and the door is **not even read**
+(verifactu#82). The rule is «hide it only when the core has *said* `own`» — a runtime that does not
+publish `hub.fiscal.transmission` still sees it, because the unknown road counts as delegated here
+and hiding it would take away the only way that hub has to enrol.
 
 The section shows what exists and offers the one thing there is to do:
 

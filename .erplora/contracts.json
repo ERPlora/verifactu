@@ -11,6 +11,7 @@
       "verifactu.contingency.list",
       "verifactu.diagnostics.last",
       "verifactu.events.list",
+      "verifactu.records.get",
       "verifactu.records.list"
     ],
     "optional_queries": [],
