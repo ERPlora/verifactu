@@ -427,12 +427,18 @@ describe('the filing route is read from the core, never deduced (verifactu#41)',
     expect(pill!.getAttribute('tone')).toBe(tone);
   });
 
-  it('does not offer a live test the delegated road cannot answer (hub#1485)', async () => {
+  // This assertion used to read the other way round — «does not offer a live test the delegated
+  // road cannot answer» — and it was right while the ENGINE still resolved the diagnostic through
+  // the core identity: on this road it could only ever answer «your certificate does not load» to a
+  // business that holds none. hub#1485 moved `run_diagnostics` onto `resolve_route`, so the cell
+  // road now probes the cell's readiness instead of filing a sample. Withholding the button — and
+  // explaining that the test «needs a certificate of your own» — was the last half of that same
+  // defect, so the expectation flips with the engine that caused it.
+  // What each road offers and says is pinned in `diagnostics-road.test.ts`.
+  it('offers the live test on the delegated road (hub#1485)', async () => {
     const { el } = await mountWithRoute({ transmission_route: 'delegated' });
-    expect(testButton(el)?.hasAttribute('disabled'), '«Send test» is offered on a road where the diagnostic fails')
-      .toBe(true);
-    expect(el.shadowRoot.textContent ?? '', 'the button is off and the screen does not say why')
-      .toContain('ui.testDelegatedUnavailable');
+    expect(testButton(el)?.hasAttribute('disabled'), '«Send test» is withheld from a road that can run it')
+      .toBe(false);
   });
 
   it('keeps the live test on the own road', async () => {
@@ -479,7 +485,10 @@ describe('the filing route is read from the core, never deduced (verifactu#41)',
       'routeTitle', 'routeOwn', 'routeDelegated', 'routeLoading', 'routeUnknown', 'routeUnknownHint',
       'routeOwnHint', 'routeDelegatedHint', 'grantTitle', 'grantVigente', 'grantPendiente',
       'grantRechazado', 'grantRevocado', 'grantAbsent', 'grantSince', 'grantHint',
-      'certNotNeeded', 'certOptionalHint', 'testDelegatedUnavailable', 'testNeedsOwnCertificate',
+      'certNotNeeded', 'certOptionalHint', 'testNeedsOwnCertificate',
+      // hub#1485 — `testDelegatedUnavailable` is gone with the behaviour it described.
+      'testNeedsGatewayIdentity', 'testRoute', 'testGatewayReady', 'testGatewayNotReady',
+      'testAeatNotSentDelegated',
     ];
     for (const k of added) {
       expect(en.ui?.[k], `\`ui.${k}\` has no English source`).toBeTruthy();

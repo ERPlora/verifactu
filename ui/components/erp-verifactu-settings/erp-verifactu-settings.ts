@@ -83,6 +83,23 @@ interface Diagnostic {
   huella?: string;
   qr_url?: string;
   aeat?: AeatResult | null;
+  /** `own` / `delegated` as the CORE names them (`certificate::ROUTE_*`), so both ends say one word. */
+  route?: string;
+  gateway?: GatewayReadiness | null;
+}
+
+/**
+ * What the fiscal cell answered about ITSELF when the diagnostic probed `/readyz` (hub#1485).
+ * Only ever present on the delegated road, and `error` replaces the rest when the cell could not
+ * be reached at all.
+ */
+interface GatewayReadiness {
+  ok?: boolean;
+  status?: string;
+  reason?: string;
+  transmission_enabled?: boolean;
+  holder_nif?: string;
+  error?: string;
 }
 
 function erplora(): ErploraClientLike {
@@ -381,6 +398,42 @@ export class ErpVerifactuSettings extends LitElement {
   }
 
   /**
+   * **May this hub run the live test?** — since hub#1485 the answer is «does it have a ROAD», not
+   * «does it hold a `.p12`».
+   *
+   * The engine used to resolve the diagnostic through the core identity, so on the delegated road
+   * it always answered «your certificate does not load» to a hub that files perfectly. This screen
+   * covered for that by switching the button off and saying the test «needs a certificate of your
+   * own». Both halves were the same defect: the business was sent to renew something it has never
+   * had. `run_diagnostics` now goes through `resolve_route`, and on the cell it probes readiness
+   * instead of filing a sample (ADR-0189 — a filed record cannot be undone), so the test is exactly
+   * as available as the road is.
+   *
+   * The one hub still held back is the one with NO road: no certificate and no enrolment. Its
+   * button would reach nothing, and what it needs is the enrolment section above, not a file
+   * picker.
+   */
+  private get canRunLiveTest(): boolean {
+    return this.signsWithOwnCertificate || (this.route === ROUTE_DELEGATED && this.cellCanBeReached);
+  }
+
+  /**
+   * Whether the cell has an identity to present for this hub — false ONLY when the door has
+   * positively said there is none.
+   *
+   * A read still in flight, and a door that could not be read at all (`unknown`), both count as
+   * yes. This screen already degrades that way everywhere it touches the same facts — an unreadable
+   * `notAfter` is `active` rather than `expired`, the enrolment section hides only when the core has
+   * SAID `own` — and for the same reason: taking the test away from a hub over a read that did not
+   * land is the shape of the bug this issue is about. The engine re-resolves the road server-side
+   * and answers truthfully, so the worst case is an honest «the cell cannot file right now» instead
+   * of a button that is dead for no stated reason.
+   */
+  private get cellCanBeReached(): boolean {
+    return this.gatewayLoading || gatewayState(this.gateway, Date.now()) !== 'absent';
+  }
+
+  /**
    * **Does the fiscal cell speak for this hub?** — ONE rule for the two places that ask it (the
    * read on open and the section itself), because a screen that fetches what it never paints is
    * how a pointless call to the core survives a review.
@@ -618,10 +671,38 @@ export class ErpVerifactuSettings extends LitElement {
     }
   }
 
+  /**
+   * What the fiscal CELL said about itself when the diagnostic probed it (hub#1485) — present only
+   * on the delegated road, absent on every run from before it.
+   *
+   * This is the block that replaces the AEAT verdict on that road: the test deliberately does not
+   * file (ADR-0189), so «can ERPlora file for you right now» is the whole answer, and the cell's
+   * own `reason` is the only actionable thing in it.
+   */
+  private renderTestGateway(t: (k: string) => string) {
+    const g = this.diag?.gateway;
+    if (!g) return nothing;
+    if (g.error) {
+      return html`<ok-inline-feedback tone="danger" heading=${t('ui.testGatewayNotReady')} icon="alert-circle-outline">${g.error}</ok-inline-feedback>`;
+    }
+    const detail = [g.status, g.reason].filter(Boolean).join(' · ');
+    return html`<ok-inline-feedback
+      tone=${g.ok ? 'success' : 'danger'}
+      heading=${t(g.ok ? 'ui.testGatewayReady' : 'ui.testGatewayNotReady')}
+      icon=${g.ok ? 'checkmark-circle-outline' : 'alert-circle-outline'}
+    >${detail}</ok-inline-feedback>`;
+  }
+
   private renderAeat(t: (k: string) => string) {
     const a = this.diag?.aeat;
     if (!a) {
-      return html`<ok-inline-feedback tone="neutral" icon="information-circle-outline">${t('ui.testAeatNotSent')}</ok-inline-feedback>`;
+      // «Not sent» means two different things. On the OWN road it is a fault and the certificate is
+      // the thing to look at. On the delegated one the engine never files the sample on purpose
+      // (ADR-0189: a filed record cannot be undone, and in `production` it would burn the Anexo I),
+      // so telling that business to «check the certificate» is hub#1485 all over again. The road of
+      // the RUN decides, falling back to today's for a diagnostic older than that field.
+      const filedByErplora = (this.diag?.route ?? this.route) === ROUTE_DELEGATED;
+      return html`<ok-inline-feedback tone="neutral" icon="information-circle-outline">${t(filedByErplora ? 'ui.testAeatNotSentDelegated' : 'ui.testAeatNotSent')}</ok-inline-feedback>`;
     }
     if (a.error) {
       return html`<ok-inline-feedback tone="danger" heading=${t('ui.testAeatError')} icon="alert-circle-outline">${a.error}</ok-inline-feedback>`;
@@ -649,23 +730,34 @@ export class ErpVerifactuSettings extends LitElement {
           </ion-select>
         </ion-item>
         <div class="test-actions">
-          <ion-button @click=${() => this.runTest()} ?disabled=${this.testing || !this.signsWithOwnCertificate}>${this.testing ? t('ui.testRunning') : t('ui.testRun')}</ion-button>
+          <ion-button @click=${() => this.runTest()} ?disabled=${this.testing || !this.canRunLiveTest}>${this.testing ? t('ui.testRunning') : t('ui.testRun')}</ion-button>
           <ion-button fill="outline" @click=${() => this.createTestInvoice()} ?disabled=${this.creatingInvoice || !canCreateInvoice}>${this.creatingInvoice ? t('ui.testCreateInvoiceRunning') : t('ui.testCreateInvoice')}</ion-button>
         </div>
         ${!isTesting ? html`<p class="hint">${t('ui.testInvoiceTestingOnly')}</p>` : nothing}
         ${this.invoiceCreated ? html`<ok-inline-feedback tone="success" icon="checkmark-circle-outline">${t('ui.testInvoiceCreated')}</ok-inline-feedback>` : nothing}
         <!-- Why the button is off, in the terms of the road this hub is actually on (verifactu#41).
              It used to read «not configured — Choose file…», which was a file picker's label
-             pasted where a reason belongs: it named no road and pointed at nothing to press. On
-             the delegated road the diagnostic cannot answer at all — it still demands the core
-             identity (hub#1485) — so the screen says that instead of offering a button that
-             always fails. -->
-        ${this.signsWithOwnCertificate
+             pasted where a reason belongs: it named no road and pointed at nothing to press.
+             Then, while the engine still demanded the core identity, the delegated road was told
+             the test «needs a certificate of your own» — the hub#1485 defect, since that hub has
+             none and never will. With the engine on resolve_route the only hub left without a
+             test is the one without a ROAD, and what it needs is the enrolment above.
+             Silent while either read is in flight: «you have not enrolled» is a claim, and we do
+             not get to make it before the door has answered. -->
+        ${this.canRunLiveTest || this.routeLoading || this.gatewayLoading
           ? nothing
-          : html`<p class="hint">${t(this.route === ROUTE_DELEGATED ? 'ui.testDelegatedUnavailable' : 'ui.testNeedsOwnCertificate')}</p>`}
+          : html`<p class="hint">${t(this.route === ROUTE_DELEGATED ? 'ui.testNeedsGatewayIdentity' : 'ui.testNeedsOwnCertificate')}</p>`}
         ${d
           ? html`
               <ok-inline-feedback tone=${d.cert_ok ? 'success' : 'danger'} heading=${t('ui.testCert')} icon="ribbon-outline">${d.cert_message ?? ''}</ok-inline-feedback>
+              ${this.renderTestGateway(t)}
+              <!-- WHICH road answered (hub#1485). Read off the RUN and not off the current state:
+                   a diagnostic from before an enrolment describes the road it actually took, and
+                   relabelling it with today's would rewrite history on screen. Omitted for a run
+                   older than hub#1485, which did not record one. -->
+              ${d.route
+                ? html`<div class="kv"><span class="k">${t('ui.testRoute')}</span><span>${t(d.route === ROUTE_DELEGATED ? 'ui.routeDelegated' : 'ui.routeOwn')}</span></div>`
+                : nothing}
               <div class="kv"><span class="k">${t('ui.testEnv')}</span><code>${d.environment ?? ''}</code></div>
               <div class="kv"><span class="k">${t('ui.testHuella')}</span><code>${d.huella ?? ''}</code></div>
               <div class="kv">

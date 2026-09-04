@@ -105,9 +105,26 @@ Requires `verifactu.configure_verifactu`.
 
 ### Run a self-diagnostic
 
-Validates the certificate, builds a sample hash and QR, and sends a **test** record to the AEAT
-**without touching the real chain**. The last result is readable from `verifactu.diagnostics.last`.
-Requires `verifactu.transmit_verifactu`.
+Checks the road this hub actually files on, and reports what it found. The last result is readable
+from `verifactu.diagnostics.last`. Requires `verifactu.transmit_verifactu`.
+
+It goes through `resolve_route` — the same door transmission and consult use — so it can only ever
+report on the road the real filing would take (ERPlora/hub#1485), and what it does depends on which
+one that is:
+
+| Road | What the diagnostic does | What it reports |
+|---|---|---|
+| `own` | Builds the sample hash + QR and files a **test** record with the AEAT, **without touching the real chain** | `aeat`: the tax agency's verdict |
+| `delegated` | Builds and validates the same envelope but **files nothing**, and probes the cell's `/readyz` instead | `gateway`: whether ERPlora can file right now; `aeat` stays `null` |
+
+The delegated road does not file **on purpose**: the sample would be a real record presented with
+ERPlora's Seal on the business's behalf, it would consume the Anexo I authorisation in `production`,
+and a filed record cannot be undone (ADR-0189). So on that road the test **checks the way instead of
+using it**.
+
+`details.route` carries `own` / `delegated` in the core's own words, and a failure on the delegated
+road is `verifactu.diagnostic_gateway_unavailable` — never `diagnostic_certificate_invalid`, since
+that business has no certificate to fix.
 
 ## Settings
 
@@ -129,7 +146,7 @@ answered by the core query `hub.fiscal.transmission` — never derived here:
 
 | `transmission_route` | What it means | What the screen shows |
 |---|---|---|
-| `own` | The hub signs and files with the business's own `.p12` | The route, and the live test enabled |
+| `own` | The hub signs and files with the business's own `.p12` | The route, and the live test |
 | `delegated` | ERPlora files on the business's behalf with its own certificate | The route, plus the **representation grant** (`vigente` / `pendiente` / `rechazado` / `revocado` / not signed) and the date of its last change |
 
 Do **not** derive the route from `:has_certificate`. Since ERPlora/hub#1489 that param is
@@ -144,8 +161,15 @@ with the real legal text and a person at ERPlora reviews it. This module reflect
 lives in the core. This screen only shows whether one is available — and on the delegated road it
 says so is *not needed*, rather than reporting it as missing.
 
-The **live test** («Send test») needs a certificate of the business's own, so it is disabled on the
-delegated road with its reason: the diagnostic still demands the core identity (ERPlora/hub#1485).
+The **live test** («Send test») follows the **road**, not the certificate. It used to be switched off
+on the delegated road because the engine resolved the diagnostic through the core identity and could
+only answer «your certificate does not load» to a business that holds none; ERPlora/hub#1485 moved it
+onto `resolve_route`, so the test is now offered wherever there is a road to test.
+
+The one hub still without it is the one with **no road at all** — no certificate of its own and no
+machine identity enrolled. It is pointed at the enrolment section below, not at a file picker. A
+door read that is still in flight, or that failed, counts as «there may be a road»: taking the test
+away over a read that did not land is the same defect in a different coat.
 
 ### Secure connection to ERPlora (the machine identity)
 

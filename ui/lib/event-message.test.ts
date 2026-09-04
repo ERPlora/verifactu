@@ -153,7 +153,16 @@ describe('catalogue parity — every key the engine emits, in both languages (AD
   // Spanish user, which is the defect this issue exists to remove. It cannot be caught by review.
   it('inspects the whole engine surface', () => {
     // Guards the guard: an emptied constant would make every loop below pass vacuously.
-    expect(ENGINE_MESSAGE_KEYS.length).toBe(14);
+    expect(ENGINE_MESSAGE_KEYS.length).toBe(15);
+  });
+
+  // hub#1485 — the THIRD verdict `run_diagnostics` can reach. On the delegated road a failed test
+  // is not a certificate the business could renew (it has none, and never will): it is the fiscal
+  // cell being unable to file right now. Rendering that as `diagnostic_certificate_invalid` is the
+  // very defect hub#1485 exists to remove, so the key has to land here before the screen can tell
+  // the two apart.
+  it('knows the delegated verdict, which is NOT a broken certificate (hub#1485)', () => {
+    expect(ENGINE_MESSAGE_KEYS).toContain('verifactu.diagnostic_gateway_unavailable');
   });
 
   it.each(ENGINE_MESSAGE_KEYS)('%s resolves in en and es', (messageKey) => {
@@ -185,6 +194,7 @@ describe('catalogue parity — every key the engine emits, in both languages (AD
       'verifactu.contingency_processed': ['successful', 'failed'],
       'verifactu.diagnostic_ran': ['environment', 'cert_ok', 'issuer_nif', 'invoice_type', 'sample_number'],
       'verifactu.diagnostic_certificate_invalid': ['environment', 'cert_ok', 'cert_message', 'issuer_nif'],
+      'verifactu.diagnostic_gateway_unavailable': ['environment', 'cert_ok', 'cert_message', 'issuer_nif', 'route'],
       'verifactu.chain_validated': ['valid', 'total', 'issuer_nif', 'environment', 'scope'],
       // first_invalid_seq / first_invalid_id are null on a chain that validates.
       'verifactu.chain_broken': ['valid', 'total', 'issuer_nif', 'environment', 'scope', 'first_invalid_seq'],
