@@ -2718,6 +2718,7 @@ var _OkDataTable = class _OkDataTable2 extends i3 {
       (a3) => {
         const loading = a3.loading?.(row) === true;
         const disabled = loading || a3.disabled?.(row) === true;
+        const label = typeof a3.label === "function" ? a3.label(row) : a3.label;
         return b2`
             <ion-button
               size="small"
@@ -2725,11 +2726,11 @@ var _OkDataTable = class _OkDataTable2 extends i3 {
               color=${a3.color ?? "medium"}
               ?disabled=${disabled}
               aria-disabled=${disabled ? "true" : A}
-              aria-label=${a3.label}
-              title=${a3.label}
+              aria-label=${label}
+              title=${label}
               @click=${() => this.emit("rowAction", { actionId: a3.id, row })}
             >
-              ${loading ? b2`<ion-spinner slot="icon-only" name="dots"></ion-spinner>` : a3.icon ? b2`<ion-icon slot="icon-only" .icon=${okIcon(a3.icon)}></ion-icon>` : a3.label}
+              ${loading ? b2`<ion-spinner slot="icon-only" name="dots"></ion-spinner>` : a3.icon ? b2`<ion-icon slot="icon-only" .icon=${okIcon(a3.icon)}></ion-icon>` : label}
             </ion-button>
           `;
       }
@@ -4170,7 +4171,7 @@ var ErpVerifactuEvents = class extends i3 {
     const t5 = (k2) => client.t(CATALOG2, k2);
     const translate = (catalog, key, params) => client.t(catalog, key, params);
     return [
-      { key: "timestamp", header: t5("ui.colWhen"), sortable: true, filterable: true, filterType: "text" },
+      { key: "timestamp", header: t5("ui.colWhen"), sortable: true, filterable: true, filterType: "daterange" },
       {
         key: "severity",
         header: t5("ui.colSeverity"),
