@@ -4181,7 +4181,7 @@ var ErpVerifactuEvents = class extends i3 {
     const t5 = (k2) => client.t(CATALOG2, k2);
     const translate = (catalog, key, params) => client.t(catalog, key, params);
     return [
-      { key: "timestamp", header: t5("ui.colWhen"), sortable: true, filterable: true, filterType: "text" },
+      { key: "timestamp", header: t5("ui.colWhen"), sortable: true, filterable: true, filterType: "daterange" },
       {
         key: "severity",
         header: t5("ui.colSeverity"),
