@@ -2718,6 +2718,7 @@ var _OkDataTable = class _OkDataTable2 extends i3 {
       (a3) => {
         const loading = a3.loading?.(row) === true;
         const disabled = loading || a3.disabled?.(row) === true;
+        const label = typeof a3.label === "function" ? a3.label(row) : a3.label;
         return b2`
             <ion-button
               size="small"
@@ -2725,11 +2726,11 @@ var _OkDataTable = class _OkDataTable2 extends i3 {
               color=${a3.color ?? "medium"}
               ?disabled=${disabled}
               aria-disabled=${disabled ? "true" : A}
-              aria-label=${a3.label}
-              title=${a3.label}
+              aria-label=${label}
+              title=${label}
               @click=${() => this.emit("rowAction", { actionId: a3.id, row })}
             >
-              ${loading ? b2`<ion-spinner slot="icon-only" name="dots"></ion-spinner>` : a3.icon ? b2`<ion-icon slot="icon-only" .icon=${okIcon(a3.icon)}></ion-icon>` : a3.label}
+              ${loading ? b2`<ion-spinner slot="icon-only" name="dots"></ion-spinner>` : a3.icon ? b2`<ion-icon slot="icon-only" .icon=${okIcon(a3.icon)}></ion-icon>` : label}
             </ion-button>
           `;
       }
@@ -3426,6 +3427,7 @@ var es_default = {
       contingency_processed: "Cola de contingencia procesada: {successful} enviados, {failed} con error",
       diagnostic_ran: "Prueba VeriFactu ejecutada contra {environment} con la factura de muestra {sample_number}",
       diagnostic_certificate_invalid: "Prueba VeriFactu contra {environment}: el certificado no es v\xE1lido \u2014 {cert_message}",
+      diagnostic_gateway_unavailable: "Prueba VeriFactu contra {environment}: ERPlora no puede remitir por ti ahora mismo \u2014 {cert_message}",
       chain_validated: "Cadena de huellas \xEDntegra: {total} registro(s) con su encadenado SHA-256 verificado ({issuer_nif}). No se re-auditan los importes",
       chain_broken: "Cadena de huellas ROTA en la secuencia {first_invalid_seq} ({issuer_nif})",
       aeat_queried: "Consulta AEAT: {count} registro(s) recuperados para {issuer_nif}",
@@ -3515,6 +3517,7 @@ var es_default = {
     testAeatResp: "Respuesta de la AEAT",
     testAeatAccepted: "Aceptado por la AEAT",
     testAeatNotSent: "No se intent\xF3 el env\xEDo (revisa el certificado).",
+    testAeatNotSentDelegated: "No se ha remitido nada, y en esta v\xEDa eso es lo correcto: un registro remitido no se puede deshacer, as\xED que ERPlora comprueba la v\xEDa en vez de usarla.",
     testAeatError: "Error de env\xEDo a la AEAT",
     testEnv: "Entorno",
     producerTitle: "Identificaci\xF3n del software",
@@ -3548,7 +3551,10 @@ var es_default = {
     grantHint: "Se firma en Ajustes \u2192 Negocio, donde ERPlora te prepara el modelo oficial y lo revisa una persona. Solo con el otorgamiento aprobado puede tu negocio pasar a producci\xF3n.",
     certNotNeeded: "no hace falta en esta v\xEDa",
     certOptionalHint: "En esta v\xEDa no necesitas certificado propio: ERPlora remite con el suyo. Sube uno solo si prefieres enviar t\xFA directamente.",
-    testDelegatedUnavailable: "La prueba en vivo necesita un certificado propio, as\xED que no est\xE1 disponible mientras ERPlora remite por ti.",
+    testNeedsGatewayIdentity: "Conecta este hub con ERPlora ah\xED arriba para poder ejecutar la prueba en vivo.",
+    testRoute: "Se remite",
+    testGatewayReady: "ERPlora puede remitir por ti",
+    testGatewayNotReady: "ERPlora no puede remitir por ti ahora mismo",
     testNeedsOwnCertificate: "Sube el certificado del negocio en Ajustes \u2192 Negocio para poder ejecutar la prueba en vivo.",
     gatewayTitle: "Conexi\xF3n segura con ERPlora",
     gatewayHint: "Para que ERPlora pueda remitir a la Agencia Tributaria en tu nombre, este hub y ERPlora se identifican con un certificado de este equipo. La clave privada se crea aqu\xED y nunca sale.",
@@ -3714,6 +3720,7 @@ var en_default = {
       contingency_processed: "Contingency queue processed: {successful} sent, {failed} failed",
       diagnostic_ran: "VeriFactu test run against {environment} with sample invoice {sample_number}",
       diagnostic_certificate_invalid: "VeriFactu test against {environment}: the certificate is not valid \u2014 {cert_message}",
+      diagnostic_gateway_unavailable: "VeriFactu test against {environment}: ERPlora cannot file for you right now \u2014 {cert_message}",
       chain_validated: "Fingerprint chain intact: {total} record(s) with their SHA-256 chaining verified ({issuer_nif}). Amounts are not re-audited",
       chain_broken: "Fingerprint chain BROKEN at sequence {first_invalid_seq} ({issuer_nif})",
       aeat_queried: "AEAT query: {count} record(s) retrieved for {issuer_nif}",
@@ -3803,6 +3810,7 @@ var en_default = {
     testAeatResp: "AEAT response",
     testAeatAccepted: "Accepted by the AEAT",
     testAeatNotSent: "Send not attempted (check the certificate).",
+    testAeatNotSentDelegated: "Nothing was filed, and on this route that is correct: a filed record cannot be undone, so ERPlora checks the route instead of using it.",
     testAeatError: "AEAT send error",
     testEnv: "Environment",
     producerTitle: "Software identification",
@@ -3836,7 +3844,10 @@ var en_default = {
     grantHint: "It is signed in Settings \u2192 Business, where ERPlora prepares the official form and a person reviews it. Only an approved authorisation lets your business go live.",
     certNotNeeded: "not needed on this route",
     certOptionalHint: "On this route you do not need a certificate of your own: ERPlora files with its own. Upload one only if you would rather file directly.",
-    testDelegatedUnavailable: "The live test needs a certificate of your own, so it is not available while ERPlora files for you.",
+    testNeedsGatewayIdentity: "Connect this hub with ERPlora above to run the live test.",
+    testRoute: "Filed through",
+    testGatewayReady: "ERPlora can file for you",
+    testGatewayNotReady: "ERPlora cannot file for you right now",
     testNeedsOwnCertificate: "Upload the business certificate in Settings \u2192 Business to run the live test.",
     gatewayTitle: "Secure connection to ERPlora",
     gatewayHint: "So that ERPlora can file with the tax authority on your behalf, this hub and ERPlora identify each other with a certificate of this device. The private key is created here and never leaves it.",
@@ -5403,6 +5414,40 @@ var ErpVerifactuSettings = class extends i3 {
     return this.route ? this.route === ROUTE_OWN : !!this.cfg.has_certificate;
   }
   /**
+   * **May this hub run the live test?** — since hub#1485 the answer is «does it have a ROAD», not
+   * «does it hold a `.p12`».
+   *
+   * The engine used to resolve the diagnostic through the core identity, so on the delegated road
+   * it always answered «your certificate does not load» to a hub that files perfectly. This screen
+   * covered for that by switching the button off and saying the test «needs a certificate of your
+   * own». Both halves were the same defect: the business was sent to renew something it has never
+   * had. `run_diagnostics` now goes through `resolve_route`, and on the cell it probes readiness
+   * instead of filing a sample (ADR-0189 — a filed record cannot be undone), so the test is exactly
+   * as available as the road is.
+   *
+   * The one hub still held back is the one with NO road: no certificate and no enrolment. Its
+   * button would reach nothing, and what it needs is the enrolment section above, not a file
+   * picker.
+   */
+  get canRunLiveTest() {
+    return this.signsWithOwnCertificate || this.route === ROUTE_DELEGATED && this.cellCanBeReached;
+  }
+  /**
+   * Whether the cell has an identity to present for this hub — false ONLY when the door has
+   * positively said there is none.
+   *
+   * A read still in flight, and a door that could not be read at all (`unknown`), both count as
+   * yes. This screen already degrades that way everywhere it touches the same facts — an unreadable
+   * `notAfter` is `active` rather than `expired`, the enrolment section hides only when the core has
+   * SAID `own` — and for the same reason: taking the test away from a hub over a read that did not
+   * land is the shape of the bug this issue is about. The engine re-resolves the road server-side
+   * and answers truthfully, so the worst case is an honest «the cell cannot file right now» instead
+   * of a button that is dead for no stated reason.
+   */
+  get cellCanBeReached() {
+    return this.gatewayLoading || gatewayState(this.gateway, Date.now()) !== "absent";
+  }
+  /**
    * **Does the fiscal cell speak for this hub?** — ONE rule for the two places that ask it (the
    * read on open and the section itself), because a screen that fetches what it never paints is
    * how a pointless call to the core survives a review.
@@ -5593,10 +5638,32 @@ var ErpVerifactuSettings = class extends i3 {
       this.creatingInvoice = false;
     }
   }
+  /**
+   * What the fiscal CELL said about itself when the diagnostic probed it (hub#1485) — present only
+   * on the delegated road, absent on every run from before it.
+   *
+   * This is the block that replaces the AEAT verdict on that road: the test deliberately does not
+   * file (ADR-0189), so «can ERPlora file for you right now» is the whole answer, and the cell's
+   * own `reason` is the only actionable thing in it.
+   */
+  renderTestGateway(t5) {
+    const g3 = this.diag?.gateway;
+    if (!g3) return A;
+    if (g3.error) {
+      return b2`<ok-inline-feedback tone="danger" heading=${t5("ui.testGatewayNotReady")} icon="alert-circle-outline">${g3.error}</ok-inline-feedback>`;
+    }
+    const detail = [g3.status, g3.reason].filter(Boolean).join(" \xB7 ");
+    return b2`<ok-inline-feedback
+      tone=${g3.ok ? "success" : "danger"}
+      heading=${t5(g3.ok ? "ui.testGatewayReady" : "ui.testGatewayNotReady")}
+      icon=${g3.ok ? "checkmark-circle-outline" : "alert-circle-outline"}
+    >${detail}</ok-inline-feedback>`;
+  }
   renderAeat(t5) {
     const a3 = this.diag?.aeat;
     if (!a3) {
-      return b2`<ok-inline-feedback tone="neutral" icon="information-circle-outline">${t5("ui.testAeatNotSent")}</ok-inline-feedback>`;
+      const filedByErplora = (this.diag?.route ?? this.route) === ROUTE_DELEGATED;
+      return b2`<ok-inline-feedback tone="neutral" icon="information-circle-outline">${t5(filedByErplora ? "ui.testAeatNotSentDelegated" : "ui.testAeatNotSent")}</ok-inline-feedback>`;
     }
     if (a3.error) {
       return b2`<ok-inline-feedback tone="danger" heading=${t5("ui.testAeatError")} icon="alert-circle-outline">${a3.error}</ok-inline-feedback>`;
@@ -5625,20 +5692,29 @@ var ErpVerifactuSettings = class extends i3 {
           </ion-select>
         </ion-item>
         <div class="test-actions">
-          <ion-button @click=${() => this.runTest()} ?disabled=${this.testing || !this.signsWithOwnCertificate}>${this.testing ? t5("ui.testRunning") : t5("ui.testRun")}</ion-button>
+          <ion-button @click=${() => this.runTest()} ?disabled=${this.testing || !this.canRunLiveTest}>${this.testing ? t5("ui.testRunning") : t5("ui.testRun")}</ion-button>
           <ion-button fill="outline" @click=${() => this.createTestInvoice()} ?disabled=${this.creatingInvoice || !canCreateInvoice}>${this.creatingInvoice ? t5("ui.testCreateInvoiceRunning") : t5("ui.testCreateInvoice")}</ion-button>
         </div>
         ${!isTesting ? b2`<p class="hint">${t5("ui.testInvoiceTestingOnly")}</p>` : A}
         ${this.invoiceCreated ? b2`<ok-inline-feedback tone="success" icon="checkmark-circle-outline">${t5("ui.testInvoiceCreated")}</ok-inline-feedback>` : A}
         <!-- Why the button is off, in the terms of the road this hub is actually on (verifactu#41).
              It used to read «not configured — Choose file…», which was a file picker's label
-             pasted where a reason belongs: it named no road and pointed at nothing to press. On
-             the delegated road the diagnostic cannot answer at all — it still demands the core
-             identity (hub#1485) — so the screen says that instead of offering a button that
-             always fails. -->
-        ${this.signsWithOwnCertificate ? A : b2`<p class="hint">${t5(this.route === ROUTE_DELEGATED ? "ui.testDelegatedUnavailable" : "ui.testNeedsOwnCertificate")}</p>`}
+             pasted where a reason belongs: it named no road and pointed at nothing to press.
+             Then, while the engine still demanded the core identity, the delegated road was told
+             the test «needs a certificate of your own» — the hub#1485 defect, since that hub has
+             none and never will. With the engine on resolve_route the only hub left without a
+             test is the one without a ROAD, and what it needs is the enrolment above.
+             Silent while either read is in flight: «you have not enrolled» is a claim, and we do
+             not get to make it before the door has answered. -->
+        ${this.canRunLiveTest || this.routeLoading || this.gatewayLoading ? A : b2`<p class="hint">${t5(this.route === ROUTE_DELEGATED ? "ui.testNeedsGatewayIdentity" : "ui.testNeedsOwnCertificate")}</p>`}
         ${d3 ? b2`
               <ok-inline-feedback tone=${d3.cert_ok ? "success" : "danger"} heading=${t5("ui.testCert")} icon="ribbon-outline">${d3.cert_message ?? ""}</ok-inline-feedback>
+              ${this.renderTestGateway(t5)}
+              <!-- WHICH road answered (hub#1485). Read off the RUN and not off the current state:
+                   a diagnostic from before an enrolment describes the road it actually took, and
+                   relabelling it with today's would rewrite history on screen. Omitted for a run
+                   older than hub#1485, which did not record one. -->
+              ${d3.route ? b2`<div class="kv"><span class="k">${t5("ui.testRoute")}</span><span>${t5(d3.route === ROUTE_DELEGATED ? "ui.routeDelegated" : "ui.routeOwn")}</span></div>` : A}
               <div class="kv"><span class="k">${t5("ui.testEnv")}</span><code>${d3.environment ?? ""}</code></div>
               <div class="kv"><span class="k">${t5("ui.testHuella")}</span><code>${d3.huella ?? ""}</code></div>
               <div class="kv">
