@@ -177,3 +177,58 @@ describe('the result names the road it took (hub#1485)', () => {
     expect(text).toContain('ui.routeOwn');
   });
 });
+
+// ── hub#1575: the reason the test failed, in the reader's language ───────────────────────────
+//
+// The events list was not the only surface printing the engine's Spanish: the Settings card paints
+// the same reason in its own box, straight out of `details.cert_message`. A business running
+// ERPlora in English pressed «Run test» and read «faltan los hechos del productor…» inside an
+// otherwise English screen — the half of the answer that says what to fix.
+//
+// The engine now files `details.cert_reason` = `{code, …facts}` (hub#1575) and keeps the prose as
+// the fallback. Both surfaces compose through the SAME `certReasonSentence`, so the events list and
+// this card cannot say different things about one run.
+describe('the certificate box says WHY in the reader language (hub#1575)', () => {
+  /** The engine's Spanish, the exact substring that must stop reaching the box. */
+  const ENGINE_PROSE = 'faltan los hechos del productor';
+
+  const NO_PRODUCER_FACTS = {
+    cert_ok: false,
+    cert_message: `payload inválido: ${ENGINE_PROSE} (\`SistemaInformatico\`)`,
+    cert_reason: { code: 'producer_facts_missing', error: `payload inválido: ${ENGINE_PROSE}` },
+    route: 'delegated',
+    environment: 'testing',
+    aeat: null,
+    gateway: null,
+  };
+
+  it('composes the reason from the code instead of pasting the engine prose', async () => {
+    const el = await mountWith({ route: 'delegated', details: NO_PRODUCER_FACTS });
+
+    // The harness `t` answers with the KEY, so this names a key and never prose (ADR-0055).
+    expect(cardText(el)).toContain('ui.evt.reason.producer_facts_missing');
+    expect(cardText(el), 'the engine Spanish is still on the screen').not.toContain(ENGINE_PROSE);
+  });
+
+  // 🔒 The fallback: a hub whose engine predates hub#1575 files no code at all, and the box has to
+  // keep the prose rather than lose the half that says what to fix. This is what makes the merge
+  // order safe in BOTH directions.
+  it('keeps the engine prose when the hub sends no code', async () => {
+    const { cert_reason: _dropped, ...older } = NO_PRODUCER_FACTS;
+
+    const el = await mountWith({ route: 'delegated', details: older });
+
+    expect(cardText(el)).toContain(ENGINE_PROSE);
+  });
+
+  // …and so does a code this catalogue has never heard of — a hub ahead of this module.
+  it('keeps the engine prose for a code it does not know', async () => {
+    const el = await mountWith({
+      route: 'delegated',
+      details: { ...NO_PRODUCER_FACTS, cert_reason: { code: 'a_reason_from_the_future' } },
+    });
+
+    expect(cardText(el)).toContain(ENGINE_PROSE);
+    expect(cardText(el)).not.toContain('ui.evt.reason.a_reason_from_the_future');
+  });
+});

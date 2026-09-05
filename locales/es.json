@@ -49,7 +49,17 @@
       "chain_broken": "Cadena de huellas ROTA en la secuencia {first_invalid_seq} ({issuer_nif})",
       "aeat_queried": "Consulta AEAT: {count} registro(s) recuperados para {issuer_nif}",
       "chain_recovered_from_aeat": "Cadena recuperada desde la AEAT para {issuer_nif}: continúa en la secuencia {sequence_number} de {found} registro(s) encontrados",
-      "chain_continued_manually": "Cadena continuada manualmente para {issuer_nif}: continúa en la secuencia {sequence_number}"
+      "chain_continued_manually": "Cadena continuada manualmente para {issuer_nif}: continúa en la secuencia {sequence_number}",
+      "reason": {
+        "certificate_unavailable": "el fichero del certificado no se ha podido cargar: comprueba en Ajustes → Negocio que está subido y que su contraseña es la correcta",
+        "no_transmission_route": "este hub todavía no tiene por dónde presentar: no tiene certificado propio ni conexión con la pasarela fiscal de ERPlora",
+        "gateway_not_ready": "la pasarela fiscal de ERPlora no puede presentar ahora mismo ({detail})",
+        "gateway_not_ready_unspecified": "la pasarela fiscal de ERPlora no puede presentar ahora mismo y no ha dicho por qué",
+        "gateway_unreachable": "no se ha podido contactar con la pasarela fiscal de ERPlora; inténtalo de nuevo en unos minutos",
+        "producer_facts_missing": "este hub todavía no ha recibido de ERPlora los datos del productor del software; llegan solos la próxima vez que se sincronice",
+        "sample_envelope_invalid": "el registro de prueba no se ha podido construir con los ajustes de este hub",
+        "sample_record_schema_invalid": "el esquema de la AEAT ha rechazado el registro de prueba: {detail}"
+      }
     },
     "colSeq": "Seq",
     "colInvoice": "Factura",

@@ -4,6 +4,7 @@ import { define } from '@erplora/outfitkit/define';
 import '@erplora/outfitkit/ok-status-pill';
 import '@erplora/outfitkit/ok-inline-feedback';
 import { toMicro } from '../../lib/quantity';
+import { certReasonSentence } from '../../lib/event-message';
 import {
   GATEWAY_ENROL_PATH,
   GATEWAY_IDENTITY_PATH,
@@ -74,7 +75,18 @@ interface AeatResult {
 
 interface Diagnostic {
   cert_ok?: boolean;
+  /**
+   * The engine's own Spanish account of the failure. Still written, still the FALLBACK: a hub
+   * whose engine predates hub#1575 files nothing else, and half a sentence would be worse than a
+   * Spanish one. Never printed on its own while `cert_reason` resolves.
+   */
   cert_message?: string;
+  /**
+   * Why the test failed, as a stable `{code, …facts}` the catalogue turns into a sentence
+   * (hub#1575). Absent on a run from an older engine, and unknown to this catalogue on a run from
+   * a newer one — both fall back to `cert_message`.
+   */
+  cert_reason?: Record<string, unknown>;
   issuer_nif?: string;
   invoice_type?: string;
   recipient_nif?: string;
@@ -749,7 +761,11 @@ export class ErpVerifactuSettings extends LitElement {
           : html`<p class="hint">${t(this.route === ROUTE_DELEGATED ? 'ui.testNeedsGatewayIdentity' : 'ui.testNeedsOwnCertificate')}</p>`}
         ${d
           ? html`
-              <ok-inline-feedback tone=${d.cert_ok ? 'success' : 'danger'} heading=${t('ui.testCert')} icon="ribbon-outline">${d.cert_message ?? ''}</ok-inline-feedback>
+              <!-- WHY it failed, composed from the code and not pasted from the engine
+                   (hub#1575). The same composer the events list uses, so the two surfaces cannot
+                   describe one run differently; the engine prose stays as the fallback for a run
+                   this catalogue cannot name. -->
+              <ok-inline-feedback tone=${d.cert_ok ? 'success' : 'danger'} heading=${t('ui.testCert')} icon="ribbon-outline">${certReasonSentence(CATALOG, erplora().locale, (catalog, key, params) => erplora().t(catalog, key, params), d as Record<string, unknown>) ?? d.cert_message ?? ''}</ok-inline-feedback>
               ${this.renderTestGateway(t)}
               <!-- WHICH road answered (hub#1485). Read off the RUN and not off the current state:
                    a diagnostic from before an enrolment describes the road it actually took, and

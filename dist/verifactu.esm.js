@@ -3434,7 +3434,17 @@ var es_default = {
       chain_broken: "Cadena de huellas ROTA en la secuencia {first_invalid_seq} ({issuer_nif})",
       aeat_queried: "Consulta AEAT: {count} registro(s) recuperados para {issuer_nif}",
       chain_recovered_from_aeat: "Cadena recuperada desde la AEAT para {issuer_nif}: contin\xFAa en la secuencia {sequence_number} de {found} registro(s) encontrados",
-      chain_continued_manually: "Cadena continuada manualmente para {issuer_nif}: contin\xFAa en la secuencia {sequence_number}"
+      chain_continued_manually: "Cadena continuada manualmente para {issuer_nif}: contin\xFAa en la secuencia {sequence_number}",
+      reason: {
+        certificate_unavailable: "el fichero del certificado no se ha podido cargar: comprueba en Ajustes \u2192 Negocio que est\xE1 subido y que su contrase\xF1a es la correcta",
+        no_transmission_route: "este hub todav\xEDa no tiene por d\xF3nde presentar: no tiene certificado propio ni conexi\xF3n con la pasarela fiscal de ERPlora",
+        gateway_not_ready: "la pasarela fiscal de ERPlora no puede presentar ahora mismo ({detail})",
+        gateway_not_ready_unspecified: "la pasarela fiscal de ERPlora no puede presentar ahora mismo y no ha dicho por qu\xE9",
+        gateway_unreachable: "no se ha podido contactar con la pasarela fiscal de ERPlora; int\xE9ntalo de nuevo en unos minutos",
+        producer_facts_missing: "este hub todav\xEDa no ha recibido de ERPlora los datos del productor del software; llegan solos la pr\xF3xima vez que se sincronice",
+        sample_envelope_invalid: "el registro de prueba no se ha podido construir con los ajustes de este hub",
+        sample_record_schema_invalid: "el esquema de la AEAT ha rechazado el registro de prueba: {detail}"
+      }
     },
     colSeq: "Seq",
     colInvoice: "Factura",
@@ -3729,7 +3739,17 @@ var en_default = {
       chain_broken: "Fingerprint chain BROKEN at sequence {first_invalid_seq} ({issuer_nif})",
       aeat_queried: "AEAT query: {count} record(s) retrieved for {issuer_nif}",
       chain_recovered_from_aeat: "Chain recovered from the AEAT for {issuer_nif}: continues at sequence {sequence_number} of {found} record(s) found",
-      chain_continued_manually: "Chain continued manually for {issuer_nif}: continues at sequence {sequence_number}"
+      chain_continued_manually: "Chain continued manually for {issuer_nif}: continues at sequence {sequence_number}",
+      reason: {
+        certificate_unavailable: "the certificate file could not be loaded: check in Settings \u2192 Business that it is uploaded and that its password is correct",
+        no_transmission_route: "this hub has no way to file yet: it has neither a certificate of its own nor a connection to ERPlora's fiscal gateway",
+        gateway_not_ready: "ERPlora's fiscal gateway cannot file right now ({detail})",
+        gateway_not_ready_unspecified: "ERPlora's fiscal gateway cannot file right now and did not say why",
+        gateway_unreachable: "ERPlora's fiscal gateway could not be reached; try again in a few minutes",
+        producer_facts_missing: "this hub has not received its software-producer details from ERPlora yet; they arrive on their own the next time it syncs",
+        sample_envelope_invalid: "the test record could not be built from this hub's settings",
+        sample_record_schema_invalid: "the AEAT schema refused the test record: {detail}"
+      }
     },
     colSeq: "Seq",
     colInvoice: "Invoice",
@@ -4106,6 +4126,7 @@ define("erp-verifactu-contingency", ErpVerifactuContingency);
 // ui/lib/event-message.ts
 var EVENT_MESSAGE_PREFIX = "verifactu.";
 var EVENT_CATALOG_PREFIX = "ui.evt.";
+var EVENT_REASON_PREFIX = "ui.evt.reason.";
 var PARAM_LABEL_KEYS = {
   record_type: { alta: "ui.recTypeAlta", anulacion: "ui.recTypeAnulacion" },
   environment: { testing: "ui.envTesting", production: "ui.envProduction" }
@@ -4147,13 +4168,27 @@ function localizedParams(catalog, t5, details) {
   }
   return params;
 }
+function certReasonSentence(catalog, locale, t5, details) {
+  const raw = details.cert_reason;
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return void 0;
+  const reason = raw;
+  const code = reason.code;
+  if (typeof code !== "string" || !SAFE_SUFFIX.test(code)) return void 0;
+  const key = `${EVENT_REASON_PREFIX}${code}`;
+  if (!catalogHas(catalog, locale, key)) return void 0;
+  return t5(catalog, key, localizedParams(catalog, t5, reason));
+}
 function eventMessage(catalog, locale, t5, row) {
   const details = parseDetails(row.details);
   const messageKey = details.message_key;
   if (typeof messageKey !== "string") return row.message;
   const key = catalogKeyFor(messageKey);
   if (!key || !catalogHas(catalog, locale, key)) return row.message;
-  return t5(catalog, key, localizedParams(catalog, t5, details));
+  const params = localizedParams(catalog, t5, details);
+  delete params.cert_reason;
+  const reason = certReasonSentence(catalog, locale, t5, details);
+  if (reason !== void 0) params.cert_message = reason;
+  return t5(catalog, key, params);
 }
 
 // ui/components/erp-verifactu-events/erp-verifactu-events.ts
@@ -5712,7 +5747,11 @@ var ErpVerifactuSettings = class extends i3 {
              not get to make it before the door has answered. -->
         ${this.canRunLiveTest || this.routeLoading || this.gatewayLoading ? A : b2`<p class="hint">${t5(this.route === ROUTE_DELEGATED ? "ui.testNeedsGatewayIdentity" : "ui.testNeedsOwnCertificate")}</p>`}
         ${d3 ? b2`
-              <ok-inline-feedback tone=${d3.cert_ok ? "success" : "danger"} heading=${t5("ui.testCert")} icon="ribbon-outline">${d3.cert_message ?? ""}</ok-inline-feedback>
+              <!-- WHY it failed, composed from the code and not pasted from the engine
+                   (hub#1575). The same composer the events list uses, so the two surfaces cannot
+                   describe one run differently; the engine prose stays as the fallback for a run
+                   this catalogue cannot name. -->
+              <ok-inline-feedback tone=${d3.cert_ok ? "success" : "danger"} heading=${t5("ui.testCert")} icon="ribbon-outline">${certReasonSentence(CATALOG5, erplora5().locale, (catalog, key, params) => erplora5().t(catalog, key, params), d3) ?? d3.cert_message ?? ""}</ok-inline-feedback>
               ${this.renderTestGateway(t5)}
               <!-- WHICH road answered (hub#1485). Read off the RUN and not off the current state:
                    a diagnostic from before an enrolment describes the road it actually took, and

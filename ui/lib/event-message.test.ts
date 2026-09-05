@@ -9,9 +9,12 @@ import { describe, expect, it } from 'vitest';
 import enLocale from '../../locales/en.json';
 import esLocale from '../../locales/es.json';
 import {
+  ENGINE_CERT_REASON_CODES,
   ENGINE_MESSAGE_KEYS,
   EVENT_CATALOG_PREFIX,
+  EVENT_REASON_PREFIX,
   catalogKeyFor,
+  certReasonSentence,
   eventMessage,
   type Translate,
 } from './event-message';
@@ -328,5 +331,178 @@ describe('the missing-NIF verdict stands on its own in each language (hub#1531)'
     );
     expect(composed).not.toContain(details.cert_message);
     expect(composed).not.toMatch(/\{[a-z_]+\}/);
+  });
+});
+
+// ── hub#1575: the reason behind the dash, in the reader's language ───────────────────────────
+//
+// Three of the five diagnostic verdicts end in `— {cert_message}`, and `cert_message` is Spanish
+// prose the engine wrote. A business running ERPlora in English read «…does not produce a valid
+// test record — faltan los hechos del productor…»: half a sentence in a language it did not
+// choose, and it is the half that says what to fix.
+//
+// The engine now files the reason as `details.cert_reason` = `{code, …facts}` and keeps the prose
+// as the fallback, the same shape `message_key` has had since hub#1178.
+
+/** What the engine files when the producer facts have not arrived (hub#1559 + hub#1575). */
+const DIAGNOSTIC_SAMPLE_RECORD_INVALID = JSON.stringify({
+  message_key: 'verifactu.diagnostic_sample_record_invalid',
+  cert_ok: false,
+  cert_message:
+    'payload inválido: faltan los hechos del productor (`SistemaInformatico`): este hub todavía no los ha recibido del plano de control',
+  cert_reason: {
+    code: 'producer_facts_missing',
+    error:
+      'payload inválido: faltan los hechos del productor (`SistemaInformatico`): este hub todavía no los ha recibido del plano de control',
+  },
+  route: 'delegated',
+  issuer_nif: 'B12345678',
+  environment: 'testing',
+});
+
+/** The engine's Spanish, the exact substring that must stop reaching an English reader. */
+const ENGINE_CERT_PROSE = 'faltan los hechos del productor';
+
+describe('the reason behind the dash is composed too (hub#1575)', () => {
+  it.each(['en', 'es'] as const)('leaves no engine prose inside the %s sentence', (lang) => {
+    const composed = eventMessage(
+      CATALOG,
+      lang,
+      interpolatingIn(lang),
+      row(DIAGNOSTIC_SAMPLE_RECORD_INVALID, 'Prueba VeriFactu: el registro de prueba no es válido'),
+    );
+
+    if (lang === 'en') {
+      expect(composed, 'the reason is still the engine Spanish').not.toContain(ENGINE_CERT_PROSE);
+    }
+    expect(composed, 'a placeholder survived').not.toMatch(/\{[a-z_]+\}/);
+  });
+
+  // The positive the check above cannot catch on its own: `es` legitimately contains Spanish, so
+  // «no engine prose» proves nothing there. What proves it is that the two languages differ AND
+  // that neither is the engine's own sentence.
+  it('says it differently in each language, and in neither the engine words', () => {
+    const en = eventMessage(CATALOG, 'en', interpolatingIn('en'), row(DIAGNOSTIC_SAMPLE_RECORD_INVALID));
+    const es = eventMessage(CATALOG, 'es', interpolatingIn('es'), row(DIAGNOSTIC_SAMPLE_RECORD_INVALID));
+
+    expect(es).not.toBe(en);
+    expect(es).not.toContain(ENGINE_CERT_PROSE);
+  });
+
+  // 🔒 The fallback hub#1178 left, one field further in: a hub whose engine predates the code
+  // sends no `cert_reason`, and the sentence has to keep the prose rather than lose the half that
+  // says what to fix. This is what makes the merge order safe in BOTH directions.
+  it('keeps the engine prose when the hub sends no code', () => {
+    const details = JSON.parse(DIAGNOSTIC_SAMPLE_RECORD_INVALID) as Record<string, unknown>;
+    delete details.cert_reason;
+
+    const composed = eventMessage(
+      CATALOG,
+      'en',
+      interpolatingIn('en'),
+      row(JSON.stringify(details)),
+    );
+
+    expect(composed).toContain(ENGINE_CERT_PROSE);
+    expect(composed).not.toMatch(/\{[a-z_]+\}/);
+  });
+
+  // …and so does a code this catalogue has never heard of — a hub ahead of this module.
+  it('keeps the engine prose for a code it does not know', () => {
+    const details = JSON.parse(DIAGNOSTIC_SAMPLE_RECORD_INVALID) as Record<string, unknown>;
+    details.cert_reason = { code: 'a_reason_from_the_future' };
+
+    const composed = eventMessage(
+      CATALOG,
+      'en',
+      interpolatingIn('en'),
+      row(JSON.stringify(details)),
+    );
+
+    expect(composed).toContain(ENGINE_CERT_PROSE);
+  });
+
+  // The Settings screen paints the same reason on its own, in the box it already had. Same
+  // composer, so the two surfaces cannot say different things about one run.
+  it('composes the reason on its own for the Settings box', () => {
+    const details = JSON.parse(DIAGNOSTIC_SAMPLE_RECORD_INVALID) as Record<string, unknown>;
+
+    const sentence = certReasonSentence(CATALOG, 'en', interpolatingIn('en'), details);
+
+    expect(sentence).toBeTruthy();
+    expect(sentence).not.toContain(ENGINE_CERT_PROSE);
+    expect(certReasonSentence(CATALOG, 'en', interpolatingIn('en'), {})).toBeUndefined();
+  });
+});
+
+describe('reason parity — every code the engine emits, in both languages (hub#1575)', () => {
+  it('inspects the whole reason surface', () => {
+    // Guards the guard: an emptied constant would make every loop below pass vacuously.
+    expect(ENGINE_CERT_REASON_CODES.length).toBe(8);
+  });
+
+  it.each(ENGINE_CERT_REASON_CODES)('%s resolves in en and es', (code) => {
+    for (const lang of ['en', 'es'] as const) {
+      const dict = CATALOG[lang] as Record<string, Record<string, Record<string, string>>>;
+      const entry = dict.ui?.evt?.reason?.[code];
+      expect(typeof entry, `${lang} is missing ${EVENT_REASON_PREFIX}${code}`).toBe('string');
+      expect(entry!.length).toBeGreaterThan(0);
+    }
+  });
+
+  it.each(ENGINE_CERT_REASON_CODES)('%s is translated into es, not copied from en', (code) => {
+    type Evt = Record<string, Record<string, Record<string, Record<string, string>>>>;
+    const en = (CATALOG.en as Evt).ui.evt.reason[code];
+    const es = (CATALOG.es as Evt).ui.evt.reason[code];
+    expect(es, `es copies en for ${code}`).not.toBe(en);
+  });
+
+  it('builds every reason out of facts the engine ALWAYS sends', () => {
+    // Read off `hub/crates/plugins/verifactu/src/diagnostics.rs` — the facts each `CertReason`
+    // carries, never the whole payload: a placeholder the engine does not send is printed raw,
+    // braces and all, which is the one shape worse than the Spanish it replaces.
+    const alwaysSent: Record<string, string[]> = {
+      certificate_unavailable: ['error'],
+      no_transmission_route: ['error'],
+      gateway_unreachable: ['error'],
+      gateway_not_ready: ['status', 'reason', 'detail'],
+      gateway_not_ready_unspecified: [],
+      producer_facts_missing: ['error'],
+      sample_envelope_invalid: ['error'],
+      sample_record_schema_invalid: ['detail'],
+    };
+    expect(Object.keys(alwaysSent).sort()).toEqual([...ENGINE_CERT_REASON_CODES].sort());
+
+    for (const code of ENGINE_CERT_REASON_CODES) {
+      for (const lang of ['en', 'es'] as const) {
+        type Evt = Record<string, Record<string, Record<string, Record<string, string>>>>;
+        const sentence = (CATALOG[lang] as Evt).ui.evt.reason[code];
+        for (const [, placeholder] of sentence.matchAll(/\{([a-z_]+)\}/g)) {
+          expect(alwaysSent[code], `${lang} ${code}: {${placeholder}} is not always sent`).toContain(
+            placeholder,
+          );
+        }
+      }
+    }
+  });
+
+  // 🔒 A reason that quotes the engine's own Spanish inside itself would move the defect one level
+  // down instead of removing it, which is why `{error}` — always the engine's own prose — is
+  // banned outright.
+  //
+  // `{detail}` is allowed in the two codes that carry one, and it is NOT clean in both: for
+  // `gateway_not_ready` it is the fiscal cell's own status (`expired`, `absent`) or its internal
+  // error, but for `sample_record_schema_invalid` it is still a Spanish sentence written by the
+  // hub's XSD validator («Descripcion es obligatorio y viene vacío»). It stays because it names
+  // the field to fix and losing it would leave the reader with nothing actionable; translating it
+  // means giving codes to the whole fiscal validator, which is its own change (hub#1576).
+  it('never bakes the engine prose into a reason sentence', () => {
+    for (const code of ENGINE_CERT_REASON_CODES) {
+      for (const lang of ['en', 'es'] as const) {
+        type Evt = Record<string, Record<string, Record<string, Record<string, string>>>>;
+        const sentence = (CATALOG[lang] as Evt).ui.evt.reason[code];
+        expect(sentence, `${lang} ${code}`).not.toContain('{error}');
+      }
+    }
   });
 });

@@ -130,6 +130,13 @@ wait: `verifactu.diagnostic_issuer_nif_missing` (its own NIF is not set — ERPl
 record — ERPlora/hub#1559) and `verifactu.diagnostic_gateway_unavailable` (the cell cannot file
 right now).
 
+Two of those three end in a dash and the REASON the run failed. That reason travels twice
+(ERPlora/hub#1575): as `details.cert_reason` = `{code, …facts}` — a stable code the module turns
+into a sentence of its own (`ui.evt.reason.<code>`), for the eight the engine emits — and as
+`details.cert_message`, the engine's Spanish prose, kept as the fallback. The screen composes from
+the code when it knows it and prints the prose when it does not, so a hub whose engine is older or
+newer than this module still reads a whole sentence.
+
 ## Settings
 
 The module's configuration (`verifactu.config.get`, saved with `verifactu.config.save`). Requires
