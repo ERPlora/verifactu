@@ -22,6 +22,19 @@ export const EVENT_MESSAGE_PREFIX = 'verifactu.';
 export const EVENT_CATALOG_PREFIX = 'ui.evt.';
 
 /**
+ * Where the REASON behind the dash lives: `producer_facts_missing` → `ui.evt.reason.…` (hub#1575).
+ *
+ * Three of the five diagnostic verdicts end in `— {cert_message}`, and until hub#1575 that
+ * placeholder was filled with Spanish prose the engine wrote: an English reader got «…does not
+ * produce a valid test record — faltan los hechos del productor…», half a sentence in a language
+ * they did not choose, and it was the half that says what to fix.
+ *
+ * Its own namespace and not a second `ui.evt.*` key, because a reason is not a verdict: it never
+ * stands as the headline of an audit row, and the parity tests walk the two lists apart.
+ */
+export const EVENT_REASON_PREFIX = 'ui.evt.reason.';
+
+/**
  * The keys `details_for(…)` is called with in `hub/crates/plugins/verifactu/src/` — the module's
  * declared rendering surface, verified against `origin/develop@dcdab14` (`records.rs`,
  * `recovery.rs`, `transmission.rs`, `validation.rs`, `diagnostics.rs`).
@@ -48,6 +61,29 @@ export const ENGINE_MESSAGE_KEYS = [
   'verifactu.aeat_queried',
   'verifactu.chain_recovered_from_aeat',
   'verifactu.chain_continued_manually',
+] as const;
+
+/**
+ * The `cert_reason.code` values `diagnostics.rs` files — the reason surface, the twin of
+ * [`ENGINE_MESSAGE_KEYS`] one field further in.
+ *
+ * Same contract: it is not a lookup table (resolution goes through the catalogue, so a code added
+ * to the engine still renders — as the engine's own prose — without touching this list), it is the
+ * surface the parity test walks so `en` and `es` cannot drift apart unnoticed.
+ */
+export const ENGINE_CERT_REASON_CODES = [
+  // No road at all: with a certificate slot the fault is the certificate, without one it is that
+  // this hub has nowhere to file (hub#1485 — the two ask opposite things of the reader).
+  'certificate_unavailable',
+  'no_transmission_route',
+  // The cell answered.
+  'gateway_not_ready',
+  'gateway_not_ready_unspecified',
+  'gateway_unreachable',
+  // The test record this hub's own settings produce (hub#1559).
+  'producer_facts_missing',
+  'sample_envelope_invalid',
+  'sample_record_schema_invalid',
 ] as const;
 
 /**
@@ -139,6 +175,35 @@ function localizedParams(
 }
 
 /**
+ * The reason a diagnostic gives, as its own sentence (hub#1575) — `undefined` when there is none to
+ * give, or when this catalogue does not know the code the engine sent.
+ *
+ * `undefined` is the answer that matters: it is what makes BOTH deployment orders safe. A hub older
+ * than hub#1575 files no `cert_reason` at all, and a hub newer than this module files a code the
+ * catalogue has never heard of; in either case the caller keeps the engine's `cert_message`, which
+ * is the whole reason that prose is still written and still travels.
+ *
+ * Exported because the Settings screen paints the same reason on its own, in the box it already
+ * had. One composer, so the events list and the settings box cannot say different things about the
+ * same run.
+ */
+export function certReasonSentence(
+  catalog: Record<string, unknown>,
+  locale: string,
+  t: Translate,
+  details: Record<string, unknown>,
+): string | undefined {
+  const raw = details.cert_reason;
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined;
+  const reason = raw as Record<string, unknown>;
+  const code = reason.code;
+  if (typeof code !== 'string' || !SAFE_SUFFIX.test(code)) return undefined;
+  const key = `${EVENT_REASON_PREFIX}${code}`;
+  if (!catalogHas(catalog, locale, key)) return undefined;
+  return t(catalog, key, localizedParams(catalog, t, reason));
+}
+
+/**
  * The sentence for one audit row: composed from `details.message_key` when the catalogue knows it,
  * and the engine's own `message` when it does not.
  */
@@ -153,5 +218,11 @@ export function eventMessage(
   if (typeof messageKey !== 'string') return row.message;
   const key = catalogKeyFor(messageKey);
   if (!key || !catalogHas(catalog, locale, key)) return row.message;
-  return t(catalog, key, localizedParams(catalog, t, details));
+  const params = localizedParams(catalog, t, details);
+  // `cert_reason` is a nested object: it is the reason's SOURCE, never a value to interpolate.
+  // Left in, `t()` would print `[object Object]` inside a fiscal audit line.
+  delete params.cert_reason;
+  const reason = certReasonSentence(catalog, locale, t, details);
+  if (reason !== undefined) params.cert_message = reason;
+  return t(catalog, key, params);
 }
