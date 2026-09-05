@@ -123,8 +123,12 @@ and a filed record cannot be undone (ADR-0189). So on that road the test **check
 using it**.
 
 `details.route` carries `own` / `delegated` in the core's own words, and a failure on the delegated
-road is `verifactu.diagnostic_gateway_unavailable` — never `diagnostic_certificate_invalid`, since
-that business has no certificate to fix.
+road is never `diagnostic_certificate_invalid`, since that business has no certificate to fix. It is
+one of three verdicts, and the screen has to tell them apart because only one asks the business to
+wait: `verifactu.diagnostic_issuer_nif_missing` (its own NIF is not set — ERPlora/hub#1531),
+`verifactu.diagnostic_sample_record_invalid` (its own configuration does not yield a valid test
+record — ERPlora/hub#1559) and `verifactu.diagnostic_gateway_unavailable` (the cell cannot file
+right now).
 
 ## Settings
 

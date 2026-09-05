@@ -252,6 +252,18 @@ describe('catalogue parity — every key the engine emits, in both languages (AD
     }
   });
 
+  // Review of hub#1559 — being present in both dictionaries is not being translated. An `es` entry
+  // pasted from `en` passes every check above and still puts English in front of a Spanish reader:
+  // the ADR-0055 defect wearing a Spanish key. Every sentence here is a full clause in both
+  // languages, so byte-for-byte identity is the one shape a real translation can never take.
+  it.each(ENGINE_MESSAGE_KEYS)('%s is translated into es, not copied from en', (messageKey) => {
+    const short = catalogKeyFor(messageKey)!.slice(EVENT_CATALOG_PREFIX.length);
+    type Evt = Record<string, Record<string, Record<string, string>>>;
+    const en = (CATALOG.en as Evt).ui.evt[short];
+    const es = (CATALOG.es as Evt).ui.evt[short];
+    expect(es, `es copies en for ${short}`).not.toBe(en);
+  });
+
   it('builds every sentence out of params the engine ALWAYS sends', () => {
     // Two ways a placeholder betrays the reader, and this pins both:
     //   - `{param}` the engine never sends is printed raw, braces and all;
