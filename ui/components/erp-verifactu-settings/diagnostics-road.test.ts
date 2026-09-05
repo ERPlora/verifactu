@@ -280,3 +280,107 @@ describe('the certificate box says the CONSTANT verdicts in the reader language 
     expect(cardText(el)).toContain(c.prose);
   });
 });
+
+// ── hub#1578: the AEAT box, on the OWN road ──────────────────────────────────────────────────
+//
+// hub#1575 and verifactu#95 fixed the CERTIFICATE box. On the own road that box is green — the
+// `.p12` does load — and the failure lands one box lower, in «AEAT»: the sample record cannot be
+// built or does not pass the schema, and `aeat.error` carries the engine's Spanish straight to the
+// screen. An English hub read «payload inválido: faltan los hechos del productor…» in red, in the
+// one box that says what to fix.
+//
+// Same channel, same shape: the engine files `aeat.reason` = `{code, …facts}` beside the prose, and
+// the box composes it through the SAME resolver the certificate box uses. What the AEAT itself
+// says (`codigo_error`/`descripcion_error`) is NOT this: Hacienda writes it, and it stays as it is.
+describe('the AEAT box says WHY in the reader language (hub#1578)', () => {
+  /** The engine's Spanish, the exact substring that must stop reaching the box. */
+  const ENGINE_PROSE = 'faltan los hechos del productor';
+
+  const OWN_SAMPLE_REFUSED = {
+    cert_ok: true,
+    cert_message: 'Certificado cargado correctamente.',
+    cert_reason: { code: 'certificate_loaded' },
+    route: 'own',
+    environment: 'testing',
+    aeat: {
+      ok: false,
+      error: `payload inválido: ${ENGINE_PROSE} (\`SistemaInformatico\`)`,
+      reason: { code: 'producer_facts_missing', error: `payload inválido: ${ENGINE_PROSE}` },
+    },
+    gateway: null,
+  };
+
+  it('composes the reason from the code instead of pasting the engine prose', async () => {
+    const el = await mountWith({ route: 'own', details: OWN_SAMPLE_REFUSED });
+
+    const text = cardText(el);
+    // The harness `t` answers with the KEY, so this names a key and never prose (ADR-0055).
+    expect(text, 'the AEAT box still has to be the error box').toContain('ui.testAeatError');
+    expect(text).toContain('ui.evt.reason.producer_facts_missing');
+    expect(text, 'the engine Spanish is still on the screen').not.toContain(ENGINE_PROSE);
+  });
+
+  // The other half of the own road: the tax ID this hub never filled in. It is the same code the
+  // delegated road already files for it (`issuer_nif_missing`), because for whoever reads it, it is
+  // the same field to fill — the road it happened on does not change the sentence.
+  it('composes the missing issuer tax ID with the code the other road already uses', async () => {
+    const el = await mountWith({
+      route: 'own',
+      details: {
+        ...OWN_SAMPLE_REFUSED,
+        aeat: {
+          ok: false,
+          error: 'Configura el NIF del obligado tributario (emisor) antes de enviar la prueba.',
+          reason: { code: 'issuer_nif_missing' },
+        },
+      },
+    });
+
+    const text = cardText(el);
+    expect(text).toContain('ui.evt.reason.issuer_nif_missing');
+    expect(text, 'the engine Spanish is still on the screen').not.toContain('Configura el NIF del obligado');
+  });
+
+  // 🔒 The fallback, both directions of the merge order. An engine older than hub#1578 files no
+  // `reason` at all, and the box has to keep the prose rather than go blank in the one place that
+  // says what to fix.
+  it('keeps the engine prose when the hub sends no code', async () => {
+    const { reason: _dropped, ...olderAeat } = OWN_SAMPLE_REFUSED.aeat;
+
+    const el = await mountWith({ route: 'own', details: { ...OWN_SAMPLE_REFUSED, aeat: olderAeat } });
+
+    expect(cardText(el)).toContain(ENGINE_PROSE);
+  });
+
+  // …and so does a code this catalogue has never heard of — a hub ahead of this module.
+  it('keeps the engine prose for a code it does not know', async () => {
+    const el = await mountWith({
+      route: 'own',
+      details: {
+        ...OWN_SAMPLE_REFUSED,
+        aeat: { ...OWN_SAMPLE_REFUSED.aeat, reason: { code: 'a_reason_from_the_future' } },
+      },
+    });
+
+    const text = cardText(el);
+    expect(text).toContain(ENGINE_PROSE);
+    expect(text).not.toContain('ui.evt.reason.a_reason_from_the_future');
+  });
+
+  // 🔒 What the AEAT answers is NOT ours to translate: Hacienda writes `codigo_error` and
+  // `descripcion_error` in Spanish by law, and a rejection whose code the support desk quotes must
+  // arrive verbatim. This pins that the new branch did not swallow the answer path.
+  it('leaves the AEAT own rejection exactly as Hacienda wrote it', async () => {
+    const el = await mountWith({
+      route: 'own',
+      details: {
+        ...OWN_SAMPLE_REFUSED,
+        aeat: { ok: false, estado_registro: 'Incorrecto', codigo_error: '1189', descripcion_error: 'Falta el bloque Destinatarios' },
+      },
+    });
+
+    const text = cardText(el);
+    expect(text).toContain('1189');
+    expect(text).toContain('Falta el bloque Destinatarios');
+  });
+});

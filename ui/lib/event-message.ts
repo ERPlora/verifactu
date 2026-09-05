@@ -181,13 +181,37 @@ function localizedParams(
 }
 
 /**
- * The reason a diagnostic gives, as its own sentence (hub#1575) — `undefined` when there is none to
- * give, or when this catalogue does not know the code the engine sent.
+ * A `{code, …facts}` the engine filed, as its own sentence — `undefined` when what arrived is not
+ * one, or when this catalogue does not know the code.
  *
  * `undefined` is the answer that matters: it is what makes BOTH deployment orders safe. A hub older
- * than hub#1575 files no `cert_reason` at all, and a hub newer than this module files a code the
- * catalogue has never heard of; in either case the caller keeps the engine's `cert_message`, which
- * is the whole reason that prose is still written and still travels.
+ * than the change that files the code sends nothing at all, and a hub newer than this module sends
+ * a code the catalogue has never heard of; in either case the caller keeps the engine's own prose,
+ * which is the whole reason that prose is still written and still travels.
+ *
+ * Takes the RAW field rather than the row, because the engine files this shape in more than one
+ * place: `details.cert_reason` for the certificate verdict (hub#1575) and `details.aeat.reason` for
+ * the AEAT box of the own road (hub#1578). One resolver, so a code cannot read one way in the
+ * events list and another in the settings card.
+ */
+export function reasonSentence(
+  catalog: Record<string, unknown>,
+  locale: string,
+  t: Translate,
+  raw: unknown,
+): string | undefined {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined;
+  const reason = raw as Record<string, unknown>;
+  const code = reason.code;
+  if (typeof code !== 'string' || !SAFE_SUFFIX.test(code)) return undefined;
+  const key = `${EVENT_REASON_PREFIX}${code}`;
+  if (!catalogHas(catalog, locale, key)) return undefined;
+  return t(catalog, key, localizedParams(catalog, t, reason));
+}
+
+/**
+ * The reason a DIAGNOSTIC gives for its certificate verdict (hub#1575): [`reasonSentence`] applied
+ * to the field that carries it.
  *
  * Exported because the Settings screen paints the same reason on its own, in the box it already
  * had. One composer, so the events list and the settings box cannot say different things about the
@@ -199,14 +223,7 @@ export function certReasonSentence(
   t: Translate,
   details: Record<string, unknown>,
 ): string | undefined {
-  const raw = details.cert_reason;
-  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined;
-  const reason = raw as Record<string, unknown>;
-  const code = reason.code;
-  if (typeof code !== 'string' || !SAFE_SUFFIX.test(code)) return undefined;
-  const key = `${EVENT_REASON_PREFIX}${code}`;
-  if (!catalogHas(catalog, locale, key)) return undefined;
-  return t(catalog, key, localizedParams(catalog, t, reason));
+  return reasonSentence(catalog, locale, t, details.cert_reason);
 }
 
 /**

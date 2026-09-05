@@ -4,7 +4,7 @@ import { define } from '@erplora/outfitkit/define';
 import '@erplora/outfitkit/ok-status-pill';
 import '@erplora/outfitkit/ok-inline-feedback';
 import { toMicro } from '../../lib/quantity';
-import { certReasonSentence } from '../../lib/event-message';
+import { certReasonSentence, reasonSentence } from '../../lib/event-message';
 import {
   GATEWAY_ENROL_PATH,
   GATEWAY_IDENTITY_PATH,
@@ -70,7 +70,22 @@ interface AeatResult {
   csv?: string;
   codigo_error?: string;
   descripcion_error?: string;
+  /**
+   * OUR account of why nothing was filed, in the engine's Spanish. Still written, still the
+   * FALLBACK — the twin of `cert_message` one box lower. Never printed on its own while `reason`
+   * resolves.
+   */
   error?: string;
+  /**
+   * Why nothing was filed, as a stable `{code, …facts}` the catalogue turns into a sentence
+   * (hub#1578). Absent on a run from an older engine, and unknown to this catalogue on a run from
+   * a newer one — both fall back to `error`.
+   *
+   * Only ever set beside `error`, i.e. for the faults that are OURS. What the AEAT itself answers
+   * (`codigo_error` / `descripcion_error`) never carries one: Hacienda writes those in Spanish by
+   * law, and support quotes them verbatim.
+   */
+  reason?: Record<string, unknown>;
 }
 
 interface Diagnostic {
@@ -717,7 +732,13 @@ export class ErpVerifactuSettings extends LitElement {
       return html`<ok-inline-feedback tone="neutral" icon="information-circle-outline">${t(filedByErplora ? 'ui.testAeatNotSentDelegated' : 'ui.testAeatNotSent')}</ok-inline-feedback>`;
     }
     if (a.error) {
-      return html`<ok-inline-feedback tone="danger" heading=${t('ui.testAeatError')} icon="alert-circle-outline">${a.error}</ok-inline-feedback>`;
+      // WHY nothing was filed, composed from the code and not pasted from the engine (hub#1578).
+      // On the own road the certificate box is GREEN — the `.p12` does load — and the failure lands
+      // here, so this was the last box left reading Spanish inside an English screen, and it is the
+      // one that says what to fix. Same resolver as the box above, so one run cannot be described
+      // two ways; the engine prose stays as the fallback for a code this catalogue cannot name.
+      const why = reasonSentence(CATALOG, erplora().locale, (catalog, key, params) => erplora().t(catalog, key, params), a.reason);
+      return html`<ok-inline-feedback tone="danger" heading=${t('ui.testAeatError')} icon="alert-circle-outline">${why ?? a.error}</ok-inline-feedback>`;
     }
     if (a.ok) {
       const csv = a.csv ? ` · CSV ${a.csv}` : '';
