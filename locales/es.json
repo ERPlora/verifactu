@@ -44,6 +44,7 @@
       "diagnostic_certificate_invalid": "Prueba VeriFactu contra {environment}: el certificado no es válido — {cert_message}",
       "diagnostic_gateway_unavailable": "Prueba VeriFactu contra {environment}: ERPlora no puede remitir por ti ahora mismo — {cert_message}",
       "diagnostic_issuer_nif_missing": "Prueba VeriFactu contra {environment}: falta el NIF del obligado tributario — configúralo en Ajustes → Negocio antes de probar la conexión",
+      "diagnostic_sample_record_invalid": "Prueba VeriFactu contra {environment}: tu configuración no produce un registro de prueba válido — {cert_message}",
       "chain_validated": "Cadena de huellas íntegra: {total} registro(s) con su encadenado SHA-256 verificado ({issuer_nif}). No se re-auditan los importes",
       "chain_broken": "Cadena de huellas ROTA en la secuencia {first_invalid_seq} ({issuer_nif})",
       "aeat_queried": "Consulta AEAT: {count} registro(s) recuperados para {issuer_nif}",

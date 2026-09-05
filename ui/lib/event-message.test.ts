@@ -221,7 +221,7 @@ describe('catalogue parity — every key the engine emits, in both languages (AD
   // Spanish user, which is the defect this issue exists to remove. It cannot be caught by review.
   it('inspects the whole engine surface', () => {
     // Guards the guard: an emptied constant would make every loop below pass vacuously.
-    expect(ENGINE_MESSAGE_KEYS.length).toBe(16);
+    expect(ENGINE_MESSAGE_KEYS.length).toBe(17);
   });
 
   // hub#1485 — the THIRD verdict `run_diagnostics` can reach. On the delegated road a failed test
@@ -233,6 +233,14 @@ describe('catalogue parity — every key the engine emits, in both languages (AD
     expect(ENGINE_MESSAGE_KEYS).toContain('verifactu.diagnostic_gateway_unavailable');
   });
 
+  // hub#1559 — the FIFTH verdict, and the one that keeps the delegated road honest one box past
+  // hub#1531: the obligado NIF is filled in and the test record still does not come out. Without a
+  // key of its own the screen reads `diagnostic_gateway_unavailable` and sends the business to
+  // watch a status page instead of looking at its own configuration.
+  it('tells a test record that is not valid apart from a gateway that cannot file (hub#1559)', () => {
+    expect(ENGINE_MESSAGE_KEYS).toContain('verifactu.diagnostic_sample_record_invalid');
+  });
+
   it.each(ENGINE_MESSAGE_KEYS)('%s resolves in en and es', (messageKey) => {
     const key = catalogKeyFor(messageKey);
     expect(key).not.toBeNull();
@@ -242,6 +250,18 @@ describe('catalogue parity — every key the engine emits, in both languages (AD
       expect(typeof entry, `${lang} is missing ${key}`).toBe('string');
       expect(entry!.length).toBeGreaterThan(0);
     }
+  });
+
+  // Review of hub#1559 — being present in both dictionaries is not being translated. An `es` entry
+  // pasted from `en` passes every check above and still puts English in front of a Spanish reader:
+  // the ADR-0055 defect wearing a Spanish key. Every sentence here is a full clause in both
+  // languages, so byte-for-byte identity is the one shape a real translation can never take.
+  it.each(ENGINE_MESSAGE_KEYS)('%s is translated into es, not copied from en', (messageKey) => {
+    const short = catalogKeyFor(messageKey)!.slice(EVENT_CATALOG_PREFIX.length);
+    type Evt = Record<string, Record<string, Record<string, string>>>;
+    const en = (CATALOG.en as Evt).ui.evt[short];
+    const es = (CATALOG.es as Evt).ui.evt[short];
+    expect(es, `es copies en for ${short}`).not.toBe(en);
   });
 
   it('builds every sentence out of params the engine ALWAYS sends', () => {
@@ -264,6 +284,7 @@ describe('catalogue parity — every key the engine emits, in both languages (AD
       'verifactu.diagnostic_certificate_invalid': ['environment', 'cert_ok', 'cert_message', 'issuer_nif'],
       'verifactu.diagnostic_gateway_unavailable': ['environment', 'cert_ok', 'cert_message', 'issuer_nif', 'route'],
       'verifactu.diagnostic_issuer_nif_missing': ['environment', 'cert_ok', 'cert_message', 'issuer_nif', 'route'],
+      'verifactu.diagnostic_sample_record_invalid': ['environment', 'cert_ok', 'cert_message', 'issuer_nif', 'route'],
       'verifactu.chain_validated': ['valid', 'total', 'issuer_nif', 'environment', 'scope'],
       // first_invalid_seq / first_invalid_id are null on a chain that validates.
       'verifactu.chain_broken': ['valid', 'total', 'issuer_nif', 'environment', 'scope', 'first_invalid_seq'],
