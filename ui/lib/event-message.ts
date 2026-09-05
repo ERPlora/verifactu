@@ -93,6 +93,45 @@ export const ENGINE_CERT_REASON_CODES = [
 ] as const;
 
 /**
+ * The refusals `xsd.rs::validate_registro` files as codes (hub#1576) — the reason NESTED inside a
+ * reason.
+ *
+ * `sample_record_schema_invalid` says «the AEAT schema refused the test record: {detail}», and
+ * until hub#1576 that `{detail}` was a sentence the hub's own validator wrote in Spanish. So the
+ * verdict arrived translated and the only actionable half — WHICH element to fix — did not.
+ *
+ * The element names inside these sentences (`DescripcionOperacion`, `TipoHuella`…) stay in
+ * Spanish on purpose: they are the AEAT's own tag names, fixed by law, and a business that rings
+ * its accountant has to quote the same word the AEAT uses. They travel as DATA, never inside the
+ * sentence, which is exactly what lets the sentence around them be translated.
+ *
+ * Same contract as the list above: it is not a lookup table (resolution goes through the
+ * catalogue), it is the surface the parity test walks so `en` and `es` cannot drift apart.
+ */
+export const ENGINE_SCHEMA_REASON_CODES = [
+  // The envelope itself.
+  'schema_envelope_empty',
+  'schema_envelope_not_regfactu',
+  'schema_record_missing',
+  // The header: who is filing, and on whose behalf.
+  'schema_header_issuer_missing',
+  'schema_issuer_identity_incomplete',
+  'schema_representative_incomplete',
+  // An element in the wrong place, or missing, or empty. Three codes and not one, because «you
+  // left it blank» and «it is not there at all» are different things to go and look for.
+  'schema_element_out_of_order',
+  'schema_element_missing',
+  'schema_element_missing_or_empty',
+  'schema_element_empty',
+  // A value the schema will not take.
+  'schema_value_not_in_enum',
+  'schema_value_too_long',
+  'schema_recipient_block_required',
+  'schema_hash_type_unsupported',
+  'schema_hash_malformed',
+] as const;
+
+/**
  * Params the engine sends as a bare CODE that would read as prose if interpolated unchanged
  * (`alta`, `production`). They are resolved through the labels the Records and Settings screens
  * already use, so the whole sentence lands in one language — reusing those keys rather than adding
@@ -105,6 +144,17 @@ const PARAM_LABEL_KEYS: Record<string, Record<string, string>> = {
 
 /** A key suffix that cannot walk out of `ui.evt` — `details` is row data, not a path. */
 const SAFE_SUFFIX = /^[a-z][a-z0-9_]*$/;
+
+/**
+ * How a reason nests inside another one (hub#1576): a fact called `<x>_reason` is itself a
+ * `{code, …facts}`, and the sentence it composes fills the placeholder `{<x>}` beside it.
+ *
+ * A convention and not a second special case, because it has already happened twice — the
+ * diagnostic's verdict, then the schema refusal inside it — and the next one should not need a
+ * third branch here. The engine keeps filing the plain `<x>` too, in its own prose: that is the
+ * fallback a hub whose module does not know the nested code still paints.
+ */
+const REASON_FACT_SUFFIX = '_reason';
 
 export type Translate = (
   catalog: Record<string, unknown>,
@@ -160,22 +210,37 @@ function catalogHas(catalog: Record<string, unknown>, locale: string, key: strin
 }
 
 /**
- * Replaces the enum codes with their translated labels, and DROPS the params the engine sent as
- * `null` — `csv`, `codigo_error`, `note` and `first_invalid_seq` are null on the happy path, and
- * `t()` interpolates whatever it is handed, so keeping them would print the word «null» inside a
- * fiscal audit line. Dropped, the placeholder survives instead, which is why no sentence in the
- * catalogue is allowed to depend on an optional field (pinned by the parity test).
+ * Replaces the enum codes with their translated labels, resolves the reasons nested one level in,
+ * and DROPS everything `t()` must never be handed.
+ *
+ * Two kinds are dropped. The params the engine sent as `null` — `csv`, `codigo_error`, `note` and
+ * `first_invalid_seq` are null on the happy path — because `t()` interpolates whatever it is
+ * handed and would print the word «null» inside a fiscal audit line. And the ones that are still
+ * OBJECTS, which would print `[object Object]` there: `cert_reason` and `detail_reason` are the
+ * SOURCE of a sentence, never a value to interpolate. Dropped, the placeholder survives instead,
+ * which is why no sentence in the catalogue is allowed to depend on an optional field (pinned by
+ * the parity test).
+ *
+ * The nested pass runs SECOND on purpose: `detail` and `detail_reason` both arrive, the first
+ * being the engine's Spanish and the second the code for it, and the composed sentence has to win
+ * whichever order the JSON happened to list them in.
  */
 function localizedParams(
   catalog: Record<string, unknown>,
+  locale: string,
   t: Translate,
   details: Record<string, unknown>,
 ): Record<string, unknown> {
   const params: Record<string, unknown> = {};
   for (const [param, value] of Object.entries(details)) {
-    if (value === null || value === undefined) continue;
+    if (value === null || value === undefined || typeof value === 'object') continue;
     const labelKey = typeof value === 'string' ? PARAM_LABEL_KEYS[param]?.[value] : undefined;
     params[param] = labelKey ? t(catalog, labelKey) : value;
+  }
+  for (const [param, value] of Object.entries(details)) {
+    if (!param.endsWith(REASON_FACT_SUFFIX)) continue;
+    const nested = reasonSentence(catalog, locale, t, value);
+    if (nested !== undefined) params[param.slice(0, -REASON_FACT_SUFFIX.length)] = nested;
   }
   return params;
 }
@@ -206,7 +271,7 @@ export function reasonSentence(
   if (typeof code !== 'string' || !SAFE_SUFFIX.test(code)) return undefined;
   const key = `${EVENT_REASON_PREFIX}${code}`;
   if (!catalogHas(catalog, locale, key)) return undefined;
-  return t(catalog, key, localizedParams(catalog, t, reason));
+  return t(catalog, key, localizedParams(catalog, locale, t, reason));
 }
 
 /**
@@ -241,10 +306,9 @@ export function eventMessage(
   if (typeof messageKey !== 'string') return row.message;
   const key = catalogKeyFor(messageKey);
   if (!key || !catalogHas(catalog, locale, key)) return row.message;
-  const params = localizedParams(catalog, t, details);
-  // `cert_reason` is a nested object: it is the reason's SOURCE, never a value to interpolate.
-  // Left in, `t()` would print `[object Object]` inside a fiscal audit line.
-  delete params.cert_reason;
+  // `cert_reason` never reaches `t()` as an object — `localizedParams` drops it, along with any
+  // other nested source — and comes back as a sentence instead.
+  const params = localizedParams(catalog, locale, t, details);
   const reason = certReasonSentence(catalog, locale, t, details);
   if (reason !== undefined) params.cert_message = reason;
   return t(catalog, key, params);

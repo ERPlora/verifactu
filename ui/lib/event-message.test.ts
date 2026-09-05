@@ -11,11 +11,13 @@ import esLocale from '../../locales/es.json';
 import {
   ENGINE_CERT_REASON_CODES,
   ENGINE_MESSAGE_KEYS,
+  ENGINE_SCHEMA_REASON_CODES,
   EVENT_CATALOG_PREFIX,
   EVENT_REASON_PREFIX,
   catalogKeyFor,
   certReasonSentence,
   eventMessage,
+  reasonSentence,
   type Translate,
 } from './event-message';
 
@@ -494,18 +496,191 @@ describe('reason parity — every code the engine emits, in both languages (hub#
   // down instead of removing it, which is why `{error}` — always the engine's own prose — is
   // banned outright.
   //
-  // `{detail}` is allowed in the two codes that carry one, and it is NOT clean in both: for
-  // `gateway_not_ready` it is the fiscal cell's own status (`expired`, `absent`) or its internal
-  // error, but for `sample_record_schema_invalid` it is still a Spanish sentence written by the
-  // hub's XSD validator («Descripcion es obligatorio y viene vacío»). It stays because it names
-  // the field to fix and losing it would leave the reader with nothing actionable; translating it
-  // means giving codes to the whole fiscal validator, which is its own change (hub#1576).
+  // `{detail}` is allowed in the two codes that carry one, and since hub#1576 it is clean in both:
+  // for `gateway_not_ready` it is the fiscal cell's own status (`expired`, `absent`), and for
+  // `sample_record_schema_invalid` the validator now files its refusal as `detail_reason` —
+  // `{code, …facts}` composed from THIS catalogue — with the Spanish sentence left behind as the
+  // fallback for a hub that does not know the code. Until then it was the validator's own Spanish
+  // («Descripcion es obligatorio y viene vacío»), kept anyway because losing it would have left
+  // the reader with nothing actionable.
   it('never bakes the engine prose into a reason sentence', () => {
     for (const code of ENGINE_CERT_REASON_CODES) {
       for (const lang of ['en', 'es'] as const) {
         type Evt = Record<string, Record<string, Record<string, Record<string, string>>>>;
         const sentence = (CATALOG[lang] as Evt).ui.evt.reason[code];
         expect(sentence, `${lang} ${code}`).not.toContain('{error}');
+      }
+    }
+  });
+});
+
+// ── hub#1576: the refusal of the SCHEMA, one level further down ──────────────────────────────
+//
+// hub#1575 translated the reason the diagnostic gives, and left the last half of one of them
+// untranslated: `sample_record_schema_invalid` says «the AEAT schema refused the test record:
+// {detail}», and `{detail}` was a sentence the hub's own XSD validator wrote in Spanish. So the
+// English reader got the verdict in English and the only actionable half — WHICH field to fix —
+// in a language it did not choose.
+//
+// The validator now files each refusal as a code with the element as data, and the reason nests:
+// `detail` keeps the Spanish prose, `detail_reason` carries `{code, …facts}`, and this catalogue
+// composes it. The nesting is resolved by convention — a fact called `<x>_reason` fills `{<x>}` —
+// so the channel does not need a second special case the next time it happens.
+
+/** The element names are the AEAT's own and stay in Spanish by law; the sentence around them is not. */
+const SCHEMA_REFUSAL = {
+  code: 'sample_record_schema_invalid',
+  detail: 'DescripcionOperacion es obligatorio y viene vacío',
+  detail_reason: { code: 'schema_element_empty', element: 'DescripcionOperacion' },
+};
+
+/** The validator's Spanish, the exact substring that must stop reaching an English reader. */
+const VALIDATOR_PROSE = 'es obligatorio y viene vacío';
+
+describe('the reason the SCHEMA gave is composed too (hub#1576)', () => {
+  it('composes the nested reason into the placeholder the Spanish detail used to fill', () => {
+    const sentence = reasonSentence(CATALOG, 'en', interpolatingIn('en'), SCHEMA_REFUSAL);
+
+    expect(sentence, 'the validator Spanish is still in the sentence').not.toContain(VALIDATOR_PROSE);
+    expect(sentence, 'the element the schema named is the actionable half').toContain(
+      'DescripcionOperacion',
+    );
+    expect(sentence, 'a placeholder survived').not.toMatch(/\{[a-z_]+\}/);
+  });
+
+  // The positive the check above cannot catch on its own: `es` legitimately contains Spanish.
+  it('says it differently in each language, and in neither the validator words', () => {
+    const en = reasonSentence(CATALOG, 'en', interpolatingIn('en'), SCHEMA_REFUSAL);
+    const es = reasonSentence(CATALOG, 'es', interpolatingIn('es'), SCHEMA_REFUSAL);
+
+    expect(es).not.toBe(en);
+    expect(en).not.toContain(VALIDATOR_PROSE);
+  });
+
+  // 🔒 The fallback, both directions of the merge order: a hub whose engine predates hub#1576
+  // sends no `detail_reason`, and the sentence keeps the Spanish rather than lose what to fix.
+  it('keeps the validator prose when the hub sends no nested code', () => {
+    const { detail_reason: _dropped, ...older } = SCHEMA_REFUSAL;
+
+    const sentence = reasonSentence(CATALOG, 'en', interpolatingIn('en'), older);
+
+    expect(sentence).toContain(VALIDATOR_PROSE);
+  });
+
+  // …and so does a nested code this catalogue has never heard of — a hub ahead of this module.
+  it('keeps the validator prose for a nested code it does not know', () => {
+    const sentence = reasonSentence(CATALOG, 'en', interpolatingIn('en'), {
+      ...SCHEMA_REFUSAL,
+      detail_reason: { code: 'schema_something_from_the_future', element: 'X' },
+    });
+
+    expect(sentence).toContain(VALIDATOR_PROSE);
+  });
+
+  // 🔒 And an unresolved nested reason NEVER reaches `t()` as an object. `t` interpolates whatever
+  // it is handed, so a `{detail_reason}` left in would print `[object Object]` inside a fiscal
+  // line — the one shape worse than the Spanish it replaces.
+  it('never hands the catalogue a raw object', () => {
+    const { t, calls } = spy();
+
+    reasonSentence(CATALOG, 'en', t, {
+      ...SCHEMA_REFUSAL,
+      detail_reason: { code: 'schema_something_from_the_future' },
+    });
+
+    const params = calls.find((c) => c.key.startsWith(EVENT_REASON_PREFIX))?.params ?? {};
+    for (const [name, value] of Object.entries(params)) {
+      expect(typeof value, `${name} reached t() as an object`).not.toBe('object');
+    }
+  });
+
+  // 🔒 The whole way through, from the audit row the engine writes: the nesting has to survive
+  // `eventMessage`, which is the surface the events list actually paints.
+  it('reaches the audit line whole', () => {
+    const composed = eventMessage(CATALOG, 'en', interpolatingIn('en'), {
+      message: 'Prueba VeriFactu: el registro de prueba no es válido',
+      details: JSON.stringify({
+        message_key: 'verifactu.diagnostic_sample_record_invalid',
+        cert_reason: SCHEMA_REFUSAL,
+        environment: 'testing',
+      }),
+    });
+
+    expect(composed).toContain('DescripcionOperacion');
+    expect(composed).not.toContain(VALIDATOR_PROSE);
+    expect(composed).not.toContain('[object Object]');
+    expect(composed).not.toMatch(/\{[a-z_]+\}/);
+  });
+});
+
+describe('schema reason parity — every refusal the validator emits, in both languages (hub#1576)', () => {
+  it('inspects the whole schema surface', () => {
+    // Guards the guard: an emptied constant would make every loop below pass vacuously. Fifteen
+    // is the number of `named(...)` refusals in `xsd.rs::validate_registro`, pinned on both sides.
+    expect(ENGINE_SCHEMA_REASON_CODES.length).toBe(15);
+  });
+
+  it.each(ENGINE_SCHEMA_REASON_CODES)('%s resolves in en and es', (code) => {
+    for (const lang of ['en', 'es'] as const) {
+      const dict = CATALOG[lang] as Record<string, Record<string, Record<string, string>>>;
+      const entry = dict.ui?.evt?.reason?.[code];
+      expect(typeof entry, `${lang} is missing ${EVENT_REASON_PREFIX}${code}`).toBe('string');
+      expect(entry!.length).toBeGreaterThan(0);
+    }
+  });
+
+  it.each(ENGINE_SCHEMA_REASON_CODES)('%s is translated into es, not copied from en', (code) => {
+    type Evt = Record<string, Record<string, Record<string, Record<string, string>>>>;
+    const en = (CATALOG.en as Evt).ui.evt.reason[code];
+    const es = (CATALOG.es as Evt).ui.evt.reason[code];
+    expect(es, `es copies en for ${code}`).not.toBe(en);
+  });
+
+  it('builds every refusal out of facts the validator ALWAYS sends', () => {
+    // Read off `hub/crates/plugins/verifactu/src/xsd.rs::validate_registro` — the `json!({…})` each
+    // `named(...)` carries. A placeholder the validator does not send is printed raw, braces and
+    // all, which is the one shape worse than the Spanish it replaces.
+    const alwaysSent: Record<string, string[]> = {
+      schema_envelope_empty: [],
+      schema_envelope_not_regfactu: [],
+      schema_header_issuer_missing: [],
+      schema_issuer_identity_incomplete: ['element'],
+      schema_representative_incomplete: ['element'],
+      schema_element_out_of_order: ['element', 'sequence'],
+      schema_record_missing: [],
+      schema_element_missing: ['element'],
+      schema_element_missing_or_empty: ['element'],
+      schema_element_empty: ['element'],
+      schema_value_not_in_enum: ['element', 'value', 'allowed'],
+      schema_recipient_block_required: ['invoice_type'],
+      schema_value_too_long: ['element', 'value', 'max'],
+      schema_hash_type_unsupported: ['value'],
+      schema_hash_malformed: [],
+    };
+    expect(Object.keys(alwaysSent).sort()).toEqual([...ENGINE_SCHEMA_REASON_CODES].sort());
+
+    for (const code of ENGINE_SCHEMA_REASON_CODES) {
+      for (const lang of ['en', 'es'] as const) {
+        type Evt = Record<string, Record<string, Record<string, Record<string, string>>>>;
+        const sentence = (CATALOG[lang] as Evt).ui.evt.reason[code];
+        for (const [, placeholder] of sentence.matchAll(/\{([a-z_]+)\}/g)) {
+          expect(alwaysSent[code], `${lang} ${code}: {${placeholder}} is not always sent`).toContain(
+            placeholder,
+          );
+        }
+      }
+    }
+  });
+
+  // 🔒 Same ban as the reasons above: a sentence that quotes the engine's own prose inside itself
+  // would move the defect one level down instead of removing it.
+  it('never bakes the engine prose into a schema sentence', () => {
+    for (const code of ENGINE_SCHEMA_REASON_CODES) {
+      for (const lang of ['en', 'es'] as const) {
+        type Evt = Record<string, Record<string, Record<string, Record<string, string>>>>;
+        const sentence = (CATALOG[lang] as Evt).ui.evt.reason[code];
+        expect(sentence, `${lang} ${code}`).not.toContain('{error}');
+        expect(sentence, `${lang} ${code}`).not.toContain('{detail}');
       }
     }
   });
