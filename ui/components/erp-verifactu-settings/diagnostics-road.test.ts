@@ -21,10 +21,17 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import './erp-verifactu-settings';
 import { HUB_SESSION_KEY } from '../../lib/gateway-identity';
+import enLocale from '../../../locales/en.json';
+import esLocale from '../../../locales/es.json';
 
 const originalFetch = globalThis.fetch;
 
 /** A cell identity that is installed and nowhere near expiry, i.e. a hub that CAN reach the cell. */
+type ShellT = (catalog: unknown, key: string, params?: Record<string, unknown>) => string;
+
+/** The shell's `t`, minus the wording: returns the key, so a test names a KEY and never prose. */
+const keyEcho: ShellT = (_catalog, key) => key;
+
 const ENROLLED = { has_key: true, has_certificate: true, common_name: 'hub-h1.fiscal.erplora.internal', not_after: '2099-01-01' };
 
 /**
@@ -33,8 +40,8 @@ const ENROLLED = { has_key: true, has_certificate: true, common_name: 'hub-h1.fi
  * not enrolled yet.
  */
 async function mountWith(
-  { route, details, identity = ENROLLED, locale = 'es' }:
-  { route: string; details?: Record<string, unknown>; identity?: unknown; locale?: string },
+  { route, details, identity = ENROLLED, locale = 'es', t = keyEcho }:
+  { route: string; details?: Record<string, unknown>; identity?: unknown; locale?: string; t?: ShellT },
 ) {
   (globalThis as Record<string, unknown>).erplora = {
     query: async (name: string) => {
@@ -47,9 +54,10 @@ async function mountWith(
     command: async () => ({}),
     on: () => () => {},
     locale,
-    // The shell's `t`, minus the wording: returns the key, so a test names a KEY and never prose
-    // (ADR-0055). Which sentence each key carries is pinned by the catalogue parity test.
-    t: (_catalog: unknown, key: string) => key,
+    // By default the shell's `t` minus the wording: returns the key, so a test names a KEY and
+    // never prose (ADR-0055). Which sentence each key carries is pinned by the catalogue parity
+    // test — and rendered for real, in both languages, by the last block of this file.
+    t,
   };
   globalThis.fetch = (async (path: string) => (path === '/api/business/gateway-identity'
     ? new Response(JSON.stringify(identity), { status: 200 })
@@ -382,5 +390,99 @@ describe('the AEAT box says WHY in the reader language (hub#1578)', () => {
     const text = cardText(el);
     expect(text).toContain('1189');
     expect(text).toContain('Falta el bloque Destinatarios');
+  });
+});
+
+// ── The whole card, mounted with the REAL catalogue in each language ─────────────────────────
+//
+// Every block above hands the screen a `t` that answers with the KEY. That is what lets a test
+// name a key and never prose (ADR-0055) — and it also means none of them ever renders a translated
+// sentence, so a screen that pasted the engine's Spanish after all, or looked the catalogue up in
+// the wrong place, would pass them as long as the key existed. This block closes that gap the way
+// the resolver's own tests do (`event-message.test.ts`): the SAME run, mounted in `en` and in
+// `es` with the real dictionaries, has to speak each language from the catalogue, and the English
+// card has to carry none of the engine's Spanish while still naming the element to fix.
+
+const REAL_CATALOG: Record<string, unknown> = { en: enLocale, es: esLocale };
+
+/** `t` as the shell implements it, wording included: what a reader of `lang` actually sees. */
+function realT(lang: 'en' | 'es'): ShellT {
+  return (_catalog, key, params) => {
+    let cur: unknown = REAL_CATALOG[lang];
+    for (const part of key.split('.')) {
+      cur = cur && typeof cur === 'object' ? (cur as Record<string, unknown>)[part] : undefined;
+    }
+    let out = typeof cur === 'string' ? cur : key;
+    for (const [k, v] of Object.entries(params ?? {})) {
+      out = out.replace(new RegExp(`\\{${k}\\}`, 'g'), String(v));
+    }
+    return out;
+  };
+}
+
+/** The live-test card once the titles are translated: found by the title of `lang`, not by its key. */
+function translatedCardText(el: HTMLElement & { shadowRoot: ShadowRoot }, lang: 'en' | 'es') {
+  const title = (REAL_CATALOG[lang] as { ui: { testTitle: string } }).ui.testTitle;
+  const card = [...el.shadowRoot.querySelectorAll('.card')].find((c) => c.innerHTML.includes(title));
+  if (!card) throw new Error(`the live-test card is not on the screen in ${lang}`);
+  return card.innerHTML;
+}
+
+describe('the boxes speak the reader language from the catalogue, mounted for real (verifactu#95 · hub#1578 · hub#1576)', () => {
+  /** The validator's Spanish, verbatim, and the wrapper the engine puts around it. */
+  const VALIDATOR_PROSE = 'DescripcionOperacion es obligatorio y viene vacío';
+  const ENGINE_WRAPPER = 'XML no conforme al esquema';
+
+  /**
+   * One own-road run as the engine on hub#1576 files it: the `.p12` loads (a CONSTANT verdict,
+   * verifactu#95), and the sample record fails the schema in the AEAT box (hub#1578) for a reason
+   * that nests one level further down (hub#1576). Every box carries its code beside the prose.
+   */
+  const OWN_RUN = {
+    cert_ok: true,
+    cert_message: 'Certificado cargado correctamente.',
+    cert_reason: { code: 'certificate_loaded' },
+    route: 'own',
+    environment: 'testing',
+    aeat: {
+      ok: false,
+      error: `${ENGINE_WRAPPER}: payload inválido: ${VALIDATOR_PROSE}`,
+      reason: {
+        code: 'sample_record_schema_invalid',
+        detail: `payload inválido: ${VALIDATOR_PROSE}`,
+        detail_reason: { code: 'schema_element_empty', element: 'DescripcionOperacion' },
+      },
+    },
+    gateway: null,
+  };
+
+  it('in en, every box reads English and still names the element to fix', async () => {
+    const el = await mountWith({ route: 'own', details: OWN_RUN, locale: 'en', t: realT('en') });
+
+    const text = translatedCardText(el, 'en');
+    expect(text).toContain('the certificate loaded correctly');
+    expect(text).toContain(
+      'the AEAT schema refused the test record: DescripcionOperacion is required and came in empty',
+    );
+    expect(text, 'the engine Spanish reached an English screen').not.toContain('Certificado cargado');
+    expect(text, 'the validator Spanish reached an English screen').not.toContain(VALIDATOR_PROSE);
+    expect(text, 'the engine wrapper reached an English screen').not.toContain(ENGINE_WRAPPER);
+    expect(text, 'a placeholder survived').not.toMatch(/\{[a-z_]+\}/);
+    expect(text).not.toContain('[object Object]');
+  });
+
+  // The positive the English card cannot prove on its own: Spanish is legitimate here, so what is
+  // pinned is WHOSE Spanish — the catalogue's sentences, never the engine's wording.
+  it('in es, every box reads the catalogue Spanish, not the engine wording', async () => {
+    const el = await mountWith({ route: 'own', details: OWN_RUN, locale: 'es', t: realT('es') });
+
+    const text = translatedCardText(el, 'es');
+    expect(text).toContain('el certificado se ha cargado correctamente');
+    expect(text).toContain(
+      'el esquema de la AEAT ha rechazado el registro de prueba: DescripcionOperacion es obligatorio y viene vacío',
+    );
+    expect(text, 'the engine wording was pasted instead of composed').not.toContain('Certificado cargado correctamente.');
+    expect(text, 'the engine wrapper was pasted instead of composed').not.toContain(ENGINE_WRAPPER);
+    expect(text, 'a placeholder survived').not.toMatch(/\{[a-z_]+\}/);
   });
 });
