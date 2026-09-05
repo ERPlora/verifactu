@@ -487,9 +487,15 @@ describe('reason parity — every code the engine emits, in both languages (hub#
   });
 
   // 🔒 A reason that quotes the engine's own Spanish inside itself would move the defect one level
-  // down instead of removing it. Only `sample_record_schema_invalid` may carry an untranslated
-  // `{detail}`, and it is the AEAT element name the schema refused — Spanish by law, and the same
-  // string in either language.
+  // down instead of removing it, which is why `{error}` — always the engine's own prose — is
+  // banned outright.
+  //
+  // `{detail}` is allowed in the two codes that carry one, and it is NOT clean in both: for
+  // `gateway_not_ready` it is the fiscal cell's own status (`expired`, `absent`) or its internal
+  // error, but for `sample_record_schema_invalid` it is still a Spanish sentence written by the
+  // hub's XSD validator («Descripcion es obligatorio y viene vacío»). It stays because it names
+  // the field to fix and losing it would leave the reader with nothing actionable; translating it
+  // means giving codes to the whole fiscal validator, which is its own change (hub#1576).
   it('never bakes the engine prose into a reason sentence', () => {
     for (const code of ENGINE_CERT_REASON_CODES) {
       for (const lang of ['en', 'es'] as const) {

@@ -48,7 +48,17 @@
       "chain_broken": "Fingerprint chain BROKEN at sequence {first_invalid_seq} ({issuer_nif})",
       "aeat_queried": "AEAT query: {count} record(s) retrieved for {issuer_nif}",
       "chain_recovered_from_aeat": "Chain recovered from the AEAT for {issuer_nif}: continues at sequence {sequence_number} of {found} record(s) found",
-      "chain_continued_manually": "Chain continued manually for {issuer_nif}: continues at sequence {sequence_number}"
+      "chain_continued_manually": "Chain continued manually for {issuer_nif}: continues at sequence {sequence_number}",
+      "reason": {
+        "certificate_unavailable": "the certificate file could not be loaded: check in Settings → Business that it is uploaded and that its password is correct",
+        "no_transmission_route": "this hub has no way to file yet: it has neither a certificate of its own nor a connection to ERPlora's fiscal gateway",
+        "gateway_not_ready": "ERPlora's fiscal gateway cannot file right now ({detail})",
+        "gateway_not_ready_unspecified": "ERPlora's fiscal gateway cannot file right now and did not say why",
+        "gateway_unreachable": "ERPlora's fiscal gateway could not be reached; try again in a few minutes",
+        "producer_facts_missing": "this hub has not received its software-producer details from ERPlora yet; they arrive on their own the next time it syncs",
+        "sample_envelope_invalid": "the test record could not be built from this hub's settings",
+        "sample_record_schema_invalid": "the AEAT schema refused the test record: {detail}"
+      }
     },
     "colSeq": "Seq",
     "colInvoice": "Invoice",
