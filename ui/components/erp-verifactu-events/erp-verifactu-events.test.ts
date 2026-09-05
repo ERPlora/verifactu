@@ -7,6 +7,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import './erp-verifactu-events';
 import enLocale from '../../../locales/en.json';
+import esLocale from '../../../locales/es.json';
 
 /** The prose `records.rs` formats, verbatim. This is what must STOP reaching an English reader. */
 const ENGINE_PROSE = 'Registro alta #27 de F-2026-1 creado';
@@ -110,5 +111,55 @@ describe('the audit sentence is composed, not copied', () => {
 
   it('keeps the engine sentence for a row written before the key existed', async () => {
     expect(await messageCell({ ...ROW, details: '{}' })).toBe(ENGINE_PROSE);
+  });
+});
+
+/** The engine's `cert_message` on the missing-NIF verdict: Spanish prose, constant for this key. */
+const ENGINE_CERT_MESSAGE = 'Configura el NIF del obligado tributario (emisor) antes de probar la conexión.';
+
+/** What `run_diagnostics` files when the cell road stops on the business's own NIF (hub#1531). */
+const NIF_MISSING_ROW = {
+  ...ROW,
+  id: 'e-2',
+  record_id: null,
+  event_type: 'diagnostic',
+  severity: 'warning',
+  message: 'Prueba VeriFactu: falta el NIF del obligado tributario',
+  details: JSON.stringify({
+    message_key: 'verifactu.diagnostic_issuer_nif_missing',
+    cert_ok: false,
+    cert_message: ENGINE_CERT_MESSAGE,
+    route: 'delegated',
+    issuer_nif: '',
+    environment: 'testing',
+    gateway: { ok: true, status: 'ready', reason: '', transmission_enabled: true, holder_nif: 'B00000000' },
+  }),
+};
+
+describe('the missing-NIF verdict of the cell road stands on its own (hub#1531)', () => {
+  // The engine writes `cert_message` in Spanish, and for THIS verdict it says nothing the sentence
+  // does not already say. Interpolating it hands an English reader a fiscal audit line that switches
+  // language halfway through — the ADR-0055 defect, one placeholder further in. The sentence is
+  // read off the catalogue (never a literal), so the wording stays free and the contract does not.
+  it('reads in Spanish to a Spanish reader, and is not the English sentence', async () => {
+    locale = 'es';
+    const cell = await messageCell(NIF_MISSING_ROW);
+    const expected = esLocale.ui.evt.diagnostic_issuer_nif_missing.replace('{environment}', esLocale.ui.envTesting);
+    expect(cell).toBe(expected);
+    expect(cell).not.toBe(
+      enLocale.ui.evt.diagnostic_issuer_nif_missing.replace('{environment}', enLocale.ui.envTesting),
+    );
+    expect(cell).not.toBe(NIF_MISSING_ROW.message);
+    expect(cell).not.toMatch(/\{[a-z_]+\}/);
+  });
+
+  it('reads in English to an English reader, with none of the engine\'s Spanish in it', async () => {
+    locale = 'en';
+    const cell = await messageCell(NIF_MISSING_ROW);
+    const expected = enLocale.ui.evt.diagnostic_issuer_nif_missing.replace('{environment}', enLocale.ui.envTesting);
+    expect(cell).toBe(expected);
+    expect(cell).not.toContain(ENGINE_CERT_MESSAGE);
+    expect(cell).not.toBe(NIF_MISSING_ROW.message);
+    expect(cell).not.toMatch(/\{[a-z_]+\}/);
   });
 });

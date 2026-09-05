@@ -21,6 +21,21 @@ const CATALOG: Record<string, unknown> = { en: enLocale, es: esLocale };
 /** `t` as the shell implements it, minus the wording: returns the key, so a test can name it. */
 const keyEcho: Translate = (_catalog, key) => key;
 
+/** `t` as the shell implements it, wording included: what the reader of `lang` actually sees. */
+function interpolatingIn(lang: 'en' | 'es'): Translate {
+  return (catalog, key, params) => {
+    let cur: unknown = catalog[lang];
+    for (const part of key.split('.')) {
+      cur = cur && typeof cur === 'object' ? (cur as Record<string, unknown>)[part] : undefined;
+    }
+    let out = typeof cur === 'string' ? cur : key;
+    for (const [k, v] of Object.entries(params ?? {})) {
+      out = out.replace(new RegExp(`\\{${k}\\}`, 'g'), String(v));
+    }
+    return out;
+  };
+}
+
 /** Records every call, to assert WHICH key was asked for and with which params. */
 function spy() {
   const calls: Array<{ key: string; params?: Record<string, unknown> }> = [];
@@ -45,6 +60,59 @@ const RECORD_CREATED = JSON.stringify({
   sequence_number: 27,
   record_hash: 'a'.repeat(64),
   is_first_record: false,
+});
+
+/** What the engine files when the cell road stops on a field the business never filled (hub#1531). */
+const DIAGNOSTIC_ISSUER_NIF_MISSING = JSON.stringify({
+  message_key: 'verifactu.diagnostic_issuer_nif_missing',
+  cert_ok: false,
+  cert_message: 'Configura el NIF del obligado tributario (emisor) antes de probar la conexión.',
+  route: 'delegated',
+  issuer_nif: '',
+  environment: 'testing',
+});
+
+/** The verdict hub#1485 added for a cell that answered and cannot transmit. */
+const DIAGNOSTIC_GATEWAY_UNAVAILABLE = JSON.stringify({
+  message_key: 'verifactu.diagnostic_gateway_unavailable',
+  cert_ok: false,
+  cert_message: 'No se pudo contactar con la pasarela fiscal: conexión rechazada.',
+  route: 'delegated',
+  issuer_nif: 'B12345678',
+  environment: 'testing',
+});
+
+describe('the verdicts of the cell road are in the catalogue too (hub#1531)', () => {
+  // 🔴 RED: the engine has been filing these two keys since hub#1485/hub#1531 and the catalogue
+  // never learned them, so `eventMessage` falls back to `row.message` — the engine's Spanish prose
+  // in front of every reader, which is the exact defect verifactu#63 exists to close.
+  it.each([
+    ['verifactu.diagnostic_issuer_nif_missing', DIAGNOSTIC_ISSUER_NIF_MISSING],
+    ['verifactu.diagnostic_gateway_unavailable', DIAGNOSTIC_GATEWAY_UNAVAILABLE],
+  ])('composes %s from the catalogue instead of repeating the engine prose', (messageKey, details) => {
+    const engineProse = 'Prueba VeriFactu: la pasarela fiscal no está disponible';
+    const short = messageKey.slice('verifactu.'.length);
+    for (const lang of ['en', 'es'] as const) {
+      const composed = eventMessage(CATALOG, lang, keyEcho, row(details, engineProse));
+      expect(composed, `${lang} falls back to the engine prose`).not.toBe(engineProse);
+      expect(composed).toBe(`${EVENT_CATALOG_PREFIX}${short}`);
+    }
+  });
+
+  // And the `es` is a TRANSLATION, not the English string copied across: a catalogue that carries
+  // the same bytes in both languages passes every key-shaped assertion and still ships English to
+  // a Spanish user.
+  it.each([
+    'verifactu.diagnostic_issuer_nif_missing',
+    'verifactu.diagnostic_gateway_unavailable',
+  ])('ships %s in both languages, and they are not the same sentence', (messageKey) => {
+    const short = messageKey.slice('verifactu.'.length);
+    const en = (enLocale as any).ui.evt[short];
+    const es = (esLocale as any).ui.evt[short];
+    expect(en, `en is missing ui.evt.${short}`).toBeTruthy();
+    expect(es, `es is missing ui.evt.${short}`).toBeTruthy();
+    expect(es).not.toBe(en);
+  });
 });
 
 describe('the sentence comes from the catalog, not from the engine', () => {
@@ -153,7 +221,7 @@ describe('catalogue parity — every key the engine emits, in both languages (AD
   // Spanish user, which is the defect this issue exists to remove. It cannot be caught by review.
   it('inspects the whole engine surface', () => {
     // Guards the guard: an emptied constant would make every loop below pass vacuously.
-    expect(ENGINE_MESSAGE_KEYS.length).toBe(15);
+    expect(ENGINE_MESSAGE_KEYS.length).toBe(16);
   });
 
   // hub#1485 — the THIRD verdict `run_diagnostics` can reach. On the delegated road a failed test
@@ -195,6 +263,7 @@ describe('catalogue parity — every key the engine emits, in both languages (AD
       'verifactu.diagnostic_ran': ['environment', 'cert_ok', 'issuer_nif', 'invoice_type', 'sample_number'],
       'verifactu.diagnostic_certificate_invalid': ['environment', 'cert_ok', 'cert_message', 'issuer_nif'],
       'verifactu.diagnostic_gateway_unavailable': ['environment', 'cert_ok', 'cert_message', 'issuer_nif', 'route'],
+      'verifactu.diagnostic_issuer_nif_missing': ['environment', 'cert_ok', 'cert_message', 'issuer_nif', 'route'],
       'verifactu.chain_validated': ['valid', 'total', 'issuer_nif', 'environment', 'scope'],
       // first_invalid_seq / first_invalid_id are null on a chain that validates.
       'verifactu.chain_broken': ['valid', 'total', 'issuer_nif', 'environment', 'scope', 'first_invalid_seq'],
@@ -221,5 +290,22 @@ describe('catalogue parity — every key the engine emits, in both languages (AD
     }
     // Without this the loop would pass vacuously on a catalogue of sentences with no params at all.
     expect(placeholdersChecked).toBeGreaterThan(20);
+  });
+});
+
+describe('the missing-NIF verdict stands on its own in each language (hub#1531)', () => {
+  // `cert_message` is Spanish prose the engine writes, and on this verdict it is a constant that
+  // says nothing the catalogue sentence does not. A sentence that leans on it switches language
+  // halfway for an English reader — the ADR-0055 defect one placeholder further in.
+  it.each(['en', 'es'] as const)('never repeats the engine\'s cert_message in %s', (lang) => {
+    const details = JSON.parse(DIAGNOSTIC_ISSUER_NIF_MISSING) as { cert_message: string };
+    const composed = eventMessage(
+      CATALOG,
+      lang,
+      interpolatingIn(lang),
+      row(DIAGNOSTIC_ISSUER_NIF_MISSING, 'Prueba VeriFactu: falta el NIF del obligado tributario'),
+    );
+    expect(composed).not.toContain(details.cert_message);
+    expect(composed).not.toMatch(/\{[a-z_]+\}/);
   });
 });

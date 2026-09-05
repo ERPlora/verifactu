@@ -41,6 +41,7 @@ export const ENGINE_MESSAGE_KEYS = [
   'verifactu.diagnostic_ran',
   'verifactu.diagnostic_certificate_invalid',
   'verifactu.diagnostic_gateway_unavailable',
+  'verifactu.diagnostic_issuer_nif_missing',
   'verifactu.chain_validated',
   'verifactu.chain_broken',
   'verifactu.aeat_queried',
