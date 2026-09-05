@@ -21,6 +21,21 @@ const CATALOG: Record<string, unknown> = { en: enLocale, es: esLocale };
 /** `t` as the shell implements it, minus the wording: returns the key, so a test can name it. */
 const keyEcho: Translate = (_catalog, key) => key;
 
+/** `t` as the shell implements it, wording included: what the reader of `lang` actually sees. */
+function interpolatingIn(lang: 'en' | 'es'): Translate {
+  return (catalog, key, params) => {
+    let cur: unknown = catalog[lang];
+    for (const part of key.split('.')) {
+      cur = cur && typeof cur === 'object' ? (cur as Record<string, unknown>)[part] : undefined;
+    }
+    let out = typeof cur === 'string' ? cur : key;
+    for (const [k, v] of Object.entries(params ?? {})) {
+      out = out.replace(new RegExp(`\\{${k}\\}`, 'g'), String(v));
+    }
+    return out;
+  };
+}
+
 /** Records every call, to assert WHICH key was asked for and with which params. */
 function spy() {
   const calls: Array<{ key: string; params?: Record<string, unknown> }> = [];
@@ -275,5 +290,22 @@ describe('catalogue parity — every key the engine emits, in both languages (AD
     }
     // Without this the loop would pass vacuously on a catalogue of sentences with no params at all.
     expect(placeholdersChecked).toBeGreaterThan(20);
+  });
+});
+
+describe('the missing-NIF verdict stands on its own in each language (hub#1531)', () => {
+  // `cert_message` is Spanish prose the engine writes, and on this verdict it is a constant that
+  // says nothing the catalogue sentence does not. A sentence that leans on it switches language
+  // halfway for an English reader — the ADR-0055 defect one placeholder further in.
+  it.each(['en', 'es'] as const)('never repeats the engine\'s cert_message in %s', (lang) => {
+    const details = JSON.parse(DIAGNOSTIC_ISSUER_NIF_MISSING) as { cert_message: string };
+    const composed = eventMessage(
+      CATALOG,
+      lang,
+      interpolatingIn(lang),
+      row(DIAGNOSTIC_ISSUER_NIF_MISSING, 'Prueba VeriFactu: falta el NIF del obligado tributario'),
+    );
+    expect(composed).not.toContain(details.cert_message);
+    expect(composed).not.toMatch(/\{[a-z_]+\}/);
   });
 });
