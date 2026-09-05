@@ -43,6 +43,7 @@
       "diagnostic_certificate_invalid": "VeriFactu test against {environment}: the certificate is not valid — {cert_message}",
       "diagnostic_gateway_unavailable": "VeriFactu test against {environment}: ERPlora cannot file for you right now — {cert_message}",
       "diagnostic_issuer_nif_missing": "VeriFactu test against {environment}: the taxpayer (issuer) tax ID is missing — set it in Settings → Business before testing the connection",
+      "diagnostic_sample_record_invalid": "VeriFactu test against {environment}: your configuration does not produce a valid test record — {cert_message}",
       "chain_validated": "Fingerprint chain intact: {total} record(s) with their SHA-256 chaining verified ({issuer_nif}). Amounts are not re-audited",
       "chain_broken": "Fingerprint chain BROKEN at sequence {first_invalid_seq} ({issuer_nif})",
       "aeat_queried": "AEAT query: {count} record(s) retrieved for {issuer_nif}",
