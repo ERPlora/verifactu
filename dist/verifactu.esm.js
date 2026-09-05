@@ -3443,7 +3443,25 @@ var es_default = {
         gateway_unreachable: "no se ha podido contactar con la pasarela fiscal de ERPlora; int\xE9ntalo de nuevo en unos minutos",
         producer_facts_missing: "este hub todav\xEDa no ha recibido de ERPlora los datos del productor del software; llegan solos la pr\xF3xima vez que se sincronice",
         sample_envelope_invalid: "el registro de prueba no se ha podido construir con los ajustes de este hub",
-        sample_record_schema_invalid: "el esquema de la AEAT ha rechazado el registro de prueba: {detail}"
+        certificate_loaded: "el certificado se ha cargado correctamente",
+        gateway_ready: "la pasarela fiscal de ERPlora est\xE1 disponible y presenta por ti",
+        issuer_nif_missing: "configura el NIF del obligado tributario (emisor) en Ajustes \u2192 Negocio antes de probar la conexi\xF3n",
+        sample_record_schema_invalid: "el esquema de la AEAT ha rechazado el registro de prueba: {detail}",
+        schema_envelope_empty: "el registro a presentar ha salido vac\xEDo; no es XML v\xE1lido",
+        schema_envelope_not_regfactu: "el sobre no es una presentaci\xF3n VeriFactu (RegFactuSistemaFacturacion)",
+        schema_record_missing: "el sobre no lleva ning\xFAn registro de factura",
+        schema_header_issuer_missing: "la presentaci\xF3n no lleva obligado tributario: configura los datos fiscales del negocio en Ajustes \u2192 Negocio",
+        schema_issuer_identity_incomplete: "los datos fiscales del negocio est\xE1n incompletos: {element} es obligatorio y viene vac\xEDo",
+        schema_representative_incomplete: "los datos del representante est\xE1n incompletos: {element} es obligatorio",
+        schema_element_out_of_order: "{element} va fuera de orden; el esquema de la AEAT espera {sequence}",
+        schema_element_missing: "{element} es obligatorio y no est\xE1 en el registro",
+        schema_element_missing_or_empty: "{element} es obligatorio y falta o viene vac\xEDo",
+        schema_element_empty: "{element} es obligatorio y viene vac\xEDo",
+        schema_value_not_in_enum: "{element} vale \xAB{value}\xBB, que el esquema de la AEAT no admite; solo acepta {allowed}",
+        schema_value_too_long: "{element} vale \xAB{value}\xBB, m\xE1s largo que los {max} caracteres que admite la AEAT",
+        schema_recipient_block_required: "una factura {invoice_type} tiene que identificar al cliente; una venta sin NIF de cliente es un tique simplificado F2",
+        schema_hash_type_unsupported: "el tipo de huella \xAB{value}\xBB no est\xE1 soportado; la AEAT solo admite 01 (SHA-256)",
+        schema_hash_malformed: "la huella del registro no es un SHA-256 v\xE1lido (64 caracteres hexadecimales)"
       }
     },
     colSeq: "Seq",
@@ -3748,7 +3766,25 @@ var en_default = {
         gateway_unreachable: "ERPlora's fiscal gateway could not be reached; try again in a few minutes",
         producer_facts_missing: "this hub has not received its software-producer details from ERPlora yet; they arrive on their own the next time it syncs",
         sample_envelope_invalid: "the test record could not be built from this hub's settings",
-        sample_record_schema_invalid: "the AEAT schema refused the test record: {detail}"
+        certificate_loaded: "the certificate loaded correctly",
+        gateway_ready: "ERPlora's fiscal gateway is available and files on your behalf",
+        issuer_nif_missing: "set the taxpayer (issuer) tax ID in Settings \u2192 Business before testing the connection",
+        sample_record_schema_invalid: "the AEAT schema refused the test record: {detail}",
+        schema_envelope_empty: "the record to be filed came out empty; it is not valid XML",
+        schema_envelope_not_regfactu: "the envelope is not a VeriFactu filing (RegFactuSistemaFacturacion)",
+        schema_record_missing: "the envelope carries no invoice record at all",
+        schema_header_issuer_missing: "the filing carries no taxpayer: set your business tax details in Settings \u2192 Business",
+        schema_issuer_identity_incomplete: "your business tax details are incomplete: {element} is required and came in empty",
+        schema_representative_incomplete: "the filing agent's details are incomplete: {element} is required",
+        schema_element_out_of_order: "{element} is filed out of order; the AEAT schema expects {sequence}",
+        schema_element_missing: "{element} is required and is not in the record",
+        schema_element_missing_or_empty: "{element} is required and is either missing or empty",
+        schema_element_empty: "{element} is required and came in empty",
+        schema_value_not_in_enum: "{element} is \xAB{value}\xBB, which the AEAT schema does not admit; it only takes {allowed}",
+        schema_value_too_long: "{element} is \xAB{value}\xBB, longer than the {max} characters the AEAT admits",
+        schema_recipient_block_required: "a {invoice_type} invoice has to identify the customer; a sale with no customer tax ID is a simplified F2 receipt",
+        schema_hash_type_unsupported: "the hash type \xAB{value}\xBB is not supported; the AEAT only takes 01 (SHA-256)",
+        schema_hash_malformed: "the record hash is not a valid SHA-256 (64 hexadecimal characters)"
       }
     },
     colSeq: "Seq",
@@ -4132,6 +4168,7 @@ var PARAM_LABEL_KEYS = {
   environment: { testing: "ui.envTesting", production: "ui.envProduction" }
 };
 var SAFE_SUFFIX = /^[a-z][a-z0-9_]*$/;
+var REASON_FACT_SUFFIX = "_reason";
 function catalogKeyFor(messageKey) {
   if (!messageKey.startsWith(EVENT_MESSAGE_PREFIX)) return null;
   const suffix = messageKey.slice(EVENT_MESSAGE_PREFIX.length);
@@ -4159,24 +4196,31 @@ function catalogHas(catalog, locale, key) {
   }
   return false;
 }
-function localizedParams(catalog, t5, details) {
+function localizedParams(catalog, locale, t5, details) {
   const params = {};
   for (const [param, value] of Object.entries(details)) {
-    if (value === null || value === void 0) continue;
+    if (value === null || value === void 0 || typeof value === "object") continue;
     const labelKey = typeof value === "string" ? PARAM_LABEL_KEYS[param]?.[value] : void 0;
     params[param] = labelKey ? t5(catalog, labelKey) : value;
   }
+  for (const [param, value] of Object.entries(details)) {
+    if (!param.endsWith(REASON_FACT_SUFFIX)) continue;
+    const nested = reasonSentence(catalog, locale, t5, value);
+    if (nested !== void 0) params[param.slice(0, -REASON_FACT_SUFFIX.length)] = nested;
+  }
   return params;
 }
-function certReasonSentence(catalog, locale, t5, details) {
-  const raw = details.cert_reason;
+function reasonSentence(catalog, locale, t5, raw) {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return void 0;
   const reason = raw;
   const code = reason.code;
   if (typeof code !== "string" || !SAFE_SUFFIX.test(code)) return void 0;
   const key = `${EVENT_REASON_PREFIX}${code}`;
   if (!catalogHas(catalog, locale, key)) return void 0;
-  return t5(catalog, key, localizedParams(catalog, t5, reason));
+  return t5(catalog, key, localizedParams(catalog, locale, t5, reason));
+}
+function certReasonSentence(catalog, locale, t5, details) {
+  return reasonSentence(catalog, locale, t5, details.cert_reason);
 }
 function eventMessage(catalog, locale, t5, row) {
   const details = parseDetails(row.details);
@@ -4184,8 +4228,7 @@ function eventMessage(catalog, locale, t5, row) {
   if (typeof messageKey !== "string") return row.message;
   const key = catalogKeyFor(messageKey);
   if (!key || !catalogHas(catalog, locale, key)) return row.message;
-  const params = localizedParams(catalog, t5, details);
-  delete params.cert_reason;
+  const params = localizedParams(catalog, locale, t5, details);
   const reason = certReasonSentence(catalog, locale, t5, details);
   if (reason !== void 0) params.cert_message = reason;
   return t5(catalog, key, params);
@@ -5705,7 +5748,8 @@ var ErpVerifactuSettings = class extends i3 {
       return b2`<ok-inline-feedback tone="neutral" icon="information-circle-outline">${t5(filedByErplora ? "ui.testAeatNotSentDelegated" : "ui.testAeatNotSent")}</ok-inline-feedback>`;
     }
     if (a3.error) {
-      return b2`<ok-inline-feedback tone="danger" heading=${t5("ui.testAeatError")} icon="alert-circle-outline">${a3.error}</ok-inline-feedback>`;
+      const why = reasonSentence(CATALOG5, erplora5().locale, (catalog, key, params) => erplora5().t(catalog, key, params), a3.reason);
+      return b2`<ok-inline-feedback tone="danger" heading=${t5("ui.testAeatError")} icon="alert-circle-outline">${why ?? a3.error}</ok-inline-feedback>`;
     }
     if (a3.ok) {
       const csv = a3.csv ? ` \xB7 CSV ${a3.csv}` : "";
