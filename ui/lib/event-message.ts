@@ -84,6 +84,12 @@ export const ENGINE_CERT_REASON_CODES = [
   'producer_facts_missing',
   'sample_envelope_invalid',
   'sample_record_schema_invalid',
+  // The three CONSTANT verdicts (verifactu#95). hub#1575 coded the reasons that VARY and left
+  // these behind, so «it went well» stayed the one sentence a business read in Spanish — on the
+  // two runs it sees most often. Factless on purpose: each is one sentence with nothing to fill.
+  'certificate_loaded',
+  'gateway_ready',
+  'issuer_nif_missing',
 ] as const;
 
 /**

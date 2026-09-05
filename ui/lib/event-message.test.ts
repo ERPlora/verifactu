@@ -438,7 +438,7 @@ describe('the reason behind the dash is composed too (hub#1575)', () => {
 describe('reason parity — every code the engine emits, in both languages (hub#1575)', () => {
   it('inspects the whole reason surface', () => {
     // Guards the guard: an emptied constant would make every loop below pass vacuously.
-    expect(ENGINE_CERT_REASON_CODES.length).toBe(8);
+    expect(ENGINE_CERT_REASON_CODES.length).toBe(11);
   });
 
   it.each(ENGINE_CERT_REASON_CODES)('%s resolves in en and es', (code) => {
@@ -470,6 +470,10 @@ describe('reason parity — every code the engine emits, in both languages (hub#
       producer_facts_missing: ['error'],
       sample_envelope_invalid: ['error'],
       sample_record_schema_invalid: ['detail'],
+      // verifactu#95 — one constant sentence each, nothing to fill.
+      certificate_loaded: [],
+      gateway_ready: [],
+      issuer_nif_missing: [],
     };
     expect(Object.keys(alwaysSent).sort()).toEqual([...ENGINE_CERT_REASON_CODES].sort());
 

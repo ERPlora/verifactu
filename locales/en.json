@@ -57,6 +57,9 @@
         "gateway_unreachable": "ERPlora's fiscal gateway could not be reached; try again in a few minutes",
         "producer_facts_missing": "this hub has not received its software-producer details from ERPlora yet; they arrive on their own the next time it syncs",
         "sample_envelope_invalid": "the test record could not be built from this hub's settings",
+        "certificate_loaded": "the certificate loaded correctly",
+        "gateway_ready": "ERPlora's fiscal gateway is available and files on your behalf",
+        "issuer_nif_missing": "set the taxpayer (issuer) tax ID in Settings → Business before testing the connection",
         "sample_record_schema_invalid": "the AEAT schema refused the test record: {detail}"
       }
     },

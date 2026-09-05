@@ -232,3 +232,51 @@ describe('the certificate box says WHY in the reader language (hub#1575)', () =>
     expect(cardText(el)).not.toContain('ui.evt.reason.a_reason_from_the_future');
   });
 });
+
+// ── verifactu#95: the CONSTANT verdicts of the certificate box ───────────────────────────────
+//
+// hub#1575 translated the reason the test FAILED for, and it did it for the verdicts whose reason
+// is variable. The three CONSTANT sentences stayed behind: on a good run the box reads «Certificado
+// cargado correctamente.» or «Pasarela fiscal disponible: ERPlora presenta por ti.», and with no
+// issuer tax ID it reads «Configura el NIF del obligado tributario (emisor)…» — Spanish inside an
+// otherwise English screen, on the two runs a business sees most often.
+//
+// Same channel, one field further: the engine files them as `cert_reason` codes too and the box
+// composes them like any other, so «it went well» is not the one sentence left untranslated.
+describe('the certificate box says the CONSTANT verdicts in the reader language (verifactu#95)', () => {
+  const CASES = [
+    { code: 'certificate_loaded', road: 'own', certOk: true, prose: 'Certificado cargado' },
+    { code: 'gateway_ready', road: 'delegated', certOk: true, prose: 'Pasarela fiscal disponible' },
+    { code: 'issuer_nif_missing', road: 'delegated', certOk: false, prose: 'Configura el NIF del obligado' },
+  ];
+
+  function details({ code, road, certOk, prose }: (typeof CASES)[number]) {
+    return {
+      cert_ok: certOk,
+      cert_message: `${prose} …`,
+      cert_reason: { code },
+      route: road,
+      environment: 'testing',
+      aeat: null,
+      gateway: null,
+    };
+  }
+
+  it.each(CASES)('composes $code from the code instead of pasting the engine prose', async (c) => {
+    const el = await mountWith({ route: c.road, details: details(c) });
+
+    // The harness `t` answers with the KEY, so this names a key and never prose (ADR-0055).
+    expect(cardText(el)).toContain(`ui.evt.reason.${c.code}`);
+    expect(cardText(el), 'the engine Spanish is still on the screen').not.toContain(c.prose);
+  });
+
+  // 🔒 The fallback that makes the merge order safe in BOTH directions, on these three too: an
+  // engine older than this change files no code, and the box keeps the sentence it always had.
+  it.each(CASES)('keeps the engine prose for $code when the hub sends no code', async (c) => {
+    const { cert_reason: _dropped, ...older } = details(c);
+
+    const el = await mountWith({ route: c.road, details: older });
+
+    expect(cardText(el)).toContain(c.prose);
+  });
+});

@@ -58,6 +58,9 @@
         "gateway_unreachable": "no se ha podido contactar con la pasarela fiscal de ERPlora; inténtalo de nuevo en unos minutos",
         "producer_facts_missing": "este hub todavía no ha recibido de ERPlora los datos del productor del software; llegan solos la próxima vez que se sincronice",
         "sample_envelope_invalid": "el registro de prueba no se ha podido construir con los ajustes de este hub",
+        "certificate_loaded": "el certificado se ha cargado correctamente",
+        "gateway_ready": "la pasarela fiscal de ERPlora está disponible y presenta por ti",
+        "issuer_nif_missing": "configura el NIF del obligado tributario (emisor) en Ajustes → Negocio antes de probar la conexión",
         "sample_record_schema_invalid": "el esquema de la AEAT ha rechazado el registro de prueba: {detail}"
       }
     },
