@@ -66,13 +66,20 @@ OPS_FOR_FILTER_TYPE = {
 # now widens a bare-date `to` bound to the START of the next day before comparing
 # (`hub/crates/runtime/src/queries.rs`, verifactu#70), so both column shapes get the same,
 # correct, `daterange` control.
-DATE_COLUMN_SUFFIXES = ("_date", "_at")
-DATE_COLUMN_NAMES = {"timestamp"}
+#
+# `timestamp` is a SUFFIX, not an exact name (verifactu#90). `verifactu_aeat_record.query_timestamp`
+# holds the same ISO-8601 instant as `verifactu_event.timestamp` and used to fall outside the rule
+# on a technicality: it ends in neither `_date` nor `_at`, and the exact-name set held only the bare
+# word. Today the column is not filterable, so nothing is broken on screen — but the guard is the
+# only thing standing between «somebody opens it» and an exact-string box asking the user to type an
+# instant to the second, timezone included. Matching by suffix covers the bare `timestamp` too
+# (`"timestamp".endswith("timestamp")`), so the exact-name set has nothing left to hold.
+DATE_COLUMN_SUFFIXES = ("_date", "_at", "timestamp")
 DATE_FILTER_TYPE = "daterange"
 
 
 def is_date_column(name: str) -> bool:
-    return name.endswith(DATE_COLUMN_SUFFIXES) or name in DATE_COLUMN_NAMES
+    return name.endswith(DATE_COLUMN_SUFFIXES)
 
 
 #: The check on the RULE itself (verifactu#90). The sweep above only inspects columns that are
@@ -127,6 +134,61 @@ def the_date_rule_covers_every_instant_column() -> list[str]:
     return broken
 
 
+def painted_column_keys() -> dict[str, set[str]]:
+    """Every `key: '<column>'` the components paint, filterable or not, and where."""
+    keys: dict[str, set[str]] = {}
+    for path in sorted((MODULE_DIR / "ui" / "components").rglob("*.ts")):
+        if path.name.endswith(".test.ts"):
+            continue
+        for match in re.finditer(r"key:\s*'([^']+)'", path.read_text()):
+            keys.setdefault(match.group(1), set()).add(path.name)
+    return keys
+
+
+def unwatched_date_columns(cases, painted: dict[str, set[str]]) -> list[str]:
+    """The date columns of `painted` that no case of `cases` names. Pure, so it can be pinned."""
+    named = {name for name, expected, _ in cases if expected}
+    return [
+        f"`{key}` is painted by {sorted(painted[key])} and the date rule calls it a date, but no "
+        f"case above names it: the rule is unwatched for that column"
+        for key in sorted(key for key in painted if is_date_column(key) and key not in named)
+    ]
+
+
+def every_real_date_column_is_named_in_the_cases() -> list[str]:
+    """The cases above have to name the REAL date columns of this module, not a chosen few.
+
+    Without this anchor the table is loose prose: deleting the `query_timestamp` line puts the rule
+    back to covering nothing that anybody checks, and every case still passes — the guard would go
+    quiet in exactly the way verifactu#90 is about. So the columns the module actually paints are
+    read from the components, and each one the rule calls a date has to appear here with the reason
+    it is one. A NEW instant column added to any table lands on this list the day it is written.
+
+    Its own silence is not taken on trust: `unwatched_date_columns` is first shown FIRING on a
+    planted column, because a comparison that has stopped comparing is quiet in the same way as one
+    with nothing to report.
+    """
+    planted = {"invoice_date": {"planted.ts"}, "audit_at": {"planted.ts"}}
+    fires = unwatched_date_columns((("invoice_date", True, "named on purpose"),), planted)
+    if len(fires) != 1 or "audit_at" not in fires[0]:
+        return [
+            "this anchor cannot detect a column nobody watches, so its silence proves nothing: "
+            f"planting an unnamed `audit_at` reported {fires}"
+        ]
+    if unwatched_date_columns(
+        (("invoice_date", True, "named"), ("audit_at", True, "named")), planted
+    ):
+        return ["this anchor reports a column that IS named in the cases"]
+
+    painted = painted_column_keys()
+    if not any(is_date_column(key) for key in painted):
+        return [
+            "no painted column of this module is a date at all: the component parser stopped "
+            "matching, so these cases would pass while proving nothing"
+        ]
+    return unwatched_date_columns(DATE_RULE_CASES, painted)
+
+
 failures: list[str] = []
 
 
@@ -176,7 +238,10 @@ def declared_filters(query_name: str) -> dict:
 
 
 def main() -> int:
-    misjudged = the_date_rule_covers_every_instant_column()
+    misjudged = (
+        the_date_rule_covers_every_instant_column()
+        + every_real_date_column_is_named_in_the_cases()
+    )
     if misjudged:
         print(
             f"✗ list_filters.contract: the date rule misjudges {len(misjudged)} column name(s), so "
@@ -248,8 +313,8 @@ def main() -> int:
     if not dates_checked:
         fail(
             "no filterable date/instant column was inspected (suffixes "
-            f"{DATE_COLUMN_SUFFIXES}, names {sorted(DATE_COLUMN_NAMES)}): the date rule would "
-            "pass while proving nothing (verifactu#68)"
+            f"{DATE_COLUMN_SUFFIXES}): the date rule would pass while proving nothing "
+            "(verifactu#68)"
         )
     print()
     if failures:
