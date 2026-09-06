@@ -77,6 +77,16 @@ interface AeatResult {
    */
   error?: string;
   /**
+   * The RAW transport text, in a slot of its own (hub#1580) — a `reqwest`/TLS chain, never
+   * translated and never interpolated into the sentence. Only the faults that happened DURING the
+   * call to Hacienda carry one; the ones that happen before it (no tax ID, a sample that will not
+   * wrap) have no transport to quote, and an engine older than hub#1580 sends none at all.
+   *
+   * It is what the support desk reads to tell a bad certificate from the customer's proxy or a
+   * quiet AEAT, so it is painted BESIDE the sentence rather than instead of it.
+   */
+  detail?: string;
+  /**
    * Why nothing was filed, as a stable `{code, …facts}` the catalogue turns into a sentence
    * (hub#1578). Absent on a run from an older engine, and unknown to this catalogue on a run from
    * a newer one — both fall back to `error`.
@@ -738,7 +748,13 @@ export class ErpVerifactuSettings extends LitElement {
       // one that says what to fix. Same resolver as the box above, so one run cannot be described
       // two ways; the engine prose stays as the fallback for a code this catalogue cannot name.
       const why = reasonSentence(CATALOG, erplora().locale, (catalog, key, params) => erplora().t(catalog, key, params), a.reason);
-      return html`<ok-inline-feedback tone="danger" heading=${t('ui.testAeatError')} icon="alert-circle-outline">${why ?? a.error}</ok-inline-feedback>`;
+      // …and the raw transport chain BESIDE it when the run carries one (hub#1580). Composing the
+      // sentence used to drop `error`, which on this arm was the only copy of that chain: the
+      // reader gained a sentence and the support desk lost the one string that separates an
+      // expired certificate from the customer's proxy. It cannot go INSIDE the sentence — the
+      // catalogue forbids interpolating engine text into a reason — so it gets the secondary slot
+      // the card already uses for small print. Conditional: no chain, no empty slot.
+      return html`<ok-inline-feedback tone="danger" heading=${t('ui.testAeatError')} icon="alert-circle-outline">${why ?? a.error}${a.detail ? html`<p class="hint">${a.detail}</p>` : nothing}</ok-inline-feedback>`;
     }
     if (a.ok) {
       const csv = a.csv ? ` · CSV ${a.csv}` : '';

@@ -90,6 +90,14 @@ export const ENGINE_CERT_REASON_CODES = [
   'certificate_loaded',
   'gateway_ready',
   'issuer_nif_missing',
+  // The own road's call to Hacienda came back a failure (hub#1580) — the last box of «Test
+  // connection» that answered only in Spanish. TWO codes because they ask opposite things: a
+  // secure channel the AEAT refused is FIXED (expired, revoked, not accepted) and an unreachable
+  // AEAT is WAITED OUT. Factless like the three above: the raw transport failure is painted
+  // beside the sentence, out of `aeat.detail` — its own slot, because `error` on this road is the
+  // engine's PROSE — and never interpolated into it.
+  'aeat_tls_rejected',
+  'aeat_unreachable',
 ] as const;
 
 /**
@@ -129,6 +137,34 @@ export const ENGINE_SCHEMA_REASON_CODES = [
   'schema_recipient_block_required',
   'schema_hash_type_unsupported',
   'schema_hash_malformed',
+  // What a rectifying invoice must carry, and what a plain one must not (hub#1579).
+  'schema_rectification_field_on_plain_invoice',
+  'schema_rectification_type_missing',
+  'schema_rectification_amount_required',
+  'schema_rectification_amount_not_allowed',
+  // The breakdown (hub#1579): the half of the validator that hub#1576 could not reach from the
+  // diagnostic sample, and the half a real transmission hits most. Nearly all of them carry
+  // `line`: an envelope holds up to twelve `DetalleDesglose`, and «the rate is not allowed»
+  // without saying WHICH line is a search rather than an instruction.
+  'schema_breakdown_empty',
+  'schema_breakdown_too_many_lines',
+  'schema_breakdown_value_not_in_enum',
+  'schema_breakdown_regime_not_in_enum',
+  'schema_breakdown_regime_not_allowed',
+  'schema_breakdown_regime_required',
+  'schema_breakdown_regime_requires_n2',
+  'schema_breakdown_qualification_conflict',
+  'schema_breakdown_qualification_missing',
+  'schema_breakdown_exemption_igic_only',
+  'schema_breakdown_base_missing',
+  'schema_breakdown_exempt_amount_not_allowed',
+  'schema_breakdown_untaxed_amount_not_allowed',
+  'schema_breakdown_reverse_charge_not_zero',
+  'schema_breakdown_reverse_charge_missing',
+  'schema_breakdown_vat_rate_not_allowed',
+  'schema_breakdown_surcharge_rate_not_allowed',
+  // The simplified-invoice ceiling (hub#1579).
+  'schema_simplified_over_ceiling',
 ] as const;
 
 /**

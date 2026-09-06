@@ -94,6 +94,21 @@ function cardText(el: HTMLElement & { shadowRoot: ShadowRoot }) {
   return card.innerHTML;
 }
 
+/**
+ * The AEAT box ITSELF, so a test can pin what the box does and does not carry. `cardText` cannot:
+ * the card is full of hints of its own, so «the box grew no empty slot» is unprovable from it.
+ */
+function aeatBoxEl(el: HTMLElement & { shadowRoot: ShadowRoot }) {
+  const box = [...el.shadowRoot.querySelectorAll('ok-inline-feedback')]
+    .find((b) => b.getAttribute('heading') === 'ui.testAeatError');
+  if (!box) throw new Error('the AEAT error box is not on the screen');
+  return box;
+}
+
+function aeatBox(el: HTMLElement & { shadowRoot: ShadowRoot }) {
+  return aeatBoxEl(el).innerHTML;
+}
+
 beforeEach(() => {
   document.body.replaceChildren();
   globalThis.localStorage?.setItem(HUB_SESSION_KEY, 'sess-abc');
@@ -393,6 +408,121 @@ describe('the AEAT box says WHY in the reader language (hub#1578)', () => {
   });
 });
 
+// ── hub#1580: the call to Hacienda that came back a failure ──────────────────────────────────
+//
+// hub#1578 coded the two AEAT faults that happen BEFORE the call — no tax ID, a sample that cannot
+// be wrapped. This is the one that happens DURING it: a secure channel the AEAT refused, or an AEAT
+// that never answered. It reached the screen as `error: e.to_string()`, the transport's own Spanish
+// («transmisión AEAT (TLS): …»), so the last box of «Test connection» still spoke Spanish inside an
+// English hub.
+//
+// The shape is the neighbouring one (`gateway_unreachable`): a CONSTANT sentence out of the
+// catalogue, and the raw transport chain painted BESIDE it — never interpolated into it, which the
+// catalogue forbids and its `never bakes the engine prose into a reason sentence` test defends. The
+// box has to keep BOTH: without the sentence the business cannot act, and without the chain the
+// support desk cannot tell a bad certificate from the customer's proxy or a quiet AEAT.
+describe('the AEAT transport failure says WHY and still shows the technical chain (hub#1580)', () => {
+  const TLS_CHAIN = 'transmisión AEAT (TLS): certificate verify failed';
+  const TLS_PROSE = 'La AEAT no ha aceptado el certificado al abrir el canal seguro';
+
+  const TLS_REFUSED = {
+    cert_ok: true,
+    cert_message: 'Certificado cargado correctamente.',
+    cert_reason: { code: 'certificate_loaded' },
+    route: 'own',
+    environment: 'testing',
+    aeat: {
+      ok: false,
+      error: `${TLS_PROSE}: revisa que no esté caducado ni revocado.`,
+      detail: TLS_CHAIN,
+      reason: { code: 'aeat_tls_rejected' },
+    },
+    gateway: null,
+  };
+
+  it('composes the sentence from the code and keeps the raw chain beside it', async () => {
+    const el = await mountWith({ route: 'own', details: TLS_REFUSED });
+
+    const box = aeatBox(el);
+    expect(box).toContain('ui.evt.reason.aeat_tls_rejected');
+    expect(box, 'the chain the support desk reads vanished once the sentence composed').toContain(TLS_CHAIN);
+    expect(box, 'the engine Spanish was pasted instead of composed').not.toContain(TLS_PROSE);
+  });
+
+  // The OTHER code, because the two ask opposite things of the reader: a refused channel is FIXED
+  // (the certificate expired, was revoked, is not accepted) and an unreachable AEAT is WAITED OUT.
+  // One sentence for both would tell somebody whose certificate died last week to try again later.
+  it('tells an unreachable AEAT from a refused channel', async () => {
+    const chain = 'transmisión AEAT: error sending request for url (https://prewww1.aeat.es/…)';
+    const el = await mountWith({
+      route: 'own',
+      details: {
+        ...TLS_REFUSED,
+        aeat: {
+          ok: false,
+          error: 'No se ha podido contactar con la AEAT; vuelve a intentarlo en unos minutos.',
+          detail: chain,
+          reason: { code: 'aeat_unreachable' },
+        },
+      },
+    });
+
+    const box = aeatBox(el);
+    expect(box).toContain('ui.evt.reason.aeat_unreachable');
+    expect(box, 'a waited-out outage must not read as a certificate to fix').not.toContain('ui.evt.reason.aeat_tls_rejected');
+    expect(box).toContain(chain);
+  });
+
+  // 🔒 Both directions of the merge order, again. An engine older than hub#1580 files no `detail`
+  // at all — every other AEAT fault still travels without one — and the box must not grow an empty
+  // slot under the sentence, which reads as a broken screen.
+  it('paints no technical slot on a run that carries none', async () => {
+    const { detail: _dropped, ...older } = TLS_REFUSED.aeat;
+
+    const el = await mountWith({ route: 'own', details: { ...TLS_REFUSED, aeat: older } });
+
+    const box = aeatBox(el);
+    expect(box).toContain('ui.evt.reason.aeat_tls_rejected');
+    expect(box, 'an empty technical slot reads as a broken screen').not.toContain('class="hint"');
+  });
+
+  // 🔒 WHERE the chain lives is the contract, not a rendering detail. A chain interpolated INTO the
+  // sentence («…ui.evt.reason.aeat_tls_rejected — transmisión AEAT (TLS): …») passes every check
+  // above — the key is there, the chain is there, no empty slot — and it is exactly what the
+  // catalogue forbids: engine text inside a reason, untranslatable once composed. So this pins
+  // the slot itself: one small-print line that carries the chain and nothing else, and a sentence
+  // beside it with none of the chain in it.
+  it('keeps the chain in a slot of its own, never inside the sentence', async () => {
+    const el = await mountWith({ route: 'own', details: TLS_REFUSED });
+
+    const box = aeatBoxEl(el);
+    const hints = [...box.querySelectorAll('p.hint')];
+    expect(hints, 'exactly one technical slot').toHaveLength(1);
+    expect(hints[0].textContent?.trim()).toBe(TLS_CHAIN);
+    const sentence = [...box.childNodes]
+      .filter((n) => n !== hints[0])
+      .map((n) => n.textContent ?? '')
+      .join('');
+    expect(sentence).toContain('ui.evt.reason.aeat_tls_rejected');
+    expect(sentence, 'the chain leaked into the sentence').not.toContain(TLS_CHAIN);
+  });
+
+  // 🔒 The other direction of the merge order, with the NEW key on board: a hub ahead of this module
+  // files a code the catalogue has never heard of, and files a chain with it. The box falls back to
+  // the engine prose — nothing blank, no raw key on the screen — and the chain still gets its slot.
+  it('keeps the engine prose and the chain for a code it does not know', async () => {
+    const el = await mountWith({
+      route: 'own',
+      details: { ...TLS_REFUSED, aeat: { ...TLS_REFUSED.aeat, reason: { code: 'aeat_something_from_the_future' } } },
+    });
+
+    const box = aeatBox(el);
+    expect(box).toContain(TLS_PROSE);
+    expect(box).toContain(TLS_CHAIN);
+    expect(box).not.toContain('ui.evt.reason.aeat_something_from_the_future');
+  });
+});
+
 // ── The whole card, mounted with the REAL catalogue in each language ─────────────────────────
 //
 // Every block above hands the screen a `t` that answers with the KEY. That is what lets a test
@@ -484,5 +614,43 @@ describe('the boxes speak the reader language from the catalogue, mounted for re
     expect(text, 'the engine wording was pasted instead of composed').not.toContain('Certificado cargado correctamente.');
     expect(text, 'the engine wrapper was pasted instead of composed').not.toContain(ENGINE_WRAPPER);
     expect(text, 'a placeholder survived').not.toMatch(/\{[a-z_]+\}/);
+  });
+
+  // hub#1580 through the same door: the SENTENCE is translated and the CHAIN is not. The chain is
+  // a `reqwest`/OpenSSL string — there is nothing in it to translate, and support quotes it
+  // verbatim — so what each language has to prove is that the sentence came from the catalogue and
+  // the chain survived it.
+  const TLS_RUN = {
+    ...OWN_RUN,
+    aeat: {
+      ok: false,
+      error: 'La AEAT no ha aceptado el certificado al abrir el canal seguro: revisa que no esté caducado ni revocado.',
+      detail: 'transmisión AEAT (TLS): certificate verify failed',
+      reason: { code: 'aeat_tls_rejected' },
+    },
+  };
+
+  it('in en, a refused channel reads English and still carries its chain', async () => {
+    const el = await mountWith({ route: 'own', details: TLS_RUN, locale: 'en', t: realT('en') });
+
+    const text = translatedCardText(el, 'en');
+    expect(text).toContain(
+      'the AEAT did not accept the certificate when opening the secure channel; check that it has not expired and has not been revoked',
+    );
+    expect(text, 'the transport Spanish reached an English screen').not.toContain('La AEAT no ha aceptado');
+    expect(text, 'the chain the support desk reads was dropped').toContain('certificate verify failed');
+  });
+
+  // The positive English cannot give: in `es` the sentence is Spanish too, so what is pinned is
+  // WHOSE Spanish — the catalogue's, never the engine's wording.
+  it('in es, a refused channel reads the catalogue Spanish and still carries its chain', async () => {
+    const el = await mountWith({ route: 'own', details: TLS_RUN, locale: 'es', t: realT('es') });
+
+    const text = translatedCardText(el, 'es');
+    expect(text).toContain(
+      'la AEAT no ha aceptado el certificado al abrir el canal seguro; comprueba que no esté caducado ni revocado',
+    );
+    expect(text, 'the engine wording was pasted instead of composed').not.toContain('revisa que no esté caducado');
+    expect(text, 'the chain the support desk reads was dropped').toContain('certificate verify failed');
   });
 });

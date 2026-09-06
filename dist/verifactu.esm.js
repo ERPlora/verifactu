@@ -3461,7 +3461,31 @@ var es_default = {
         schema_value_too_long: "{element} vale \xAB{value}\xBB, m\xE1s largo que los {max} caracteres que admite la AEAT",
         schema_recipient_block_required: "una factura {invoice_type} tiene que identificar al cliente; una venta sin NIF de cliente es un tique simplificado F2",
         schema_hash_type_unsupported: "el tipo de huella \xAB{value}\xBB no est\xE1 soportado; la AEAT solo admite 01 (SHA-256)",
-        schema_hash_malformed: "la huella del registro no es un SHA-256 v\xE1lido (64 caracteres hexadecimales)"
+        schema_hash_malformed: "la huella del registro no es un SHA-256 v\xE1lido (64 caracteres hexadecimales)",
+        aeat_tls_rejected: "la AEAT no ha aceptado el certificado al abrir el canal seguro; comprueba que no est\xE9 caducado ni revocado",
+        aeat_unreachable: "no se ha podido contactar con la AEAT; int\xE9ntalo de nuevo en unos minutos",
+        schema_rectification_field_on_plain_invoice: "una factura {invoice_type} no rectifica nada, as\xED que no puede informar {element}; la AEAT solo lo admite con tipo de factura {allowed}",
+        schema_rectification_type_missing: "una rectificativa {invoice_type} exige TipoRectificativa ({allowed}); sin \xE9l la AEAT rechaza el registro, que ya ha gastado su n\xFAmero de cadena",
+        schema_rectification_amount_required: "una rectificativa por sustituci\xF3n (TipoRectificativa=S) exige ImporteRectificacion con la base y la cuota rectificadas",
+        schema_rectification_amount_not_allowed: "una rectificativa por diferencias (TipoRectificativa=I) ya declara el delta en sus propios importes; ImporteRectificacion solo se informa con TipoRectificativa=S",
+        schema_breakdown_empty: "el desglose no lleva ninguna l\xEDnea DetalleDesglose: la AEAT no admite un desglose vac\xEDo",
+        schema_breakdown_too_many_lines: "el desglose lleva {count} l\xEDneas y el esquema admite {max}",
+        schema_breakdown_value_not_in_enum: "l\xEDnea {line} del desglose: {element} vale \xAB{value}\xBB, que no est\xE1 en la enumeraci\xF3n; solo acepta {allowed}",
+        schema_breakdown_regime_not_in_enum: "l\xEDnea {line} del desglose: ClaveRegimen \xAB{value}\xBB no est\xE1 en las listas L8A/L8B de la AEAT",
+        schema_breakdown_regime_not_allowed: "l\xEDnea {line} del desglose: ClaveRegimen solo se admite con impuesto {allowed}, y esta l\xEDnea declara {tax}",
+        schema_breakdown_regime_required: "l\xEDnea {line} del desglose: ClaveRegimen es obligatoria con impuesto {tax}; sin ella la AEAT responde el error 1245",
+        schema_breakdown_regime_requires_n2: "l\xEDnea {line} del desglose: ClaveRegimen {regime} exige CalificacionOperacion N2 y lleva \xAB{qualification}\xBB",
+        schema_breakdown_qualification_conflict: "l\xEDnea {line} del desglose: CalificacionOperacion y OperacionExenta son un choice del esquema \u2014 va una o la otra, nunca las dos",
+        schema_breakdown_qualification_missing: "l\xEDnea {line} del desglose: falta CalificacionOperacion u OperacionExenta; el esquema exige una de las dos",
+        schema_breakdown_exemption_igic_only: "l\xEDnea {line} del desglose: OperacionExenta \xAB{value}\xBB solo existe con impuesto 03 (IGIC); con IVA la lista es E1\u2013E6",
+        schema_breakdown_base_missing: "l\xEDnea {line} del desglose: {element} es obligatorio",
+        schema_breakdown_exempt_amount_not_allowed: "l\xEDnea {line} del desglose: una l\xEDnea con OperacionExenta no puede informar {element}",
+        schema_breakdown_untaxed_amount_not_allowed: "l\xEDnea {line} del desglose: con CalificacionOperacion \xAB{qualification}\xBB la l\xEDnea no puede informar {element}; es el error 1237 de la AEAT",
+        schema_breakdown_reverse_charge_not_zero: "l\xEDnea {line} del desglose: con inversi\xF3n del sujeto pasivo (S2) {element} tiene que ser 0 y vale {value}",
+        schema_breakdown_reverse_charge_missing: "l\xEDnea {line} del desglose: con inversi\xF3n del sujeto pasivo (S2) {element} es obligatorio y va a 0 \u2014 no se omite",
+        schema_breakdown_vat_rate_not_allowed: "l\xEDnea {line} del desglose: TipoImpositivo {value} no es un tipo de IVA; la AEAT solo admite 0, 2, 4, 5, 7,5, 10 y 21",
+        schema_breakdown_surcharge_rate_not_allowed: "l\xEDnea {line} del desglose: TipoRecargoEquivalencia {value} no es un tipo de recargo de equivalencia; la AEAT admite 0, 0,26, 0,5, 0,62, 1, 1,4, 1,75 y 5,2",
+        schema_simplified_over_ceiling: "una factura simplificada F2 no puede pasar de {ceiling} \u20AC (m\xE1s {tolerance} \u20AC de tolerancia) sumando base y cuota de todas las l\xEDneas, y esta suma {total} \u20AC; con este importe hay que emitir factura completa identificando al destinatario"
       }
     },
     colSeq: "Seq",
@@ -3784,7 +3808,31 @@ var en_default = {
         schema_value_too_long: "{element} is \xAB{value}\xBB, longer than the {max} characters the AEAT admits",
         schema_recipient_block_required: "a {invoice_type} invoice has to identify the customer; a sale with no customer tax ID is a simplified F2 receipt",
         schema_hash_type_unsupported: "the hash type \xAB{value}\xBB is not supported; the AEAT only takes 01 (SHA-256)",
-        schema_hash_malformed: "the record hash is not a valid SHA-256 (64 hexadecimal characters)"
+        schema_hash_malformed: "the record hash is not a valid SHA-256 (64 hexadecimal characters)",
+        aeat_tls_rejected: "the AEAT did not accept the certificate when opening the secure channel; check that it has not expired and has not been revoked",
+        aeat_unreachable: "the AEAT could not be reached; try again in a few minutes",
+        schema_rectification_field_on_plain_invoice: "a {invoice_type} invoice rectifies nothing, so it cannot carry {element}; the AEAT only admits it with invoice type {allowed}",
+        schema_rectification_type_missing: "a {invoice_type} corrective invoice requires TipoRectificativa ({allowed}); without it the AEAT refuses the record, which has already spent its chain number",
+        schema_rectification_amount_required: "a corrective invoice by substitution (TipoRectificativa=S) requires ImporteRectificacion with the corrected base and tax",
+        schema_rectification_amount_not_allowed: "a corrective invoice by difference (TipoRectificativa=I) already declares the delta in its own amounts; ImporteRectificacion is only filed with TipoRectificativa=S",
+        schema_breakdown_empty: "the breakdown carries no DetalleDesglose line: the AEAT does not admit an empty breakdown",
+        schema_breakdown_too_many_lines: "the breakdown carries {count} lines and the schema admits {max}",
+        schema_breakdown_value_not_in_enum: "breakdown line {line}: {element} is \xAB{value}\xBB, which is not in the enumeration; it only takes {allowed}",
+        schema_breakdown_regime_not_in_enum: "breakdown line {line}: ClaveRegimen \xAB{value}\xBB is not in the AEAT L8A/L8B lists",
+        schema_breakdown_regime_not_allowed: "breakdown line {line}: ClaveRegimen is only admitted with tax {allowed}, and this line declares {tax}",
+        schema_breakdown_regime_required: "breakdown line {line}: ClaveRegimen is required with tax {tax}; without it the AEAT answers error 1245",
+        schema_breakdown_regime_requires_n2: "breakdown line {line}: ClaveRegimen {regime} requires CalificacionOperacion N2 and carries \xAB{qualification}\xBB",
+        schema_breakdown_qualification_conflict: "breakdown line {line}: CalificacionOperacion and OperacionExenta are a schema choice \u2014 one or the other, never both",
+        schema_breakdown_qualification_missing: "breakdown line {line}: CalificacionOperacion or OperacionExenta is missing; the schema requires one of the two",
+        schema_breakdown_exemption_igic_only: "breakdown line {line}: OperacionExenta \xAB{value}\xBB only exists with tax 03 (IGIC); under VAT the list is E1\u2013E6",
+        schema_breakdown_base_missing: "breakdown line {line}: {element} is required",
+        schema_breakdown_exempt_amount_not_allowed: "breakdown line {line}: a line with OperacionExenta cannot carry {element}",
+        schema_breakdown_untaxed_amount_not_allowed: "breakdown line {line}: with CalificacionOperacion \xAB{qualification}\xBB the line cannot carry {element}; it is the AEAT's error 1237",
+        schema_breakdown_reverse_charge_not_zero: "breakdown line {line}: under reverse charge (S2) {element} has to be 0 and is {value}",
+        schema_breakdown_reverse_charge_missing: "breakdown line {line}: under reverse charge (S2) {element} is required and goes to 0 \u2014 it is not left out",
+        schema_breakdown_vat_rate_not_allowed: "breakdown line {line}: TipoImpositivo {value} is not a VAT rate; the AEAT only admits 0, 2, 4, 5, 7.5, 10 and 21",
+        schema_breakdown_surcharge_rate_not_allowed: "breakdown line {line}: TipoRecargoEquivalencia {value} is not an equivalence surcharge rate; the AEAT admits 0, 0.26, 0.5, 0.62, 1, 1.4, 1.75 and 5.2",
+        schema_simplified_over_ceiling: "a simplified F2 invoice cannot go over {ceiling} \u20AC (plus {tolerance} \u20AC of tolerance) adding base and tax of every line, and this one adds {total} \u20AC; at this amount a full invoice identifying the customer is required"
       }
     },
     colSeq: "Seq",
@@ -5749,7 +5797,7 @@ var ErpVerifactuSettings = class extends i3 {
     }
     if (a3.error) {
       const why = reasonSentence(CATALOG5, erplora5().locale, (catalog, key, params) => erplora5().t(catalog, key, params), a3.reason);
-      return b2`<ok-inline-feedback tone="danger" heading=${t5("ui.testAeatError")} icon="alert-circle-outline">${why ?? a3.error}</ok-inline-feedback>`;
+      return b2`<ok-inline-feedback tone="danger" heading=${t5("ui.testAeatError")} icon="alert-circle-outline">${why ?? a3.error}${a3.detail ? b2`<p class="hint">${a3.detail}</p>` : A}</ok-inline-feedback>`;
     }
     if (a3.ok) {
       const csv = a3.csv ? ` \xB7 CSV ${a3.csv}` : "";
