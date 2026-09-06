@@ -440,7 +440,7 @@ describe('the reason behind the dash is composed too (hub#1575)', () => {
 describe('reason parity — every code the engine emits, in both languages (hub#1575)', () => {
   it('inspects the whole reason surface', () => {
     // Guards the guard: an emptied constant would make every loop below pass vacuously.
-    expect(ENGINE_CERT_REASON_CODES.length).toBe(11);
+    expect(ENGINE_CERT_REASON_CODES.length).toBe(13);
   });
 
   it.each(ENGINE_CERT_REASON_CODES)('%s resolves in en and es', (code) => {
@@ -476,6 +476,10 @@ describe('reason parity — every code the engine emits, in both languages (hub#
       certificate_loaded: [],
       gateway_ready: [],
       issuer_nif_missing: [],
+      // hub#1580 — the own road's call to the AEAT. Factless for the same reason: the raw
+      // transport failure is painted BESIDE the sentence, out of `aeat.error`, never inside it.
+      aeat_tls_rejected: [],
+      aeat_unreachable: [],
     };
     expect(Object.keys(alwaysSent).sort()).toEqual([...ENGINE_CERT_REASON_CODES].sort());
 
@@ -615,9 +619,12 @@ describe('the reason the SCHEMA gave is composed too (hub#1576)', () => {
 
 describe('schema reason parity — every refusal the validator emits, in both languages (hub#1576)', () => {
   it('inspects the whole schema surface', () => {
-    // Guards the guard: an emptied constant would make every loop below pass vacuously. Fifteen
-    // is the number of `named(...)` refusals in `xsd.rs::validate_registro`, pinned on both sides.
-    expect(ENGINE_SCHEMA_REASON_CODES.length).toBe(15);
+    // Guards the guard: an emptied constant would make every loop below pass vacuously.
+    // Thirty-seven is the number of DISTINCT codes `xsd.rs::validate_registro` can file, pinned on
+    // both sides — the hub asserts the same number in `the_schema_codes_are_not_all_the_same_one`.
+    // It grew from fifteen in hub#1579, when the breakdown, the rectification and the F2 ceiling
+    // stopped refusing in untranslatable prose.
+    expect(ENGINE_SCHEMA_REASON_CODES.length).toBe(37);
   });
 
   it.each(ENGINE_SCHEMA_REASON_CODES)('%s resolves in en and es', (code) => {
@@ -656,6 +663,34 @@ describe('schema reason parity — every refusal the validator emits, in both la
       schema_value_too_long: ['element', 'value', 'max'],
       schema_hash_type_unsupported: ['value'],
       schema_hash_malformed: [],
+      // The rectification block (hub#1579): what a rectifying invoice must carry, and what a
+      // plain one must not.
+      schema_rectification_field_on_plain_invoice: ['invoice_type', 'element', 'allowed'],
+      schema_rectification_type_missing: ['invoice_type', 'allowed'],
+      schema_rectification_amount_required: [],
+      schema_rectification_amount_not_allowed: [],
+      // The breakdown (hub#1579). `line` travels in almost all of them: with up to twelve
+      // `DetalleDesglose` in one envelope, «the rate is not allowed» without saying WHICH line
+      // is a search, not an instruction.
+      schema_breakdown_empty: [],
+      schema_breakdown_too_many_lines: ['count', 'max'],
+      schema_breakdown_value_not_in_enum: ['line', 'element', 'value', 'allowed'],
+      schema_breakdown_regime_not_in_enum: ['line', 'value'],
+      schema_breakdown_regime_not_allowed: ['line', 'tax', 'allowed'],
+      schema_breakdown_regime_required: ['line', 'tax'],
+      schema_breakdown_regime_requires_n2: ['line', 'regime', 'qualification'],
+      schema_breakdown_qualification_conflict: ['line'],
+      schema_breakdown_qualification_missing: ['line'],
+      schema_breakdown_exemption_igic_only: ['line', 'value'],
+      schema_breakdown_base_missing: ['line', 'element'],
+      schema_breakdown_exempt_amount_not_allowed: ['line', 'element'],
+      schema_breakdown_untaxed_amount_not_allowed: ['line', 'qualification', 'element'],
+      schema_breakdown_reverse_charge_not_zero: ['line', 'element', 'value'],
+      schema_breakdown_reverse_charge_missing: ['line', 'element'],
+      schema_breakdown_vat_rate_not_allowed: ['line', 'value'],
+      schema_breakdown_surcharge_rate_not_allowed: ['line', 'value'],
+      // The simplified-invoice ceiling (hub#1579).
+      schema_simplified_over_ceiling: ['total', 'ceiling', 'tolerance'],
     };
     expect(Object.keys(alwaysSent).sort()).toEqual([...ENGINE_SCHEMA_REASON_CODES].sort());
 
