@@ -66,13 +66,72 @@ OPS_FOR_FILTER_TYPE = {
 # now widens a bare-date `to` bound to the START of the next day before comparing
 # (`hub/crates/runtime/src/queries.rs`, verifactu#70), so both column shapes get the same,
 # correct, `daterange` control.
-DATE_COLUMN_SUFFIXES = ("_date", "_at")
-DATE_COLUMN_NAMES = {"timestamp"}
+#
+# `timestamp` is a SUFFIX, not an exact name (verifactu#90). `verifactu_aeat_record.query_timestamp`
+# holds the same ISO-8601 instant as `verifactu_event.timestamp` and used to fall outside the rule
+# on a technicality: it ends in neither `_date` nor `_at`, and the exact-name set held only the bare
+# word. Today the column is not filterable, so nothing is broken on screen — but the guard is the
+# only thing standing between «somebody opens it» and an exact-string box asking the user to type an
+# instant to the second, timezone included. Matching by suffix covers the bare `timestamp` too
+# (`"timestamp".endswith("timestamp")`), so the exact-name set has nothing left to hold.
+DATE_COLUMN_SUFFIXES = ("_date", "_at", "timestamp")
 DATE_FILTER_TYPE = "daterange"
 
 
 def is_date_column(name: str) -> bool:
-    return name.endswith(DATE_COLUMN_SUFFIXES) or name in DATE_COLUMN_NAMES
+    return name.endswith(DATE_COLUMN_SUFFIXES)
+
+
+#: The check on the RULE itself (verifactu#90). The sweep above only inspects columns that are
+#: ALREADY `filterable: true`, so a column the rule does not recognise is invisible here until the
+#: day somebody makes it filterable -- and that day the box ships as an exact-string one and the
+#: sweep stays green, which is how #64, #68 and #70 each found the same hole again. These cases pin
+#: the rule on its own, so narrowing it is a red test today instead of a bad box later.
+#:
+#: `(column name, is it an instant/date?, why it matters)`.
+DATE_RULE_CASES: tuple[tuple[str, bool, str], ...] = (
+    ("invoice_date", True, "`verifactu_record.invoice_date` — the date-only shape, `_date` suffix"),
+    ("next_attempt_at", True, "`verifactu_contingency.next_attempt_at` — an instant, `_at` suffix"),
+    ("timestamp", True, "`verifactu_event.timestamp` — an instant whose whole name is the word"),
+    (
+        "query_timestamp",
+        True,
+        "`verifactu_aeat_record.query_timestamp`, the «when was the AEAT asked» column of the "
+        "Recovery screen: an ISO-8601 instant exactly like `timestamp`, and the rule used to miss "
+        "it because it matched that name EXACTLY instead of as a suffix (verifactu#90)",
+    ),
+    (
+        "submitted_timestamp",
+        True,
+        "any future `<something>_timestamp`: the point of a suffix is that the next one is covered "
+        "before it is written",
+    ),
+    ("invoice_number", False, "a number is not a date, and its box is free text on purpose"),
+    ("estado", False, "the AEAT status is a short code, not an instant"),
+    (
+        "timestamp_source",
+        False,
+        "it CONTAINS the word but does not END with it: widening by suffix must not turn a "
+        "«where did this come from» column into a calendar",
+    ),
+)
+
+
+def the_date_rule_covers_every_instant_column() -> list[str]:
+    """A column that holds an instant has to be RECOGNISED as one, whether or not it is filterable.
+
+    verifactu#90. `is_date_column` is what decides whether a filterable column is forced to be a
+    `daterange`. It is only ever consulted for columns already marked `filterable: true`, so a gap
+    in it is LATENT: the guard stays green until the column is opened, and then it ships the box the
+    guard exists to prevent. The rule is therefore checked on its own, by name, here.
+    """
+    broken = []
+    for name, expected, why in DATE_RULE_CASES:
+        got = is_date_column(name)
+        if got is not expected:
+            verb = "does not recognise" if expected else "wrongly recognises"
+            broken.append(f"`{name}`: the date rule {verb} it — {why}")
+    return broken
 
 
 failures: list[str] = []
@@ -124,6 +183,16 @@ def declared_filters(query_name: str) -> dict:
 
 
 def main() -> int:
+    misjudged = the_date_rule_covers_every_instant_column()
+    if misjudged:
+        print(
+            f"✗ list_filters.contract: the date rule misjudges {len(misjudged)} column name(s), so "
+            "the sweep below decides with the wrong rule:"
+        )
+        for m in misjudged:
+            print(f"  - {m}")
+        return 1
+
     components = sorted((MODULE_DIR / "ui" / "components").rglob("*.ts"))
     checked = 0
     dates_checked = 0
@@ -186,8 +255,8 @@ def main() -> int:
     if not dates_checked:
         fail(
             "no filterable date/instant column was inspected (suffixes "
-            f"{DATE_COLUMN_SUFFIXES}, names {sorted(DATE_COLUMN_NAMES)}): the date rule would "
-            "pass while proving nothing (verifactu#68)"
+            f"{DATE_COLUMN_SUFFIXES}): the date rule would pass while proving nothing "
+            "(verifactu#68)"
         )
     print()
     if failures:
