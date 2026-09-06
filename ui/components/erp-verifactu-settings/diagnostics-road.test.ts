@@ -98,11 +98,15 @@ function cardText(el: HTMLElement & { shadowRoot: ShadowRoot }) {
  * The AEAT box ITSELF, so a test can pin what the box does and does not carry. `cardText` cannot:
  * the card is full of hints of its own, so «the box grew no empty slot» is unprovable from it.
  */
-function aeatBox(el: HTMLElement & { shadowRoot: ShadowRoot }) {
+function aeatBoxEl(el: HTMLElement & { shadowRoot: ShadowRoot }) {
   const box = [...el.shadowRoot.querySelectorAll('ok-inline-feedback')]
     .find((b) => b.getAttribute('heading') === 'ui.testAeatError');
   if (!box) throw new Error('the AEAT error box is not on the screen');
-  return box.innerHTML;
+  return box;
+}
+
+function aeatBox(el: HTMLElement & { shadowRoot: ShadowRoot }) {
+  return aeatBoxEl(el).innerHTML;
 }
 
 beforeEach(() => {
@@ -480,6 +484,42 @@ describe('the AEAT transport failure says WHY and still shows the technical chai
     const box = aeatBox(el);
     expect(box).toContain('ui.evt.reason.aeat_tls_rejected');
     expect(box, 'an empty technical slot reads as a broken screen').not.toContain('class="hint"');
+  });
+
+  // 🔒 WHERE the chain lives is the contract, not a rendering detail. A chain interpolated INTO the
+  // sentence («…ui.evt.reason.aeat_tls_rejected — transmisión AEAT (TLS): …») passes every check
+  // above — the key is there, the chain is there, no empty slot — and it is exactly what the
+  // catalogue forbids: engine text inside a reason, untranslatable once composed. So this pins
+  // the slot itself: one small-print line that carries the chain and nothing else, and a sentence
+  // beside it with none of the chain in it.
+  it('keeps the chain in a slot of its own, never inside the sentence', async () => {
+    const el = await mountWith({ route: 'own', details: TLS_REFUSED });
+
+    const box = aeatBoxEl(el);
+    const hints = [...box.querySelectorAll('p.hint')];
+    expect(hints, 'exactly one technical slot').toHaveLength(1);
+    expect(hints[0].textContent?.trim()).toBe(TLS_CHAIN);
+    const sentence = [...box.childNodes]
+      .filter((n) => n !== hints[0])
+      .map((n) => n.textContent ?? '')
+      .join('');
+    expect(sentence).toContain('ui.evt.reason.aeat_tls_rejected');
+    expect(sentence, 'the chain leaked into the sentence').not.toContain(TLS_CHAIN);
+  });
+
+  // 🔒 The other direction of the merge order, with the NEW key on board: a hub ahead of this module
+  // files a code the catalogue has never heard of, and files a chain with it. The box falls back to
+  // the engine prose — nothing blank, no raw key on the screen — and the chain still gets its slot.
+  it('keeps the engine prose and the chain for a code it does not know', async () => {
+    const el = await mountWith({
+      route: 'own',
+      details: { ...TLS_REFUSED, aeat: { ...TLS_REFUSED.aeat, reason: { code: 'aeat_something_from_the_future' } } },
+    });
+
+    const box = aeatBox(el);
+    expect(box).toContain(TLS_PROSE);
+    expect(box).toContain(TLS_CHAIN);
+    expect(box).not.toContain('ui.evt.reason.aeat_something_from_the_future');
   });
 });
 
