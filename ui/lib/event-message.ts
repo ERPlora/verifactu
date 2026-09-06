@@ -94,7 +94,8 @@ export const ENGINE_CERT_REASON_CODES = [
   // connection» that answered only in Spanish. TWO codes because they ask opposite things: a
   // secure channel the AEAT refused is FIXED (expired, revoked, not accepted) and an unreachable
   // AEAT is WAITED OUT. Factless like the three above: the raw transport failure is painted
-  // beside the sentence, out of `aeat.error`, never interpolated into it.
+  // beside the sentence, out of `aeat.detail` — its own slot, because `error` on this road is the
+  // engine's PROSE — and never interpolated into it.
   'aeat_tls_rejected',
   'aeat_unreachable',
 ] as const;

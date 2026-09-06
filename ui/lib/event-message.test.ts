@@ -477,7 +477,7 @@ describe('reason parity — every code the engine emits, in both languages (hub#
       gateway_ready: [],
       issuer_nif_missing: [],
       // hub#1580 — the own road's call to the AEAT. Factless for the same reason: the raw
-      // transport failure is painted BESIDE the sentence, out of `aeat.error`, never inside it.
+      // transport failure is painted BESIDE the sentence, out of `aeat.detail`, never inside it.
       aeat_tls_rejected: [],
       aeat_unreachable: [],
     };
