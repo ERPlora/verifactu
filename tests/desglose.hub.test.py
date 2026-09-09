@@ -50,6 +50,7 @@ own: without a runtime it fails, it does not skip.
 """
 
 import sys
+import time
 
 import hub_harness
 from hub_harness import (
@@ -64,6 +65,11 @@ from hub_harness import (
     issue_ticket,
     wait_for_record,
 )
+
+#: One relay tick, plus slack. `wait_for_record` can only wait FOR a record; a NEGATIVE («the
+#: second ingestion added none») never resolves by polling, so the relay is given time to have
+#: written one and the result is read outright afterwards.
+RELAY_TICK = 2.5
 
 
 def key_of(entry: dict) -> tuple:
@@ -405,6 +411,68 @@ def test_a_sale_wide_discount_is_spread_across_rates(hub: Hub, cash: str) -> Non
     )
 
 
+def test_the_same_invoice_ingested_twice_seals_one_record(hub: Hub) -> None:
+    """The same invoice ingested TWICE must leave exactly ONE record — and must not burn a
+    sequence number on the way (verifactu#99).
+
+    An invoice reaches this module through `invoice.created`, but that is not the only way in:
+    `records.ingest_invoice` is a PUBLIC command (`verifactu.manage_verifactu`), the outbox retries
+    a listener whose first delivery failed, and since ERPlora/sales#272 a shop can register its own
+    sale over the public API — so «the same invoice arrives twice» is an ordinary event, not an
+    exotic one.
+
+    Two ways to fail, and both are non-compliance:
+
+      1. **A second record.** `verifactu_record` is a chained ledger under RD 1007/2023: every row
+         hashes the previous one. A duplicate is not a spare row, it is a second entry in an
+         immutable chain, and a fiscal record has no undo (ADR-0189). `uq_verifactu_record`
+         (`hub_id, issuer_nif, invoice_number, invoice_date, record_type`) is what stops it; this
+         is what EXERCISES it — until now the index was asserted by nothing.
+
+      2. 🔴 **A burnt sequence number.** Subtler and just as bad: a second ingestion that takes the
+         next `sequence_number` and only THEN hits the unique index leaves a hole in the chain, and
+         a chain with a hole is exactly what the AEAT reads as tampering. Asserting «still one row»
+         alone would pass while that happened, so the next record's number is asserted too. It is
+         the same failure `invoice/tests/from_sale.hub.test.py` §3 pins for ticket numbering.
+    """
+    print("\n§7 · the same invoice ingested twice seals ONE record, and burns no number")
+    invoice = issue_ticket(hub, "twice", [("Caña", 1, 1000, 21.0, "restaurant.alcohol")])
+    record = wait_for_record(hub, invoice["id"])
+    sealed_id = record["id"]
+    sealed_sequence = int(record["sequence_number"])
+    # Counted by the invoice's OWN number, not by a hub-wide total: `issue_ticket` mints a fresh
+    # series per run (`unique_series`), so this number belongs to this case alone and the count is
+    # exact on a hub SHARED with every other run this battery has ever had. `by_invoice` cannot do
+    # it — its SQL is `LIMIT 1`, so it would answer «one» even if there were two.
+    sealed_number = record["invoice_number"]
+    records_of_this_invoice = lambda: hub.query(
+        "verifactu.records.list", {"f_invoice_number": sealed_number}
+    )
+    hub.check("one record for this invoice to begin with", len(records_of_this_invoice()), 1)
+
+    # The second arrival, through the public door the listener itself uses.
+    hub.command("verifactu.records.ingest_invoice", {"invoice_id": invoice["id"]})
+    # Whatever the answer was — a refusal, a no-op — what matters is what it LEFT. The relay gets
+    # its tick so a second record would have had time to land, and then we look.
+    time.sleep(RELAY_TICK)
+
+    again = records_of_this_invoice()
+    hub.check("the invoice still has exactly one record", len(again), 1)
+    if len(again) == 1:
+        hub.check("…and it is the SAME record, not a fresh seal", again[0]["id"], sealed_id)
+
+    # And the chain closed over it: the next invoice takes the very next number. A gap here would
+    # be a hole in a hash chain the AEAT reads as tampering.
+    next_record = wait_for_record(
+        hub,
+        issue_ticket(hub, "after-twice", [("Caña", 1, 1000, 21.0, "restaurant.alcohol")])["id"],
+    )
+    hub.check(
+        "the next record takes the next number: no sequence was burnt",
+        int(next_record["sequence_number"]),
+        sealed_sequence + 1,
+    )
+
 def wait_for_auto_f2(hub: Hub, timeout: float = 20.0):
     """The auto-F2 the relay mints for the sale just completed. Scoped to THIS run by the invoice's
     own `source_id`: `sales.complete_sale` returns the sale id in `new_ids`, and `invoice.by_source`
@@ -440,6 +508,7 @@ def main() -> int:
     test_an_exempt_service_and_a_zero_rated_sale_never_share_a_line(hub)
     test_the_quota_closes_once_per_fiscal_key_not_per_line(hub)
     test_a_sale_wide_discount_is_spread_across_rates(hub, cash)
+    test_the_same_invoice_ingested_twice_seals_one_record(hub)
     return hub.finish(
         "what `invoice` writes is what the VeriFactu record seals, to the cent, through the real "
         "native engine"
