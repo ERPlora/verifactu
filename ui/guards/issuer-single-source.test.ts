@@ -107,27 +107,24 @@ describe('the screen stops inviting a second, divergent taxpayer', () => {
     expect(settingsUi).not.toMatch(/Mi Empresa SL/);
   });
 
-  it('the issuer is shown read-only, not as an editable input', () => {
+  it('the issuer is not asked for here — nor mirrored', () => {
     // The two `ion-input`s that wrote `issuer_nif` / `issuer_name` are gone: the value is not
     // owned here, so it cannot be typed here.
     expect(settingsUi).not.toMatch(/set\(\s*'issuer_nif'/);
     expect(settingsUi).not.toMatch(/set\(\s*'issuer_name'/);
-    // …and it is displayed with a pointer to where it IS changed.
-    expect(settingsUi).toMatch(/obligadoFromHub/);
-    for (const locale of ['en', 'es']) {
-      const catalog = JSON.parse(read('locales', `${locale}.json`)) as Record<string, Record<string, string>>;
-      expect(catalog.ui.obligadoFromHub ?? '').not.toBe('');
-    }
+    // 13/09: and the read-only copy went too. A mirror that cannot be acted on is noise in front of
+    // the controls that can; what is missing is said by the shell's «you cannot invoice yet» strip,
+    // which the manifest's `setup` block feeds, and it takes the owner to where it is fixed.
+    expect(settingsUi).not.toMatch(/obligadoFromHub/);
   });
 });
 
 describe('the pointers land on the tab that actually has the fix', () => {
-  it('setup.route points at the Business tab, not General', () => {
-    expect(manifest.setup.route).toBe('/settings#tax');
+  it('setup.route points at the module Configuración, where what is missing is completed', () => {
+    expect(manifest.setup.route).toBe('/m/verifactu/config');
   });
 
-  it('the screen link points at the Business tab too', () => {
-    expect(settingsUi).toMatch(/'\/settings#tax'/);
+  it('no link on the screen lands on a bare /settings (it degrades to the General tab)', () => {
     expect(settingsUi).not.toMatch(/pushState\(\{\}, '', '\/settings'\)/);
   });
 });

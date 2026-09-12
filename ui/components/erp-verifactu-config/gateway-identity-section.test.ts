@@ -1,4 +1,8 @@
-// verifactu#76 — the enrolment section of the module's settings screen.
+// verifactu#76 — the enrolment section, on the module's CONFIGURATION screen (tab «Lo remite ERPlora»).
+//
+// It lived in Ajustes until Ajustes was cut down to what is switched on and off; the machine
+// identity is the other half of what lets ERPlora file for the business, so it moved next to the
+// representation grant. Same behaviour, same rules, another screen.
 //
 // The state and the vocabulary are pinned in `ui/lib/gateway-identity.test.ts`; this file pins
 // what the SCREEN does with them: that it reads the door on open, that the one button says the one
@@ -8,7 +12,7 @@
 // The component is imported STATICALLY on purpose (verifactu#31): a dynamic import inside a test
 // charges the whole OutfitKit/SDK transform to that test's 5 s budget.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import './erp-verifactu-settings';
+import './erp-verifactu-config';
 import { HUB_SESSION_KEY } from '../../lib/gateway-identity';
 
 const IDENTITY = '/api/business/gateway-identity';
@@ -53,11 +57,15 @@ afterEach(() => {
 });
 
 async function mount() {
-  const el = document.createElement('erp-verifactu-settings');
+  window.history.pushState({}, '', '/m/verifactu/config#delegated');
+  const el = document.createElement('erp-verifactu-config');
   document.body.appendChild(el);
-  await (el as unknown as { updateComplete: Promise<unknown> }).updateComplete;
-  await new Promise((resolve) => setTimeout(resolve, 0));
-  await (el as unknown as { updateComplete: Promise<unknown> }).updateComplete;
+  const wc = el as unknown as { updateComplete: Promise<unknown> };
+  for (let i = 0; i < 4; i += 1) {
+    await wc.updateComplete;
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  }
+  await wc.updateComplete;
   return el as HTMLElement & { shadowRoot: ShadowRoot };
 }
 
@@ -187,11 +195,13 @@ describe('the gateway identity is shown and asked for from this screen (verifact
     expect(gwButton(el), 'an unreadable identity was offered an enrolment anyway').toBeUndefined();
   });
 
-  it('never lets the identity read blank the configuration the owner came to change', async () => {
+  it('never lets the identity read blank the rest of the tab', async () => {
     serve(null);
     const el = await mount();
-    expect((el as unknown as { error: string }).error, 'a side read took over the screen-wide error slot').toBe('');
-    expect(el.shadowRoot.textContent ?? '', 'the configuration form disappeared').toContain('ui.enableVerifactu');
+    expect(
+      el.shadowRoot.querySelector('[data-testid="config-grant"]'),
+      'an unreadable identity took the representation grant down with it',
+    ).toBeTruthy();
   });
 
   it('every string it paints has both catalogues (en + es)', async () => {
@@ -250,8 +260,10 @@ describe('the machine identity is only shown on the road that uses it (verifactu
     expect(gwButton(el), 'an own-certificate hub was offered an enrolment it must never need').toBeUndefined();
     expect(calls.map((c) => c.path), 'the screen read an identity it was never going to paint')
       .not.toContain(IDENTITY);
-    expect(el.shadowRoot.textContent ?? '', 'the rest of the screen went away with the section')
-      .toContain('ui.enableVerifactu');
+    expect(
+      el.shadowRoot.querySelector('[data-testid="config-grant"]'),
+      'the rest of the tab went away with the section',
+    ).toBeTruthy();
   });
 
   it('a DELEGATED hub sees it whole, exactly as before', async () => {

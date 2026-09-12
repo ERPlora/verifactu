@@ -209,22 +209,19 @@ describe('a refused save says what was refused (verifactu#40)', () => {
 // browser-side identity may only SUBTRACT, never grant). Claiming «denied» before a refusal would
 // be inventing a fact — so the row states the requirement, and only a real `capability_denied`
 // turns it into a denial.
-/** The prerequisite row's status pill — the one whose label belongs to the capability block. */
-function capabilityPill(el: HTMLElement & { shadowRoot: ShadowRoot }): Element | undefined {
-  return [...el.shadowRoot.querySelectorAll('ok-status-pill')].find((p) =>
-    ['ui.capabilityPending', 'ui.capabilityDenied'].includes(p.getAttribute('label') ?? ''));
-}
 
 describe('the signing permission is named at the point of use (verifactu#62)', () => {
-  it('lists the permission as a prerequisite, with the way to grant it', async () => {
+  // 13/09: the permanent prerequisite row was a MIRROR of Settings → Permissions — it could not be
+  // acted on here, and it sat in front of the three controls that can. What stays is the part that
+  // was never a mirror: the moment the runtime PROVES the refusal, the screen says so, with the way
+  // to grant it. Before that it says nothing — the module cannot read the grant, and a «denied» it
+  // has not been told would be inventing a fact.
+  it('says nothing about the permission until the runtime has refused it', async () => {
     const el = await mount();
-    const text = el.shadowRoot.textContent ?? '';
-    expect(text, 'the screen never mentions the permission VeriFactu needs to sign').toContain('ui.capabilityTitle');
-    expect(text, 'the screen says what is missing but offers no way to fix it').toContain('ui.capabilityGoPermissions');
-    // Neutral until the runtime says otherwise: the module cannot read the grant, and painting a
-    // red «denied» it has not been told would be inventing a fact.
-    expect(capabilityPill(el)?.getAttribute('tone')).toBe('neutral');
-    expect(capabilityPill(el)?.getAttribute('label')).toBe('ui.capabilityPending');
+    expect(
+      el.shadowRoot.querySelector('ok-inline-feedback[heading="ui.capabilityTitle"]'),
+      'a permission nobody has refused yet was painted as a problem',
+    ).toBeNull();
   });
 
   it('the CTA lands on Settings → Permissions, not on Settings → General', async () => {
@@ -260,11 +257,14 @@ describe('the signing permission is named at the point of use (verifactu#62)', (
     // The catalogue KEY is allowed to contain the word (`ui.errCapabilityDenied`); what must never
     // reach a person is the runtime's own sentence, which names the raw capability id.
     expect(wc.error, 'the runtime prose reached the operator untranslated').not.toMatch(/permiso del módulo|`certificate`/i);
-    expect(wc.capabilityDenied, 'a proven refusal left the prerequisite row neutral').toBe(true);
-    // The pill carries its label as an ATTRIBUTE, like the two prerequisites above it, so this is
-    // what «the row turned red» means in the DOM.
-    expect(capabilityPill(el)?.getAttribute('label')).toBe('ui.capabilityDenied');
-    expect(capabilityPill(el)?.getAttribute('tone')).toBe('danger');
+    expect(wc.capabilityDenied, 'a proven refusal was not recorded').toBe(true);
+    // …and the refusal is SHOWN, with the way to grant it: a denial nobody sees is the silence
+    // verifactu#62 was opened for.
+    // The notice carries its title as the `heading` ATTRIBUTE of `ok-inline-feedback`, so that is
+    // where «the refusal is on the screen» is read; the way to fix it is its slotted text.
+    const notice = el.shadowRoot.querySelector('ok-inline-feedback[heading="ui.capabilityTitle"]');
+    expect(notice, 'the proven refusal is not on the screen').toBeTruthy();
+    expect(notice?.textContent ?? '', 'the screen names the refusal but offers no way to fix it').toContain('ui.capabilityGoPermissions');
   });
 
   it('a save that turns VeriFactu ON says what still has to be granted for it to sign', async () => {
@@ -319,18 +319,10 @@ describe('the signing permission is named at the point of use (verifactu#62)', (
 // `certificate::route_of`, answered by the core and PAINTED here — never a second deduction of the
 // same fact, which is how a screen and a production gate end up disagreeing about a business.
 //
-// The module reflects, it does not own: the grant is signed in Ajustes → Negocio (`/settings#tax`),
-// where the runtime composes the Anexo I and a person at ERPlora approves it (ADR-0320 §5).
+// 13/09: the road is now the «Use my own certificate» switch of this screen, and the grant is
+// signed in Configuración → «Lo remite ERPlora» (`/m/verifactu/config#delegated`). The invariant this
+// block pins did not move with them: the road is READ from the core, never deduced.
 const DEFAULT_CONFIG = { issuer_nif: 'B12345678', environment: 'testing', has_certificate: 1 };
-
-/** Every grant state the core publishes (`fiscal_profile::REPRESENTATION_*`), by its label. */
-const GRANT_LABELS: Record<string, string> = {
-  vigente: 'ui.grantVigente',
-  pendiente: 'ui.grantPendiente',
-  rechazado: 'ui.grantRechazado',
-  revocado: 'ui.grantRevocado',
-  absent: 'ui.grantAbsent',
-};
 
 /** Mounts with the core query answering `row`; `null` = the runtime does not publish it. */
 async function mountWithRoute(row: Record<string, unknown> | null, cfg: Record<string, unknown> = {}) {
@@ -348,17 +340,9 @@ async function mountWithRoute(row: Record<string, unknown> | null, cfg: Record<s
   return { el, asked };
 }
 
-/** The pill that belongs to the OWN-certificate prerequisite row. */
-function certPill(el: HTMLElement & { shadowRoot: ShadowRoot }): Element | undefined {
-  return [...el.shadowRoot.querySelectorAll('ok-status-pill')].find((p) =>
-    ['ui.certLoaded', 'ui.certNotConfigured', 'ui.certNotNeeded'].includes(p.getAttribute('label') ?? ''));
-}
-
-/** The pill of the representation-grant row, whichever state it is in. */
-function grantPill(el: HTMLElement & { shadowRoot: ShadowRoot }): Element | undefined {
-  const states = Object.values(GRANT_LABELS);
-  return [...el.shadowRoot.querySelectorAll('ok-status-pill')].find((p) =>
-    states.includes(p.getAttribute('label') ?? ''));
+/** The «Use my own certificate» switch — the road, as this screen shows it. */
+function ownSwitch(el: HTMLElement & { shadowRoot: ShadowRoot }): Element | null {
+  return el.shadowRoot.querySelector('[data-testid="settings-own-certificate"]');
 }
 
 /** The «Send test» button — the first action of the live-test card. */
@@ -372,59 +356,20 @@ describe('the filing route is read from the core, never deduced (verifactu#41)',
     expect(asked, 'the screen never asked the core which road this hub is on').toContain('hub.fiscal.transmission');
   });
 
-  it('names the OWN route with the same words as Settings → Business', async () => {
+  it('the OWN road switches «use my own certificate» ON', async () => {
     const { el } = await mountWithRoute({ transmission_route: 'own' });
-    const text = el.shadowRoot.textContent ?? '';
-    expect(text, 'the screen does not say which road the records take').toContain('ui.routeTitle');
-    expect(text).toContain('ui.routeOwn');
-    expect(text, 'the own route was described as the delegated one').not.toContain('ui.routeDelegated');
+    expect(ownSwitch(el)?.hasAttribute('checked'), 'the own road was shown as the delegated one').toBe(true);
   });
 
-  it('names the DELEGATED route, and does not claim a certificate the business has not got', async () => {
+  it('the DELEGATED road leaves it OFF, even though :has_certificate says 1', async () => {
     // The hub#1489 case, exactly: a road (so `:has_certificate` is 1) and zero certificates.
     const { el } = await mountWithRoute({ transmission_route: 'delegated', representation_status: 'vigente' });
-    expect(el.shadowRoot.textContent ?? '').toContain('ui.routeDelegated');
-    expect(certPill(el)?.getAttribute('label'), 'a hub with no .p12 was told its certificate is loaded')
-      .not.toBe('ui.certLoaded');
-    expect(certPill(el)?.getAttribute('tone'), 'the missing certificate was painted as a success').not.toBe('success');
+    expect(ownSwitch(el)?.hasAttribute('checked'), 'a hub with no .p12 was told it files with its own').toBe(false);
   });
 
-  it('shows the grant state and its date, ONLY on the delegated route', async () => {
-    const { el } = await mountWithRoute({
-      transmission_route: 'delegated',
-      representation_status: 'pendiente',
-      representation_at: '2026-08-11T09:00:00Z',
-    });
-    const text = el.shadowRoot.textContent ?? '';
-    expect(text, 'the grant state is missing on the road that depends on it').toContain('ui.grantTitle');
-    // The state travels as the pill's ATTRIBUTE, like every other prerequisite on this screen.
-    expect(grantPill(el)?.getAttribute('label')).toBe('ui.grantPendiente');
-    expect(text, 'the grant carries no date, so nobody can tell a fresh upload from a stale one')
-      .toContain('ui.grantSince');
-    expect(
-      [...el.shadowRoot.querySelectorAll('.kv code')].map((c) => c.textContent ?? ''),
-      'the grant date is labelled but never printed',
-    ).toContainEqual(expect.stringContaining('2026'));
-
-    const own = await mountWithRoute({ transmission_route: 'own', representation_status: 'absent' });
-    expect(own.el.shadowRoot.textContent ?? '', 'a hub with its own certificate was asked for a grant it does not need')
-      .not.toContain('ui.grantTitle');
-  });
-
-  it.each([
-    ['vigente', GRANT_LABELS.vigente, 'success'],
-    ['pendiente', GRANT_LABELS.pendiente, 'warning'],
-    ['rechazado', GRANT_LABELS.rechazado, 'danger'],
-    ['revocado', GRANT_LABELS.revocado, 'danger'],
-    ['absent', GRANT_LABELS.absent, 'warning'],
-    // `''` is «never asked» and `absent` is «asked, there is none». Same row: the difference is
-    // real for the runtime and means the same one thing to whoever has to sign it.
-    ['', GRANT_LABELS.absent, 'warning'],
-  ])('paints the grant state `%s` as %s', async (status, key, tone) => {
-    const { el } = await mountWithRoute({ transmission_route: 'delegated', representation_status: status });
-    const pill = [...el.shadowRoot.querySelectorAll('ok-status-pill')].find((p) => p.getAttribute('label') === key);
-    expect(pill, `the grant state \`${status}\` is not painted`).toBeTruthy();
-    expect(pill!.getAttribute('tone')).toBe(tone);
+  it('the grant is not painted here any more: it lives in Configuración', async () => {
+    const { el } = await mountWithRoute({ transmission_route: 'delegated', representation_status: 'pendiente' });
+    expect(el.shadowRoot.textContent ?? '', 'the grant is back on the settings screen').not.toContain('ui.grantTitle');
   });
 
   // This assertion used to read the other way round — «does not offer a live test the delegated
@@ -446,11 +391,15 @@ describe('the filing route is read from the core, never deduced (verifactu#41)',
     expect(testButton(el)?.hasAttribute('disabled')).toBe(false);
   });
 
-  it('the route CTA lands on Settings → Business (#tax), where the grant is signed', async () => {
-    window.history.pushState({}, '', '/m/verifactu');
-    const { el } = await mountWithRoute({ transmission_route: 'delegated' });
-    (el as unknown as { goToSettings: () => void }).goToSettings();
-    expect(window.location.pathname + window.location.hash).toBe('/settings#tax');
+  it('the road CTA lands on Configuración, in the tab of the road the hub is on', async () => {
+    window.history.pushState({}, '', '/m/verifactu/settings');
+    const delegated = await mountWithRoute({ transmission_route: 'delegated' });
+    (delegated.el as unknown as { goConfig: (t: string) => void }).goConfig('delegated');
+    expect(window.location.pathname + window.location.hash).toBe('/m/verifactu/config#delegated');
+
+    const own = await mountWithRoute({ transmission_route: 'own' });
+    (own.el as unknown as { goConfig: (t: string) => void }).goConfig('own');
+    expect(window.location.pathname + window.location.hash).toBe('/m/verifactu/config#own');
   });
 
   it('degrades to the old certificate reading when the runtime does not publish the route', async () => {
@@ -458,8 +407,7 @@ describe('the filing route is read from the core, never deduced (verifactu#41)',
     // «own certificate», and the pre-hub#1489 rendering is the CORRECT one there. Inventing a route
     // would be the second deduction this issue exists to remove.
     const { el } = await mountWithRoute(null);
-    expect(el.shadowRoot.textContent ?? '', 'a route the core did not publish was made up').toContain('ui.routeUnknown');
-    expect(certPill(el)?.getAttribute('label')).toBe('ui.certLoaded');
+    expect(ownSwitch(el)?.hasAttribute('checked'), 'the pre-hub#1489 reading was not the one used').toBe(true);
     expect(testButton(el)?.hasAttribute('disabled')).toBe(false);
   });
 
@@ -475,7 +423,7 @@ describe('the filing route is read from the core, never deduced (verifactu#41)',
     const el = await mount();
     const wc = el as unknown as { error: string };
     expect(wc.error, 'a route the screen only REFLECTS took over the screen-wide error slot').toBe('');
-    expect(el.shadowRoot.textContent ?? '').toContain('ui.routeUnknown');
+    expect(ownSwitch(el), 'a refused read took the road switch down with it').toBeTruthy();
   });
 
   it('every string it paints has both catalogues (en + es)', async () => {

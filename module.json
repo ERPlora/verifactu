@@ -78,6 +78,12 @@
       "component": "erp-verifactu-recovery"
     },
     {
+      "id": "config",
+      "label": "Configuration",
+      "icon": "key-outline",
+      "component": "erp-verifactu-config"
+    },
+    {
       "id": "settings",
       "label": "Settings",
       "icon": "settings-outline",
@@ -100,7 +106,7 @@
     "title": "Configura VeriFactu",
     "description": "Activa VeriFactu y sube el certificado del negocio en Ajustes para enviar facturas a la AEAT.",
     "icon": "shield-checkmark-outline",
-    "route": "/settings#tax",
+    "route": "/m/verifactu/config",
     "permission": "verifactu.configure_verifactu"
   },
   "migrations": {
