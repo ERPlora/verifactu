@@ -7076,7 +7076,6 @@ var ErpVerifactuRecovery = class extends i3 {
     this.busy = "";
     this.error = "";
     this.done = "";
-    this.pendingRecovery = null;
     this.onLocaleChange = () => this.requestUpdate();
   }
   static {
@@ -7184,12 +7183,41 @@ var ErpVerifactuRecovery = class extends i3 {
       return;
     }
     this.error = "";
-    this.pendingRecovery = kind;
+    void this.confirmRecovery(kind);
   }
-  async onRecoveryDismiss(ev) {
-    const kind = this.pendingRecovery;
-    this.pendingRecovery = null;
-    if (ev.detail?.role !== "confirm" || !kind) return;
+  /**
+   * verifactu#112 — the confirmation is a DOCUMENT-level overlay, never an alert element declared in
+   * this template. Declared inside the shadow root it painted only the backdrop (Ionic styles `ion-alert`
+   * from the document): the screen went black and the chain could never be recovered. Same shape as
+   * `sales` asking to void a sale; `ui/guards/ion-alert-not-in-shadow-root.test.ts` keeps it so.
+   */
+  async confirmRecovery(kind) {
+    const t5 = (k2) => erplora6().t(CATALOG6, k2);
+    const alert = document.createElement("ion-alert");
+    alert.header = kind === "manual" ? t5("ui.recConfirmManualTitle") : t5("ui.recConfirmAeatTitle");
+    alert.message = kind === "manual" ? t5("ui.recConfirmManualMessage") : t5("ui.recConfirmAeatMessage");
+    alert.buttons = [
+      { text: t5("ui.recCancel"), role: "cancel" },
+      { text: t5("ui.recConfirmAction"), role: "confirm", cssClass: "alert-button-warning" }
+    ];
+    alert.addEventListener(
+      "ionAlertDidDismiss",
+      (ev) => {
+        alert.remove();
+        void this.onRecoveryDismiss(kind, ev);
+      },
+      { once: true }
+    );
+    document.body.appendChild(alert);
+    try {
+      if (typeof alert.present === "function") await alert.present();
+      else alert.isOpen = true;
+    } catch {
+      alert.remove();
+    }
+  }
+  async onRecoveryDismiss(kind, ev) {
+    if (ev.detail?.role !== "confirm") return;
     if (kind === "aeat") await this.recoverAeat();
     else await this.recoverManual();
   }
@@ -7275,16 +7303,6 @@ var ErpVerifactuRecovery = class extends i3 {
       <div class="actions">
         <ion-button color="warning" ?disabled=${blocked} @click=${() => this.requestRecovery("manual")}>${this.busy === "recoverManual" ? t5("ui.recRecovering") : t5("ui.recRecoverManual")}</ion-button>
       </div>
-      <ion-alert
-        .isOpen=${this.pendingRecovery !== null}
-        header=${this.pendingRecovery === "manual" ? t5("ui.recConfirmManualTitle") : t5("ui.recConfirmAeatTitle")}
-        message=${this.pendingRecovery === "manual" ? t5("ui.recConfirmManualMessage") : t5("ui.recConfirmAeatMessage")}
-        .buttons=${[
-      { text: t5("ui.recCancel"), role: "cancel" },
-      { text: t5("ui.recConfirmAction"), role: "confirm", cssClass: "alert-button-warning" }
-    ]}
-        @ionAlertDidDismiss=${(e6) => this.onRecoveryDismiss(e6)}
-      ></ion-alert>
     `;
   }
 };
@@ -7312,9 +7330,6 @@ __decorateClass([
 __decorateClass([
   r5()
 ], ErpVerifactuRecovery.prototype, "done", 2);
-__decorateClass([
-  r5()
-], ErpVerifactuRecovery.prototype, "pendingRecovery", 2);
 define("erp-verifactu-recovery", ErpVerifactuRecovery);
 
 // ui/lib/quantity.ts

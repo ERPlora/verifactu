@@ -77,7 +77,6 @@ export class ErpVerifactuRecovery extends LitElement {
 
   @state() done = '';
 
-  @state() private pendingRecovery: 'aeat' | 'manual' | null = null;
 
   private ctrl!: ListController<AeatRecord>;
 
@@ -184,13 +183,51 @@ export class ErpVerifactuRecovery extends LitElement {
       return;
     }
     this.error = '';
-    this.pendingRecovery = kind;
+    void this.confirmRecovery(kind);
   }
 
-  private async onRecoveryDismiss(ev: CustomEvent<{ role?: string }>) {
-    const kind = this.pendingRecovery;
-    this.pendingRecovery = null;
-    if (ev.detail?.role !== 'confirm' || !kind) return;
+  /**
+   * verifactu#112 — the confirmation is a DOCUMENT-level overlay, never an alert element declared in
+   * this template. Declared inside the shadow root it painted only the backdrop (Ionic styles `ion-alert`
+   * from the document): the screen went black and the chain could never be recovered. Same shape as
+   * `sales` asking to void a sale; `ui/guards/ion-alert-not-in-shadow-root.test.ts` keeps it so.
+   */
+  private async confirmRecovery(kind: 'aeat' | 'manual'): Promise<void> {
+    const t = (k: string): string => erplora().t(CATALOG, k);
+    const alert = document.createElement('ion-alert') as HTMLElement & {
+      header?: string;
+      message?: string;
+      buttons?: Array<{ text: string; role?: string; cssClass?: string }>;
+      isOpen?: boolean;
+      present?: () => Promise<void>;
+    };
+    alert.header = kind === 'manual' ? t('ui.recConfirmManualTitle') : t('ui.recConfirmAeatTitle');
+    alert.message = kind === 'manual' ? t('ui.recConfirmManualMessage') : t('ui.recConfirmAeatMessage');
+    alert.buttons = [
+      { text: t('ui.recCancel'), role: 'cancel' },
+      { text: t('ui.recConfirmAction'), role: 'confirm', cssClass: 'alert-button-warning' },
+    ];
+    alert.addEventListener(
+      'ionAlertDidDismiss',
+      (ev) => {
+        alert.remove();
+        void this.onRecoveryDismiss(kind, ev as CustomEvent<{ role?: string }>);
+      },
+      { once: true },
+    );
+    document.body.appendChild(alert);
+    try {
+      if (typeof alert.present === 'function') await alert.present();
+      else alert.isOpen = true;
+    } catch {
+      // An overlay that cannot open must not stay in the document half-built: without it nothing
+      // is recovered, which is the safe outcome for a fiscal chain.
+      alert.remove();
+    }
+  }
+
+  private async onRecoveryDismiss(kind: 'aeat' | 'manual', ev: CustomEvent<{ role?: string }>) {
+    if (ev.detail?.role !== 'confirm') return;
     if (kind === 'aeat') await this.recoverAeat();
     else await this.recoverManual();
   }
@@ -271,16 +308,6 @@ export class ErpVerifactuRecovery extends LitElement {
       <div class="actions">
         <ion-button color="warning" ?disabled=${blocked} @click=${() => this.requestRecovery('manual')}>${this.busy === 'recoverManual' ? t('ui.recRecovering') : t('ui.recRecoverManual')}</ion-button>
       </div>
-      <ion-alert
-        .isOpen=${this.pendingRecovery !== null}
-        header=${this.pendingRecovery === 'manual' ? t('ui.recConfirmManualTitle') : t('ui.recConfirmAeatTitle')}
-        message=${this.pendingRecovery === 'manual' ? t('ui.recConfirmManualMessage') : t('ui.recConfirmAeatMessage')}
-        .buttons=${[
-          { text: t('ui.recCancel'), role: 'cancel' },
-          { text: t('ui.recConfirmAction'), role: 'confirm', cssClass: 'alert-button-warning' },
-        ]}
-        @ionAlertDidDismiss=${(e: CustomEvent<{ role?: string }>) => this.onRecoveryDismiss(e)}
-      ></ion-alert>
     `;
   }
 }
