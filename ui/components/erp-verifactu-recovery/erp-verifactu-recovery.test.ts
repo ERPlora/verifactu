@@ -54,28 +54,73 @@ describe('VeriFactu recovery safety', () => {
     }
   });
 
-  it('does not recover from AEAT before contextual confirmation', async () => {
+  // verifactu#112 — Ioan, 2026-09-13 on banco-pre: «Recuperar cadena desde la AEAT» left the screen
+  // BLACK. The confirmation was an <ion-alert> declared inside this component's shadow root: the
+  // backdrop painted, the dialog did not (Ionic styles `ion-alert` from the document, which does not
+  // reach a shadow root), so nobody could confirm or cancel and the chain was never recovered. The
+  // accessibility tree still listed both buttons, which is why a structural test kept passing.
+  // Contract: the confirmation is a document-level overlay, the same way `sales` asks to void a sale.
+
+  type Alert = HTMLElement & { header?: string; message?: string; buttons?: Array<{ text: string; role?: string }> };
+  const openAlert = () => document.body.querySelector(':scope > ion-alert') as Alert | null;
+  const dismiss = (alert: Alert, role: string) =>
+    alert.dispatchEvent(new CustomEvent('ionAlertDidDismiss', { detail: { role } }));
+  const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+  it('asks for confirmation OUTSIDE its shadow root before recovering from the AEAT', async () => {
     const el = await mount();
-    const wc = el as unknown as {
-      requestRecovery: (kind: 'aeat') => void;
-      onRecoveryDismiss: (ev: CustomEvent<{ role: string }>) => Promise<void>;
-      updateComplete: Promise<unknown>;
-    };
+    const wc = el as unknown as { requestRecovery: (kind: 'aeat') => void; updateComplete: Promise<unknown> };
     wc.requestRecovery('aeat');
     await wc.updateComplete;
+    await settle();
 
-    const alert = el.shadowRoot.querySelector('ion-alert') as HTMLElement & {
-      isOpen: boolean;
-    };
-    expect(alert.isOpen).toBe(true);
-    expect(alert.getAttribute('message')).toBe('ui.recConfirmAeatMessage');
-    expect(commands).toEqual([]);
+    expect(el.shadowRoot.querySelector('ion-alert'), 'never inside the shadow root: it renders black').toBeNull();
+    const alert = openAlert();
+    expect(alert, 'a document-level confirmation is open').toBeTruthy();
+    expect(alert!.header).toBe('ui.recConfirmAeatTitle');
+    expect(alert!.message).toBe('ui.recConfirmAeatMessage');
+    expect(alert!.buttons?.map((b) => b.role)).toEqual(['cancel', 'confirm']);
+    expect(commands, 'nothing runs before the confirmation').toEqual([]);
 
-    await wc.onRecoveryDismiss(new CustomEvent('dismiss', { detail: { role: 'confirm' } }));
+    dismiss(alert!, 'confirm');
+    await settle();
     expect(commands).toContainEqual({
       name: 'verifactu.recovery.from_aeat',
       payload: { issuer_nif: 'B12345678' },
     });
+    expect(openAlert(), 'the confirmation leaves the document once answered').toBeNull();
+  });
+
+  it('cancelling the confirmation recovers nothing and closes it', async () => {
+    const el = await mount();
+    const wc = el as unknown as { requestRecovery: (kind: 'aeat') => void; updateComplete: Promise<unknown> };
+    wc.requestRecovery('aeat');
+    await wc.updateComplete;
+    await settle();
+
+    dismiss(openAlert()!, 'cancel');
+    await settle();
+    expect(commands).toEqual([]);
+    expect(openAlert()).toBeNull();
+  });
+
+  it('the manual recovery goes through the same visible confirmation', async () => {
+    const el = await mount();
+    const wc = el as unknown as {
+      manualHash: string;
+      requestRecovery: (kind: 'manual') => void;
+      updateComplete: Promise<unknown>;
+    };
+    wc.manualHash = 'A'.repeat(64);
+    wc.requestRecovery('manual');
+    await wc.updateComplete;
+    await settle();
+
+    const alert = openAlert();
+    expect(alert!.header).toBe('ui.recConfirmManualTitle');
+    dismiss(alert!, 'confirm');
+    await settle();
+    expect(commands.map((c) => c.name)).toContain('verifactu.recovery.manual');
   });
 
   it('rejects an invalid manual hash before opening confirmation', async () => {
@@ -88,9 +133,10 @@ describe('VeriFactu recovery safety', () => {
     wc.manualHash = 'not-a-hash';
     wc.requestRecovery('manual');
     await wc.updateComplete;
+    await settle();
 
-    const alert = el.shadowRoot.querySelector('ion-alert') as HTMLElement & { isOpen: boolean };
-    expect(alert.isOpen).toBe(false);
+    expect(openAlert(), 'no confirmation for a hash that cannot be used').toBeNull();
+    expect(el.shadowRoot.querySelector('ion-alert')).toBeNull();
     expect(commands).toEqual([]);
   });
 });
