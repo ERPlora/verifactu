@@ -242,6 +242,46 @@ SCREEN_PAYLOAD = {
 }
 
 
+def test_a_hub_that_never_saved_reads_the_hub_issuer_before_its_first_save() -> None:
+    """verifactu#107: the FIRST activation of a hub.
+
+    The settings screen reads `config.get` and refuses to even send `config.save` when the
+    effective issuer comes back empty. `config_get.sql` selected FROM `verifactu_config`, so a hub
+    that had never saved got ZERO rows - the fallback to the hub's identity never ran - and the
+    screen told an owner with a perfectly good tax id in Ajustes -> Negocio that it had none.
+    Measured on `banco-pre` (PRE, 2026-09-13): `config.get` -> `{"data":[]}` and no command left
+    the browser. So the query must answer ONE row even with nothing stored: the hub's issuer, the
+    table's defaults, and VeriFactu still OFF."""
+    print("\nnever saved: config.get answers one row with the hub's issuer, still off")
+    psql(["-c", f"DELETE FROM verifactu_config WHERE hub_id = '{HUB}'"], db=DB)
+    row = config_get(tax_id=DEMO_TAX_ID, legal_name=DEMO_LEGAL_NAME, has_certificate=0)
+    check("config.get answers a row", False, "__error__" in row)
+    check("the effective issuer is the hub's", DEMO_TAX_ID, row.get("issuer_nif"))
+    check("the effective issuer name is the hub's", DEMO_LEGAL_NAME, row.get("issuer_name"))
+    check("VeriFactu is still off", 0, row.get("enabled"))
+    check("the environment defaults to the sandbox", "testing", row.get("environment"))
+    check("the mode defaults to verifactu", "verifactu", row.get("mode"))
+    check("the retry interval is the table default", 5, row.get("retry_interval_minutes"))
+    check("the retry budget is the table default", 10, row.get("max_retries"))
+    check("the road the runtime probed is reported", 0, row.get("has_certificate"))
+    check("nothing was written by READING", "0", q(f"SELECT count(*) FROM verifactu_config WHERE hub_id = '{HUB}'"))
+
+    # And a DIFFERENT hub's stored row never leaks into this one's answer.
+    psql(
+        [],
+        db=DB,
+        stdin=(
+            "INSERT INTO verifactu_config (id, hub_id, enabled, environment, issuer_nif, issuer_name, created_at) "
+            "VALUES ('other-cfg', '33333333-3333-4333-8333-333333333333', 1, 'production', 'B99999997', 'Otro SL', '2026-09-13');"
+        ),
+    )
+    row = config_get(tax_id=DEMO_TAX_ID, legal_name=DEMO_LEGAL_NAME, has_certificate=0)
+    check("another hub's row does not leak: issuer", DEMO_TAX_ID, row.get("issuer_nif"))
+    check("another hub's row does not leak: enabled", 0, row.get("enabled"))
+    check("another hub's row does not leak: environment", "testing", row.get("environment"))
+    psql(["-c", "DELETE FROM verifactu_config WHERE id = 'other-cfg'"], db=DB)
+
+
 def test_a_demo_hub_can_turn_verifactu_on_and_it_stays_on() -> None:
     """#40, the half the demo lives or dies by.
 
@@ -364,6 +404,7 @@ def main() -> int:
     psql(["-c", f"CREATE DATABASE {DB}"])
     try:
         load_migrations()
+        test_a_hub_that_never_saved_reads_the_hub_issuer_before_its_first_save()
         test_a_demo_hub_can_turn_verifactu_on_and_it_stays_on()
         test_a_hub_with_no_taxpayer_is_refused_and_the_refusal_names_itself()
         test_every_gate_names_itself_and_an_undeclared_one_fails_closed()
