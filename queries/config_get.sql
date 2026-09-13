@@ -13,12 +13,26 @@
 -- behalf of another. The module keeps its own column because the engine reads it (`resolve_nif`
 -- anchors the chain, recovery and diagnostics on it), so this is a FALLBACK and not an override:
 -- a column with a value still wins, an empty one resolves to the hub's single source.
-SELECT vc.id, vc.enabled, vc.mode, vc.environment,
-       vc.software_name, vc.software_version, vc.software_id, vc.software_nif,
-       COALESCE(NULLIF(vc.issuer_nif, ''), :business_tax_id)     AS issuer_nif,
+--
+-- ALWAYS ONE ROW (verifactu#107). Selecting FROM `verifactu_config` answered ZERO rows on a hub
+-- that had never saved, so the fallback above never ran: the settings screen read an empty issuer
+-- and refused the first activation of an owner whose tax id was sitting in Settings → Business.
+-- The single-row anchor LEFT JOINs this hub's stored configuration and, when there is none, answers
+-- the table's own defaults with VeriFactu still OFF — reading never writes a row.
+SELECT vc.id,
+       COALESCE(vc.enabled, 0)                                    AS enabled,
+       COALESCE(vc.mode, 'verifactu')                             AS mode,
+       COALESCE(vc.environment, 'testing')                        AS environment,
+       COALESCE(vc.software_name, 'ERPlora Hub')                  AS software_name,
+       COALESCE(vc.software_version, '1.0.0')                     AS software_version,
+       COALESCE(vc.software_id, 'ERPLORA-001')                    AS software_id,
+       COALESCE(vc.software_nif, '')                              AS software_nif,
+       COALESCE(NULLIF(vc.issuer_nif, ''), :business_tax_id)      AS issuer_nif,
        COALESCE(NULLIF(vc.issuer_name, ''), :business_legal_name) AS issuer_name,
        :has_certificate AS has_certificate,
-       vc.retry_interval_minutes, vc.max_retries
-FROM verifactu_config vc
-WHERE vc.hub_id = :hub_id AND vc.is_deleted = 0
+       COALESCE(vc.retry_interval_minutes, 5)                     AS retry_interval_minutes,
+       COALESCE(vc.max_retries, 10)                               AS max_retries
+FROM (SELECT 1 AS singleton) anchor
+LEFT JOIN verifactu_config vc
+       ON vc.hub_id = :hub_id AND vc.is_deleted = 0
 LIMIT 1;
