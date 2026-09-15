@@ -2622,6 +2622,13 @@ var es_default = {
     cfgOwnTitle: "Usar mi propio certificado",
     cfgOwnOffHint: "ERPlora remite tus registros de facturaci\xF3n a Hacienda en tu nombre, con su propio certificado. No necesitas ninguno.",
     cfgOwnOnHint: "Env\xEDas t\xFA directamente a Hacienda con el certificado de tu negocio. No sale de este hub en ning\xFAn momento.",
+    cfgOwnOffKeptHint: "Tu certificado sigue guardado en este hub, pero ahora remite ERPlora en tu nombre, con su propio certificado. Enci\xE9ndelo para volver a usar el tuyo.",
+    routeSwitchedOwn: "Listo: a partir de ahora env\xEDas con tu propio certificado.",
+    routeSwitchedDelegated: "Listo: a partir de ahora remite ERPlora en tu nombre. Tu certificado sigue guardado.",
+    errRouteNeedsGrant: "Para que ERPlora remita en producci\xF3n falta que aprobemos tu otorgamiento de representaci\xF3n. Mientras tanto sigues enviando con tu certificado.",
+    errRouteNeedsConnection: "Para que ERPlora remita falta que firmemos la conexi\xF3n segura de este hub. Mientras tanto sigues enviando con tu certificado.",
+    errRouteNeedsCertificate: "No hay ning\xFAn certificado subido: s\xFAbelo en Configuraci\xF3n para poder usarlo.",
+    errRouteSwitch: "No se ha podido cambiar la v\xEDa de env\xEDo. No ha cambiado nada; int\xE9ntalo de nuevo.",
     cfgP12Title: "Certificado del negocio (.p12 / .pfx)",
     cfgP12Present: "Cargado",
     cfgP12Absent: "Sin cargar",
@@ -3083,6 +3090,13 @@ var en_default = {
     cfgOwnTitle: "Use my own certificate",
     cfgOwnOffHint: "ERPlora files your invoicing records with the tax authority on your behalf, with its own certificate. You do not need one.",
     cfgOwnOnHint: "You file directly with the tax authority using your business certificate. It never leaves this hub.",
+    cfgOwnOffKeptHint: "Your certificate is still stored on this hub, but ERPlora now files on your behalf with its own certificate. Switch it on to use yours again.",
+    routeSwitchedOwn: "Done: from now on you file with your own certificate.",
+    routeSwitchedDelegated: "Done: from now on ERPlora files on your behalf. Your certificate is still stored.",
+    errRouteNeedsGrant: "For ERPlora to file in production, your representation grant still has to be approved. Until then you keep filing with your certificate.",
+    errRouteNeedsConnection: "For ERPlora to file, this hub\u2019s secure connection still has to be signed. Until then you keep filing with your certificate.",
+    errRouteNeedsCertificate: "There is no certificate uploaded: upload it in Configuration to use it.",
+    errRouteSwitch: "The filing route could not be changed. Nothing changed; please try again.",
     cfgP12Title: "Business certificate (.p12 / .pfx)",
     cfgP12Present: "Loaded",
     cfgP12Absent: "Not loaded",
@@ -7407,6 +7421,15 @@ var PRODUCER = {
   software_nif: "B27593136",
   software_name: "ERPLORA CLOUD SL"
 };
+var CERTIFICATE_PATH2 = "/api/business/certificate";
+function routeRefusalKey(body) {
+  const error = body?.error;
+  const code = typeof error === "string" ? error : error?.code ?? "";
+  if (code === "fiscal.no_representation_grant") return "ui.errRouteNeedsGrant";
+  if (code === "fiscal.gateway_not_enrolled") return "ui.errRouteNeedsConnection";
+  if (code === "fiscal.own_certificate_not_uploaded") return "ui.errRouteNeedsCertificate";
+  return "ui.errRouteSwitch";
+}
 var ErpVerifactuSettings = class extends i3 {
   constructor() {
     super(...arguments);
@@ -7427,6 +7450,9 @@ var ErpVerifactuSettings = class extends i3 {
     this.savedEnabled = false;
     this.transmission = null;
     this.routeLoading = true;
+    this.certificateStatus = null;
+    this.switchingRoute = false;
+    this.routeNotice = null;
     this.gateway = null;
     this.gatewayLoading = true;
     this.onLocaleChange = () => this.requestUpdate();
@@ -7503,6 +7529,11 @@ var ErpVerifactuSettings = class extends i3 {
    * is where a person can act on it.
    */
   async loadRoute() {
+    void this.loadCertificateStatus();
+    await this.loadTransmission();
+  }
+  /** The road, from the core (`hub.fiscal.transmission`). `routeLoading` runs on this clock alone. */
+  async loadTransmission() {
     this.routeLoading = true;
     try {
       const rows = await erplora7().query("hub.fiscal.transmission");
@@ -7512,6 +7543,52 @@ var ErpVerifactuSettings = class extends i3 {
       this.transmission = null;
     } finally {
       this.routeLoading = false;
+    }
+  }
+  /** Whether a `.p12` is uploaded and switched on, from the core door. `null` = it did not answer. */
+  async loadCertificateStatus() {
+    const certificate = await coreFetch(CERTIFICATE_PATH2);
+    const envelope = certificate.body;
+    this.certificateStatus = certificate.ok ? envelope?.data ?? null : null;
+  }
+  /**
+   * **The «Usar mi propio certificado» switch changes the road** (hub#1871). It used to navigate to
+   * Configuración and change nothing: the `.p12` kept filing and the switch came back on.
+   *
+   * The position the owner asked for is read from the EVENT, never from a getter at the moment it
+   * fires — what matters is what they saw and flipped. Three outcomes:
+   *  - asking for ON with no certificate uploaded: there is nothing to switch, so the owner goes to
+   *    upload one (the old navigation, now only where it is the answer);
+   *  - otherwise the core decides (`PATCH /api/business/certificate`), and the road is READ back
+   *    from the core, never assumed;
+   *  - a refusal is said in the owner's words, and the switch goes back to the real road.
+   */
+  async onOwnToggle(ev) {
+    const target = ev.target;
+    const wanted = ev.detail?.checked ?? !!target?.checked;
+    if (wanted === this.signsWithOwnCertificate) return;
+    if (wanted && this.certificateStatus && !this.certificateStatus.present) {
+      if (target) target.checked = this.signsWithOwnCertificate;
+      this.goConfig("own");
+      return;
+    }
+    this.switchingRoute = true;
+    this.routeNotice = null;
+    try {
+      const reply = await coreFetch(CERTIFICATE_PATH2, {
+        method: "PATCH",
+        json: { use_for_transmission: wanted }
+      });
+      if (reply.ok) {
+        this.routeNotice = { key: wanted ? "ui.routeSwitchedOwn" : "ui.routeSwitchedDelegated", tone: "success" };
+        await this.loadRoute();
+        if (this.usesGatewayIdentity) await this.loadGatewayIdentity();
+      } else {
+        this.routeNotice = { key: routeRefusalKey(reply.body), tone: "danger" };
+      }
+    } finally {
+      this.switchingRoute = false;
+      if (target) target.checked = this.signsWithOwnCertificate;
     }
   }
   /**
@@ -7931,10 +8008,10 @@ var ErpVerifactuSettings = class extends i3 {
             <ion-item>
               <ion-toggle style=${GREEN} ?checked=${!!this.cfg.enabled} @ionChange=${(e6) => this.set("enabled", e6.target.checked)}>${t5("ui.enableVerifactu")}</ion-toggle>
             </ion-item>
-            <!-- La VIA, como interruptor. No es una preferencia que se guarde: la dicta el slot de
-                 certificado que hay (route_of), asi que encenderlo LLEVA a subirlo y apagarlo con
-                 uno puesto LLEVA a quitarlo. Lo que se toca a diario vive aqui; lo que cuesta
-                 —el fichero y el papeleo— vive en Configuracion. -->
+            <!-- La VIA, como interruptor (hub#1871): es una ELECCION que se guarda en el core.
+                 Apagarlo deja el .p12 guardado y remite ERPlora; encenderlo sin .p12 lleva a
+                 subirlo. Lo que se toca a diario vive aqui; lo que cuesta —el fichero y el
+                 papeleo— vive en Configuracion. -->
             <ion-item lines="none">
               <div class="cert">
                 <div class="cert-head">
@@ -7943,10 +8020,14 @@ var ErpVerifactuSettings = class extends i3 {
                     style=${GREEN}
                     data-testid="settings-own-certificate"
                     ?checked=${this.signsWithOwnCertificate}
-                    @ionChange=${() => this.goConfig(this.signsWithOwnCertificate ? "delegated" : "own")}
+                    ?disabled=${this.routeLoading || this.switchingRoute}
+                    @ionChange=${(e6) => void this.onOwnToggle(e6)}
                   ></ion-toggle>
                 </div>
-                <p class="hint">${t5(this.signsWithOwnCertificate ? "ui.cfgOwnOnHint" : "ui.cfgOwnOffHint")}</p>
+                <p class="hint">${t5(
+      this.signsWithOwnCertificate ? "ui.cfgOwnOnHint" : this.certificateStatus?.present ? "ui.cfgOwnOffKeptHint" : "ui.cfgOwnOffHint"
+    )}</p>
+                ${this.routeNotice ? b2`<ok-inline-feedback tone=${this.routeNotice.tone} data-testid="settings-route-notice">${t5(this.routeNotice.key)}</ok-inline-feedback>` : A}
                 <ion-button size="small" fill="outline" @click=${() => this.goConfig(this.signsWithOwnCertificate ? "own" : "delegated")}>
                   <ion-icon slot="start" name="open-outline"></ion-icon>
                   ${t5("ui.cfgGoConfig")}
@@ -8023,6 +8104,15 @@ __decorateClass([
 __decorateClass([
   r5()
 ], ErpVerifactuSettings.prototype, "routeLoading", 2);
+__decorateClass([
+  r5()
+], ErpVerifactuSettings.prototype, "certificateStatus", 2);
+__decorateClass([
+  r5()
+], ErpVerifactuSettings.prototype, "switchingRoute", 2);
+__decorateClass([
+  r5()
+], ErpVerifactuSettings.prototype, "routeNotice", 2);
 __decorateClass([
   r5()
 ], ErpVerifactuSettings.prototype, "gateway", 2);

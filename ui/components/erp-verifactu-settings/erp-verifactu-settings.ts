@@ -4,6 +4,7 @@ import { define } from '@erplora/outfitkit/define';
 import '@erplora/outfitkit/ok-status-pill';
 import '@erplora/outfitkit/ok-inline-feedback';
 import { toMicro } from '../../lib/quantity';
+import { coreFetch } from '../../lib/core-fetch';
 import { certReasonSentence, reasonSentence } from '../../lib/event-message';
 import {
   DECLARATION_FIELDS,
@@ -228,6 +229,22 @@ const PRODUCER = {
   software_name: 'ERPLORA CLOUD SL',
 };
 
+/** The core door of the business certificate (hub#1844, hub#1871). */
+const CERTIFICATE_PATH = '/api/business/certificate';
+
+/**
+ * Why the core refused to switch the road, as a catalogue key (hub#1871). By the stable CODE the
+ * runtime sends inside `error`, never by its sentence.
+ */
+export function routeRefusalKey(body: Record<string, unknown>): string {
+  const error = body?.error as { code?: string } | string | undefined;
+  const code = typeof error === 'string' ? error : error?.code ?? '';
+  if (code === 'fiscal.no_representation_grant') return 'ui.errRouteNeedsGrant';
+  if (code === 'fiscal.gateway_not_enrolled') return 'ui.errRouteNeedsConnection';
+  if (code === 'fiscal.own_certificate_not_uploaded') return 'ui.errRouteNeedsCertificate';
+  return 'ui.errRouteSwitch';
+}
+
 export class ErpVerifactuSettings extends LitElement {
   static styles = css`
     :host { display:block; height:100%; overflow:auto; font-family: system-ui, sans-serif; color: var(--ion-text-color, #1c1b18); }
@@ -318,6 +335,19 @@ export class ErpVerifactuSettings extends LitElement {
   @state() private routeLoading = true;
 
   /**
+   * What the core says about the business certificate (`GET /api/business/certificate`): whether a
+   * `.p12` is uploaded, and whether its owner switched it off for filing (hub#1871). `null` = the
+   * door did not answer, and then the switch cannot tell «switch it on» from «upload one».
+   */
+  @state() private certificateStatus: { present?: boolean; use_for_transmission?: boolean } | null = null;
+
+  /** The switch asked the core to change the road and the answer is not back yet. */
+  @state() private switchingRoute = false;
+
+  /** What the last switch did, as a catalogue key: a success notice or the reason it was refused. */
+  @state() private routeNotice: { key: string; tone: 'success' | 'danger' } | null = null;
+
+  /**
    * What the hub answered about its MACHINE identity (verifactu#76). `null` = we could not ask —
    * and then the screen says so instead of guessing at a state.
    */
@@ -373,6 +403,16 @@ export class ErpVerifactuSettings extends LitElement {
    * is where a person can act on it.
    */
   private async loadRoute() {
+    // Two facts from two doors, and neither waits for the other. The road is what the switch shows
+    // and what gates it; the certificate status only shapes the hint and the ON branch. Painting
+    // the road only once both had answered made the switch fall back to `:has_certificate` — and
+    // lie — for as long as the certificate door took to answer or to be refused by the network.
+    void this.loadCertificateStatus();
+    await this.loadTransmission();
+  }
+
+  /** The road, from the core (`hub.fiscal.transmission`). `routeLoading` runs on this clock alone. */
+  private async loadTransmission() {
     this.routeLoading = true;
     try {
       const rows = await erplora().query<FiscalTransmission[] | FiscalTransmission | null>('hub.fiscal.transmission');
@@ -382,6 +422,59 @@ export class ErpVerifactuSettings extends LitElement {
       this.transmission = null;
     } finally {
       this.routeLoading = false;
+    }
+  }
+
+  /** Whether a `.p12` is uploaded and switched on, from the core door. `null` = it did not answer. */
+  private async loadCertificateStatus() {
+    const certificate = await coreFetch(CERTIFICATE_PATH);
+    const envelope = certificate.body as { data?: { present?: boolean; use_for_transmission?: boolean } };
+    this.certificateStatus = certificate.ok ? (envelope?.data ?? null) : null;
+  }
+
+  /**
+   * **The «Usar mi propio certificado» switch changes the road** (hub#1871). It used to navigate to
+   * Configuración and change nothing: the `.p12` kept filing and the switch came back on.
+   *
+   * The position the owner asked for is read from the EVENT, never from a getter at the moment it
+   * fires — what matters is what they saw and flipped. Three outcomes:
+   *  - asking for ON with no certificate uploaded: there is nothing to switch, so the owner goes to
+   *    upload one (the old navigation, now only where it is the answer);
+   *  - otherwise the core decides (`PATCH /api/business/certificate`), and the road is READ back
+   *    from the core, never assumed;
+   *  - a refusal is said in the owner's words, and the switch goes back to the real road.
+   */
+  private async onOwnToggle(ev: Event): Promise<void> {
+    const target = ev.target as (HTMLElement & { checked?: boolean }) | null;
+    const wanted = (ev as CustomEvent<{ checked?: boolean }>).detail?.checked ?? !!target?.checked;
+    if (wanted === this.signsWithOwnCertificate) return;
+    // Only a door that ANSWERED «nothing uploaded» sends the owner to upload. A door that did not
+    // answer is «we do not know», and the core — which does know — decides on the PATCH.
+    if (wanted && this.certificateStatus && !this.certificateStatus.present) {
+      if (target) target.checked = this.signsWithOwnCertificate;
+      this.goConfig('own');
+      return;
+    }
+    this.switchingRoute = true;
+    this.routeNotice = null;
+    try {
+      const reply = await coreFetch(CERTIFICATE_PATH, {
+        method: 'PATCH',
+        json: { use_for_transmission: wanted },
+      });
+      if (reply.ok) {
+        this.routeNotice = { key: wanted ? 'ui.routeSwitchedOwn' : 'ui.routeSwitchedDelegated', tone: 'success' };
+        await this.loadRoute();
+        if (this.usesGatewayIdentity) await this.loadGatewayIdentity();
+      } else {
+        this.routeNotice = { key: routeRefusalKey(reply.body), tone: 'danger' };
+      }
+    } finally {
+      this.switchingRoute = false;
+      // A refused or failed switch leaves the road where it was: the control goes back to it. The
+      // toggle keeps the position the user dragged it to on its own, and Lit would not reset a
+      // property whose bound value did not change.
+      if (target) target.checked = this.signsWithOwnCertificate;
     }
   }
 
@@ -892,10 +985,10 @@ export class ErpVerifactuSettings extends LitElement {
             <ion-item>
               <ion-toggle style=${GREEN} ?checked=${!!this.cfg.enabled} @ionChange=${(e: any) => this.set('enabled', e.target.checked)}>${t('ui.enableVerifactu')}</ion-toggle>
             </ion-item>
-            <!-- La VIA, como interruptor. No es una preferencia que se guarde: la dicta el slot de
-                 certificado que hay (route_of), asi que encenderlo LLEVA a subirlo y apagarlo con
-                 uno puesto LLEVA a quitarlo. Lo que se toca a diario vive aqui; lo que cuesta
-                 —el fichero y el papeleo— vive en Configuracion. -->
+            <!-- La VIA, como interruptor (hub#1871): es una ELECCION que se guarda en el core.
+                 Apagarlo deja el .p12 guardado y remite ERPlora; encenderlo sin .p12 lleva a
+                 subirlo. Lo que se toca a diario vive aqui; lo que cuesta —el fichero y el
+                 papeleo— vive en Configuracion. -->
             <ion-item lines="none">
               <div class="cert">
                 <div class="cert-head">
@@ -904,10 +997,20 @@ export class ErpVerifactuSettings extends LitElement {
                     style=${GREEN}
                     data-testid="settings-own-certificate"
                     ?checked=${this.signsWithOwnCertificate}
-                    @ionChange=${() => this.goConfig(this.signsWithOwnCertificate ? 'delegated' : 'own')}
+                    ?disabled=${this.routeLoading || this.switchingRoute}
+                    @ionChange=${(e: Event) => void this.onOwnToggle(e)}
                   ></ion-toggle>
                 </div>
-                <p class="hint">${t(this.signsWithOwnCertificate ? 'ui.cfgOwnOnHint' : 'ui.cfgOwnOffHint')}</p>
+                <p class="hint">${t(
+                  this.signsWithOwnCertificate
+                    ? 'ui.cfgOwnOnHint'
+                    : this.certificateStatus?.present
+                      ? 'ui.cfgOwnOffKeptHint'
+                      : 'ui.cfgOwnOffHint',
+                )}</p>
+                ${this.routeNotice
+                  ? html`<ok-inline-feedback tone=${this.routeNotice.tone} data-testid="settings-route-notice">${t(this.routeNotice.key)}</ok-inline-feedback>`
+                  : nothing}
                 <ion-button size="small" fill="outline" @click=${() => this.goConfig(this.signsWithOwnCertificate ? 'own' : 'delegated')}>
                   <ion-icon slot="start" name="open-outline"></ion-icon>
                   ${t('ui.cfgGoConfig')}
