@@ -462,6 +462,24 @@
       "identity_not_shared": "No hemos podido decirle a ERPlora quién es el obligado. Si la página te pide tus datos fiscales, guárdalos otra vez en Ajustes → Negocio.",
       "open_external_failed": "No hemos podido abrir tu navegador.",
       "unknown": "No ha funcionado. Vuelve a intentarlo."
-    }
+    },
+    "submittedTitle": "Lo que has enviado",
+    "submittedOn": "Envío n.º {n}, enviado el {date}",
+    "reviewedOn": "Revisado el {date}",
+    "docSignedDocument": "Modelo firmado",
+    "docDniCopy": "Copia del documento de identidad",
+    "docSignatureSample": "Muestra de firma",
+    "docRepresentationProof": "Justificante de representación",
+    "historyTitle": "Historial de envíos",
+    "historyRow": "N.º {n} · {date}",
+    "historyPending": "En revisión",
+    "historyInForce": "Aceptado: vigente",
+    "historyRejected": "Rechazado",
+    "historyRevoked": "Revocado",
+    "historyReplaced": "Sustituido por un envío nuevo",
+    "resend": "Volver a enviar",
+    "resendCancel": "Cancelar",
+    "resendHintPending": "Si algo salió mal, envíalo de nuevo: el envío nuevo sustituye al que está en revisión.",
+    "resendHintInForce": "Mientras revisamos el envío nuevo, sigues remitiendo con el actual."
   }
 }

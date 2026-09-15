@@ -2231,6 +2231,28 @@ function failure(where, status, body) {
   return new RepresentationGrantError(`${where} \u2192 ${status}`, code, statusCode);
 }
 var str = (v3) => typeof v3 === "string" ? v3 : "";
+var num = (v3) => typeof v3 === "number" && Number.isFinite(v3) && v3 > 0 ? Math.floor(v3) : 0;
+var flag = (v3) => v3 === true;
+function documentsOf(v3) {
+  const o7 = v3 && typeof v3 === "object" ? v3 : {};
+  return {
+    signed_document: flag(o7.signed_document),
+    dni_copy: flag(o7.dni_copy),
+    signature_sample: flag(o7.signature_sample),
+    representation_proof: flag(o7.representation_proof)
+  };
+}
+function historyOf(v3) {
+  if (!Array.isArray(v3)) return [];
+  return v3.filter((e6) => !!e6 && typeof e6 === "object").map((e6) => ({
+    version: num(e6.version),
+    status: str(e6.status),
+    submitted_at: str(e6.submitted_at),
+    reviewed_at: str(e6.reviewed_at),
+    rejected_reason: str(e6.rejected_reason),
+    superseded: flag(e6.superseded)
+  }));
+}
 async function getGrant() {
   const reply = await coreFetch(GRANT_PATH);
   if (!reply.ok) throw failure("get-representation-grant", reply.status, reply.body);
@@ -2239,7 +2261,12 @@ async function getGrant() {
     at: str(reply.body.at),
     rejected_reason: str(reply.body.rejected_reason),
     signature_kind: str(reply.body.signature_kind),
-    document_type: str(reply.body.document_type)
+    document_type: str(reply.body.document_type),
+    version: num(reply.body.version),
+    submitted_at: str(reply.body.submitted_at),
+    reviewed_at: str(reply.body.reviewed_at),
+    documents: documentsOf(reply.body.documents),
+    history: historyOf(reply.body.history)
   };
 }
 async function downloadGrantModel(fields) {
@@ -2738,7 +2765,25 @@ var es_default = {
       identity_not_shared: "No hemos podido decirle a ERPlora qui\xE9n es el obligado. Si la p\xE1gina te pide tus datos fiscales, gu\xE1rdalos otra vez en Ajustes \u2192 Negocio.",
       open_external_failed: "No hemos podido abrir tu navegador.",
       unknown: "No ha funcionado. Vuelve a intentarlo."
-    }
+    },
+    submittedTitle: "Lo que has enviado",
+    submittedOn: "Env\xEDo n.\xBA {n}, enviado el {date}",
+    reviewedOn: "Revisado el {date}",
+    docSignedDocument: "Modelo firmado",
+    docDniCopy: "Copia del documento de identidad",
+    docSignatureSample: "Muestra de firma",
+    docRepresentationProof: "Justificante de representaci\xF3n",
+    historyTitle: "Historial de env\xEDos",
+    historyRow: "N.\xBA {n} \xB7 {date}",
+    historyPending: "En revisi\xF3n",
+    historyInForce: "Aceptado: vigente",
+    historyRejected: "Rechazado",
+    historyRevoked: "Revocado",
+    historyReplaced: "Sustituido por un env\xEDo nuevo",
+    resend: "Volver a enviar",
+    resendCancel: "Cancelar",
+    resendHintPending: "Si algo sali\xF3 mal, env\xEDalo de nuevo: el env\xEDo nuevo sustituye al que est\xE1 en revisi\xF3n.",
+    resendHintInForce: "Mientras revisamos el env\xEDo nuevo, sigues remitiendo con el actual."
   }
 };
 
@@ -3190,7 +3235,25 @@ var en_default = {
       identity_not_shared: "We could not tell ERPlora who the taxpayer is. If the page asks for your tax details, save them again in Settings \u2192 Business.",
       open_external_failed: "We could not open your browser.",
       unknown: "It did not work. Try again."
-    }
+    },
+    submittedTitle: "What you sent",
+    submittedOn: "Submission #{n}, sent on {date}",
+    reviewedOn: "Reviewed on {date}",
+    docSignedDocument: "Signed model",
+    docDniCopy: "Copy of the identity document",
+    docSignatureSample: "Signature sample",
+    docRepresentationProof: "Proof of representation",
+    historyTitle: "Submission history",
+    historyRow: "#{n} \xB7 {date}",
+    historyPending: "Under review",
+    historyInForce: "Accepted: in force",
+    historyRejected: "Rejected",
+    historyRevoked: "Revoked",
+    historyReplaced: "Replaced by a newer submission",
+    resend: "Send again",
+    resendCancel: "Cancel",
+    resendHintPending: "If something came out wrong, send it again: the new submission replaces the one under review.",
+    resendHintInForce: "While we review the new submission, you keep filing with the current one."
   }
 };
 
@@ -3223,7 +3286,7 @@ var KNOWN_REFUSALS = /* @__PURE__ */ new Set([
   "identity_not_shared",
   "open_external_failed"
 ]);
-var ErpVerifactuGrant = class extends i3 {
+var _ErpVerifactuGrant = class _ErpVerifactuGrant extends i3 {
   constructor() {
     super(...arguments);
     this.obligadoNif = "";
@@ -3234,6 +3297,17 @@ var ErpVerifactuGrant = class extends i3 {
     this.status = "";
     this.at = "";
     this.rejectedReason = "";
+    this.version = 0;
+    this.submittedAt = "";
+    this.reviewedAt = "";
+    this.documents = {
+      signed_document: false,
+      dni_copy: false,
+      signature_sample: false,
+      representation_proof: false
+    };
+    this.history = [];
+    this.resendOpen = false;
     this.loading = true;
     this.signerNif = "";
     this.signerName = "";
@@ -3272,6 +3346,13 @@ var ErpVerifactuGrant = class extends i3 {
     /* La zona de subida va al ancho del formulario, como el resto de campos: en el hub nada
        lleva tope de ancho (hub#1605), y ok-dropzone trae 480 px por defecto. */
     ok-dropzone { --ok-dropzone-max-width: 100%; }
+    .submitted, .history { display:flex; flex-direction:column; gap:.25rem; }
+    .docs, .rows { list-style:none; margin:.25rem 0 0; padding:0; display:flex; flex-direction:column; gap:.25rem; }
+    .docs li { display:flex; align-items:center; gap:.4rem; font-size:.85rem; }
+    .docs ion-icon { color: var(--ion-color-success, #2dd36f); font-size:1.1rem; }
+    .rows li { display:flex; flex-wrap:wrap; justify-content:space-between; gap:.25rem .75rem; font-size:.8rem; padding:.3rem 0; border-bottom:1px solid var(--ion-color-light, #eceef1); }
+    .rows .k { color: var(--ion-color-medium, #6b7280); }
+    .resend { display:flex; flex-wrap:wrap; align-items:center; gap:.5rem; }
   `;
   }
   async connectedCallback() {
@@ -3286,13 +3367,7 @@ var ErpVerifactuGrant = class extends i3 {
   async load() {
     this.loading = true;
     try {
-      const state = await getGrant();
-      this.status = state.status;
-      this.at = state.at;
-      this.rejectedReason = state.rejected_reason;
-      if (state.document_type === "dni" || state.document_type === "nie") {
-        this.documentType = state.document_type;
-      }
+      this.applyState(await getGrant());
     } catch {
       this.status = "";
     } finally {
@@ -3305,7 +3380,45 @@ var ErpVerifactuGrant = class extends i3 {
    * que otra persona tiene que desempatar a mano.
    */
   get showForm() {
-    return this.status !== "vigente" && this.status !== "pendiente";
+    if (this.status === "vigente" || this.status === "pendiente") return this.resendOpen;
+    return true;
+  }
+  /** What the core said, painted as it came. Shared by the first read and the read-back after a submit. */
+  applyState(state) {
+    this.status = state.status;
+    this.at = state.at;
+    this.rejectedReason = state.rejected_reason;
+    this.version = state.version;
+    this.submittedAt = state.submitted_at;
+    this.reviewedAt = state.reviewed_at;
+    this.documents = state.documents;
+    this.history = state.history;
+    if (state.document_type === "dni" || state.document_type === "nie") {
+      this.documentType = state.document_type;
+    }
+  }
+  /** The states where a new submission is an option rather than the obvious next step. */
+  get canResend() {
+    return this.status === "vigente" || this.status === "pendiente";
+  }
+  /** Something was sent and the core knows about it: the «what you sent» block has a subject. */
+  get hasSubmission() {
+    return this.version > 0 && this.status !== "" && this.status !== "absent";
+  }
+  /** A calendar date in the owner's locale, or the raw value when it is not a date. */
+  dateLabel(iso) {
+    if (!iso) return "";
+    const d3 = new Date(iso);
+    return Number.isNaN(d3.getTime()) ? iso : d3.toLocaleDateString(erplora().locale || void 0);
+  }
+  /** The outcome of one submission, as a catalogue key. Superseded wins: it was never judged. */
+  historyKey(row) {
+    if (row.superseded) return "grant.historyReplaced";
+    if (row.status === "pendiente") return "grant.historyPending";
+    if (row.status === "vigente") return "grant.historyInForce";
+    if (row.status === "rechazado") return "grant.historyRejected";
+    if (row.status === "revocado") return "grant.historyRevoked";
+    return "grant.stateUnknown";
   }
   /** Muchos NIE no llevan firma impresa: sin una muestra no hay con qué comparar la del modelo. */
   get needsSignatureSample() {
@@ -3448,11 +3561,86 @@ var ErpVerifactuGrant = class extends i3 {
       this.dniFile = null;
       this.signatureSample = null;
       this.representationProof = null;
+      this.resendOpen = false;
+      await this.readBack();
     } catch (e6) {
       this.noteFailure(e6);
     } finally {
       this.busy = false;
     }
+  }
+  /**
+   * After a submit, what is on screen (number, documents, history) is READ from the core, never
+   * assumed from the POST. A read that fails keeps the answer the POST gave: the upload happened.
+   */
+  async readBack() {
+    try {
+      this.applyState(await getGrant());
+    } catch {
+    }
+  }
+  static {
+    this.DOCUMENT_PARTS = [
+      ["signed_document", "grant.docSignedDocument"],
+      ["dni_copy", "grant.docDniCopy"],
+      ["signature_sample", "grant.docSignatureSample"],
+      ["representation_proof", "grant.docRepresentationProof"]
+    ];
+  }
+  /** «What you sent»: the submission number, its date and the parts ERPlora received. */
+  renderSubmitted(t5) {
+    if (!this.hasSubmission) return A;
+    const received = _ErpVerifactuGrant.DOCUMENT_PARTS.filter(([part]) => this.documents[part]);
+    return b2`<div class="submitted" data-testid="grant-submitted">
+      <h4>${t5("grant.submittedTitle")}</h4>
+      <p class="hint">
+        ${t5("grant.submittedOn", { n: this.version, date: this.dateLabel(this.submittedAt) })}
+        ${this.reviewedAt ? b2` · ${t5("grant.reviewedOn", { date: this.dateLabel(this.reviewedAt) })}` : A}
+      </p>
+      <ul class="docs">
+        ${received.map(
+      ([part, key]) => b2`<li data-testid=${`grant-doc-${part}`}><ion-icon name="checkmark-circle-outline"></ion-icon>${t5(key)}</li>`
+    )}
+      </ul>
+    </div>`;
+  }
+  /** Every submission with its outcome. One row would only repeat the block above, so it needs two. */
+  renderHistory(t5) {
+    if (this.history.length < 2) return A;
+    return b2`<div class="history" data-testid="grant-history">
+      <h4>${t5("grant.historyTitle")}</h4>
+      <ul class="rows">
+        ${this.history.map(
+      (row) => b2`<li data-testid="grant-history-row">
+            <span class="k">${t5("grant.historyRow", { n: row.version, date: this.dateLabel(row.submitted_at) })}</span>
+            <span>${t5(this.historyKey(row))}${row.rejected_reason && !row.superseded ? `: ${row.rejected_reason}` : ""}</span>
+          </li>`
+    )}
+      </ul>
+    </div>`;
+  }
+  /** «Send again», and once asked for, what happens to the submission that is already there. */
+  renderResend(t5) {
+    if (!this.canResend) return A;
+    if (!this.resendOpen) {
+      return b2`<div class="resend">
+        <ion-button fill="outline" size="small" data-testid="grant-resend" @click=${() => {
+        this.resendOpen = true;
+      }}>
+          <ion-icon slot="start" name="refresh-outline"></ion-icon>${t5("grant.resend")}
+        </ion-button>
+      </div>`;
+    }
+    return b2`<ok-inline-feedback tone="info" icon="information-circle-outline" data-testid="grant-resend-hint"
+        >${t5(this.status === "vigente" ? "grant.resendHintInForce" : "grant.resendHintPending")}</ok-inline-feedback
+      >
+      <div class="resend">
+        <ion-button fill="clear" size="small" data-testid="grant-resend-cancel" @click=${() => {
+      this.resendOpen = false;
+    }}>
+          ${t5("grant.resendCancel")}
+        </ion-button>
+      </div>`;
   }
   /**
    * Un adjunto, con `ok-dropzone`: arrastrar y soltar o pulsar, y el tipo se filtra en el propio
@@ -3625,6 +3813,9 @@ var ErpVerifactuGrant = class extends i3 {
               >${this.rejectedReason}</ok-inline-feedback
             >` : A}
 
+        ${this.renderSubmitted(t5)}
+        ${this.renderHistory(t5)}
+        ${this.renderResend(t5)}
         ${this.showForm ? this.renderForm(t5) : A}
       </div>
     `;
@@ -3632,76 +3823,95 @@ var ErpVerifactuGrant = class extends i3 {
 };
 __decorateClass([
   n4({ type: String })
-], ErpVerifactuGrant.prototype, "obligadoNif", 2);
+], _ErpVerifactuGrant.prototype, "obligadoNif", 2);
 __decorateClass([
   n4({ type: String })
-], ErpVerifactuGrant.prototype, "obligadoName", 2);
+], _ErpVerifactuGrant.prototype, "obligadoName", 2);
 __decorateClass([
   n4({ type: String })
-], ErpVerifactuGrant.prototype, "businessCity", 2);
+], _ErpVerifactuGrant.prototype, "businessCity", 2);
 __decorateClass([
   n4({ type: String })
-], ErpVerifactuGrant.prototype, "businessStreet", 2);
+], _ErpVerifactuGrant.prototype, "businessStreet", 2);
 __decorateClass([
   n4({ type: String })
-], ErpVerifactuGrant.prototype, "businessNumber", 2);
+], _ErpVerifactuGrant.prototype, "businessNumber", 2);
 __decorateClass([
   r5()
-], ErpVerifactuGrant.prototype, "status", 2);
+], _ErpVerifactuGrant.prototype, "status", 2);
 __decorateClass([
   r5()
-], ErpVerifactuGrant.prototype, "at", 2);
+], _ErpVerifactuGrant.prototype, "at", 2);
 __decorateClass([
   r5()
-], ErpVerifactuGrant.prototype, "rejectedReason", 2);
+], _ErpVerifactuGrant.prototype, "rejectedReason", 2);
 __decorateClass([
   r5()
-], ErpVerifactuGrant.prototype, "loading", 2);
+], _ErpVerifactuGrant.prototype, "version", 2);
 __decorateClass([
   r5()
-], ErpVerifactuGrant.prototype, "signerNif", 2);
+], _ErpVerifactuGrant.prototype, "submittedAt", 2);
 __decorateClass([
   r5()
-], ErpVerifactuGrant.prototype, "signerName", 2);
+], _ErpVerifactuGrant.prototype, "reviewedAt", 2);
 __decorateClass([
   r5()
-], ErpVerifactuGrant.prototype, "signerMunicipio", 2);
+], _ErpVerifactuGrant.prototype, "documents", 2);
 __decorateClass([
   r5()
-], ErpVerifactuGrant.prototype, "signerVia", 2);
+], _ErpVerifactuGrant.prototype, "history", 2);
 __decorateClass([
   r5()
-], ErpVerifactuGrant.prototype, "signerNumero", 2);
+], _ErpVerifactuGrant.prototype, "resendOpen", 2);
 __decorateClass([
   r5()
-], ErpVerifactuGrant.prototype, "documentType", 2);
+], _ErpVerifactuGrant.prototype, "loading", 2);
 __decorateClass([
   r5()
-], ErpVerifactuGrant.prototype, "signedDocument", 2);
+], _ErpVerifactuGrant.prototype, "signerNif", 2);
 __decorateClass([
   r5()
-], ErpVerifactuGrant.prototype, "dniFile", 2);
+], _ErpVerifactuGrant.prototype, "signerName", 2);
 __decorateClass([
   r5()
-], ErpVerifactuGrant.prototype, "signatureSample", 2);
+], _ErpVerifactuGrant.prototype, "signerMunicipio", 2);
 __decorateClass([
   r5()
-], ErpVerifactuGrant.prototype, "representationProof", 2);
+], _ErpVerifactuGrant.prototype, "signerVia", 2);
 __decorateClass([
   r5()
-], ErpVerifactuGrant.prototype, "busy", 2);
+], _ErpVerifactuGrant.prototype, "signerNumero", 2);
 __decorateClass([
   r5()
-], ErpVerifactuGrant.prototype, "downloading", 2);
+], _ErpVerifactuGrant.prototype, "documentType", 2);
 __decorateClass([
   r5()
-], ErpVerifactuGrant.prototype, "downloaded", 2);
+], _ErpVerifactuGrant.prototype, "signedDocument", 2);
 __decorateClass([
   r5()
-], ErpVerifactuGrant.prototype, "errorKey", 2);
+], _ErpVerifactuGrant.prototype, "dniFile", 2);
 __decorateClass([
   r5()
-], ErpVerifactuGrant.prototype, "errorStatusCode", 2);
+], _ErpVerifactuGrant.prototype, "signatureSample", 2);
+__decorateClass([
+  r5()
+], _ErpVerifactuGrant.prototype, "representationProof", 2);
+__decorateClass([
+  r5()
+], _ErpVerifactuGrant.prototype, "busy", 2);
+__decorateClass([
+  r5()
+], _ErpVerifactuGrant.prototype, "downloading", 2);
+__decorateClass([
+  r5()
+], _ErpVerifactuGrant.prototype, "downloaded", 2);
+__decorateClass([
+  r5()
+], _ErpVerifactuGrant.prototype, "errorKey", 2);
+__decorateClass([
+  r5()
+], _ErpVerifactuGrant.prototype, "errorStatusCode", 2);
+var ErpVerifactuGrant = _ErpVerifactuGrant;
 define("erp-verifactu-grant", ErpVerifactuGrant);
 
 // ui/lib/gateway-identity.ts

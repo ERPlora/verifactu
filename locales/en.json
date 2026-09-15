@@ -445,6 +445,24 @@
       "identity_not_shared": "We could not tell ERPlora who the taxpayer is. If the page asks for your tax details, save them again in Settings → Business.",
       "open_external_failed": "We could not open your browser.",
       "unknown": "It did not work. Try again."
-    }
+    },
+    "submittedTitle": "What you sent",
+    "submittedOn": "Submission #{n}, sent on {date}",
+    "reviewedOn": "Reviewed on {date}",
+    "docSignedDocument": "Signed model",
+    "docDniCopy": "Copy of the identity document",
+    "docSignatureSample": "Signature sample",
+    "docRepresentationProof": "Proof of representation",
+    "historyTitle": "Submission history",
+    "historyRow": "#{n} · {date}",
+    "historyPending": "Under review",
+    "historyInForce": "Accepted: in force",
+    "historyRejected": "Rejected",
+    "historyRevoked": "Revoked",
+    "historyReplaced": "Replaced by a newer submission",
+    "resend": "Send again",
+    "resendCancel": "Cancel",
+    "resendHintPending": "If something came out wrong, send it again: the new submission replaces the one under review.",
+    "resendHintInForce": "While we review the new submission, you keep filing with the current one."
   }
 }
