@@ -52,7 +52,7 @@ export interface CoreBlobReply extends CoreReply {
 
 /** How to make the call. No `json` and no `form` = a bare `GET`. */
 export interface CoreRequestOptions {
-  method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
+  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   /** Serialised as JSON with its `Content-Type`. */
   json?: unknown;
   /**
