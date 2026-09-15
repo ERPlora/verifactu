@@ -42,6 +42,32 @@ export interface GrantState extends GrantStatus {
   signature_kind: string;
   /** `dni` | `nie` | `''`. */
   document_type: string;
+  /** Submission number of the row on screen; `0` = nothing was ever sent (verifactu#115). */
+  version: number;
+  submitted_at: string;
+  reviewed_at: string;
+  /** Which parts ERPlora received. Booleans only: a file never travels this way. */
+  documents: GrantDocuments;
+  /** Newest first. Empty on a control plane older than hub#1873, which is «no history», not an error. */
+  history: GrantHistoryEntry[];
+}
+
+/** Which parts of a submission ERPlora received (verifactu#115). */
+export interface GrantDocuments {
+  signed_document: boolean;
+  dni_copy: boolean;
+  signature_sample: boolean;
+  representation_proof: boolean;
+}
+
+/** One submission, as the SaaS keeps it. `superseded` = replaced by a newer upload, never judged. */
+export interface GrantHistoryEntry {
+  version: number;
+  status: GrantStatusValue;
+  submitted_at: string;
+  reviewed_at: string;
+  rejected_reason: string;
+  superseded: boolean;
 }
 
 /** Los diez huecos del modelo oficial. Los de dirección pueden ir vacíos (se rellenan a mano). */
@@ -107,6 +133,32 @@ function failure(
 }
 
 const str = (v: unknown): string => (typeof v === 'string' ? v : '');
+const num = (v: unknown): number => (typeof v === 'number' && Number.isFinite(v) && v > 0 ? Math.floor(v) : 0);
+const flag = (v: unknown): boolean => v === true;
+
+function documentsOf(v: unknown): GrantDocuments {
+  const o = (v && typeof v === 'object' ? v : {}) as Record<string, unknown>;
+  return {
+    signed_document: flag(o.signed_document),
+    dni_copy: flag(o.dni_copy),
+    signature_sample: flag(o.signature_sample),
+    representation_proof: flag(o.representation_proof),
+  };
+}
+
+function historyOf(v: unknown): GrantHistoryEntry[] {
+  if (!Array.isArray(v)) return [];
+  return v
+    .filter((e): e is Record<string, unknown> => !!e && typeof e === 'object')
+    .map((e) => ({
+      version: num(e.version),
+      status: str(e.status) as GrantStatusValue,
+      submitted_at: str(e.submitted_at),
+      reviewed_at: str(e.reviewed_at),
+      rejected_reason: str(e.rejected_reason),
+      superseded: flag(e.superseded),
+    }));
+}
 
 /**
  * Lee el estado del otorgamiento. Cualquier sesión.
@@ -124,6 +176,11 @@ export async function getGrant(): Promise<GrantState> {
     rejected_reason: str(reply.body.rejected_reason),
     signature_kind: str(reply.body.signature_kind),
     document_type: str(reply.body.document_type),
+    version: num(reply.body.version),
+    submitted_at: str(reply.body.submitted_at),
+    reviewed_at: str(reply.body.reviewed_at),
+    documents: documentsOf(reply.body.documents),
+    history: historyOf(reply.body.history),
   };
 }
 

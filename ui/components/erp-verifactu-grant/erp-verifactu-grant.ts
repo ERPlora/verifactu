@@ -8,6 +8,9 @@ import {
   downloadGrantModel,
   getGrant,
   postGrant,
+  type GrantDocuments,
+  type GrantHistoryEntry,
+  type GrantState,
   type GrantStatusValue,
 } from '../../lib/representation-grant';
 import esLocale from '../../../locales/es.json';
@@ -106,6 +109,13 @@ export class ErpVerifactuGrant extends LitElement {
     /* La zona de subida va al ancho del formulario, como el resto de campos: en el hub nada
        lleva tope de ancho (hub#1605), y ok-dropzone trae 480 px por defecto. */
     ok-dropzone { --ok-dropzone-max-width: 100%; }
+    .submitted, .history { display:flex; flex-direction:column; gap:.25rem; }
+    .docs, .rows { list-style:none; margin:.25rem 0 0; padding:0; display:flex; flex-direction:column; gap:.25rem; }
+    .docs li { display:flex; align-items:center; gap:.4rem; font-size:.85rem; }
+    .docs ion-icon { color: var(--ion-color-success, #2dd36f); font-size:1.1rem; }
+    .rows li { display:flex; flex-wrap:wrap; justify-content:space-between; gap:.25rem .75rem; font-size:.8rem; padding:.3rem 0; border-bottom:1px solid var(--ion-color-light, #eceef1); }
+    .rows .k { color: var(--ion-color-medium, #6b7280); }
+    .resend { display:flex; flex-wrap:wrap; align-items:center; gap:.5rem; }
   `;
 
   /** El obligado tributario: identidad fiscal del hub, fuente única (ADR-0061). Se LEE, no se pide. */
@@ -130,6 +140,29 @@ export class ErpVerifactuGrant extends LitElement {
   @state() private at = '';
 
   @state() private rejectedReason = '';
+
+  /** Submission number on screen; `0` = nothing sent yet (verifactu#115). */
+  @state() private version = 0;
+
+  @state() private submittedAt = '';
+
+  @state() private reviewedAt = '';
+
+  @state() private documents: GrantDocuments = {
+    signed_document: false,
+    dni_copy: false,
+    signature_sample: false,
+    representation_proof: false,
+  };
+
+  @state() private history: GrantHistoryEntry[] = [];
+
+  /**
+   * The owner asked to send again while the last submission is still under review (or in force).
+   * The form stays closed otherwise: offering «upload it again» to whoever just uploaded is what
+   * creates the duplicates a reviewer has to untangle by hand — so it is asked for, never assumed.
+   */
+  @state() private resendOpen = false;
 
   @state() private loading = true;
 
@@ -180,13 +213,7 @@ export class ErpVerifactuGrant extends LitElement {
   private async load(): Promise<void> {
     this.loading = true;
     try {
-      const state = await getGrant();
-      this.status = state.status;
-      this.at = state.at;
-      this.rejectedReason = state.rejected_reason;
-      if (state.document_type === 'dni' || state.document_type === 'nie') {
-        this.documentType = state.document_type;
-      }
+      this.applyState(await getGrant());
     } catch {
       // Sin respuesta no se pinta un estado: «no lo sé» y «no has firmado» no son lo mismo, y
       // enseñar el segundo cuando pasa el primero manda a alguien a firmar dos veces.
@@ -202,7 +229,53 @@ export class ErpVerifactuGrant extends LitElement {
    * que otra persona tiene que desempatar a mano.
    */
   private get showForm(): boolean {
-    return this.status !== 'vigente' && this.status !== 'pendiente';
+    // Unless the owner ASKS to send again (verifactu#115): a document that came out blurry is fixed
+    // by a new submission, which supersedes the one under review; a vigente grant keeps filing
+    // while the new one is looked at.
+    if (this.status === 'vigente' || this.status === 'pendiente') return this.resendOpen;
+    return true;
+  }
+
+  /** What the core said, painted as it came. Shared by the first read and the read-back after a submit. */
+  private applyState(state: GrantState): void {
+    this.status = state.status;
+    this.at = state.at;
+    this.rejectedReason = state.rejected_reason;
+    this.version = state.version;
+    this.submittedAt = state.submitted_at;
+    this.reviewedAt = state.reviewed_at;
+    this.documents = state.documents;
+    this.history = state.history;
+    if (state.document_type === 'dni' || state.document_type === 'nie') {
+      this.documentType = state.document_type;
+    }
+  }
+
+  /** The states where a new submission is an option rather than the obvious next step. */
+  private get canResend(): boolean {
+    return this.status === 'vigente' || this.status === 'pendiente';
+  }
+
+  /** Something was sent and the core knows about it: the «what you sent» block has a subject. */
+  private get hasSubmission(): boolean {
+    return this.version > 0 && this.status !== '' && this.status !== 'absent';
+  }
+
+  /** A calendar date in the owner's locale, or the raw value when it is not a date. */
+  private dateLabel(iso: string): string {
+    if (!iso) return '';
+    const d = new Date(iso);
+    return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString(erplora().locale || undefined);
+  }
+
+  /** The outcome of one submission, as a catalogue key. Superseded wins: it was never judged. */
+  private historyKey(row: GrantHistoryEntry): string {
+    if (row.superseded) return 'grant.historyReplaced';
+    if (row.status === 'pendiente') return 'grant.historyPending';
+    if (row.status === 'vigente') return 'grant.historyInForce';
+    if (row.status === 'rechazado') return 'grant.historyRejected';
+    if (row.status === 'revocado') return 'grant.historyRevoked';
+    return 'grant.stateUnknown';
   }
 
   /** Muchos NIE no llevan firma impresa: sin una muestra no hay con qué comparar la del modelo. */
@@ -376,11 +449,86 @@ export class ErpVerifactuGrant extends LitElement {
       this.dniFile = null;
       this.signatureSample = null;
       this.representationProof = null;
+      this.resendOpen = false;
+      await this.readBack();
     } catch (e) {
       this.noteFailure(e);
     } finally {
       this.busy = false;
     }
+  }
+
+  /**
+   * After a submit, what is on screen (number, documents, history) is READ from the core, never
+   * assumed from the POST. A read that fails keeps the answer the POST gave: the upload happened.
+   */
+  private async readBack(): Promise<void> {
+    try {
+      this.applyState(await getGrant());
+    } catch {
+      // The POST already told us the status; the details wait for the next read.
+    }
+  }
+
+  private static readonly DOCUMENT_PARTS: ReadonlyArray<[keyof GrantDocuments, string]> = [
+    ['signed_document', 'grant.docSignedDocument'],
+    ['dni_copy', 'grant.docDniCopy'],
+    ['signature_sample', 'grant.docSignatureSample'],
+    ['representation_proof', 'grant.docRepresentationProof'],
+  ];
+
+  /** «What you sent»: the submission number, its date and the parts ERPlora received. */
+  private renderSubmitted(t: (k: string, p?: Record<string, unknown>) => string) {
+    if (!this.hasSubmission) return nothing;
+    const received = ErpVerifactuGrant.DOCUMENT_PARTS.filter(([part]) => this.documents[part]);
+    return html`<div class="submitted" data-testid="grant-submitted">
+      <h4>${t('grant.submittedTitle')}</h4>
+      <p class="hint">
+        ${t('grant.submittedOn', { n: this.version, date: this.dateLabel(this.submittedAt) })}
+        ${this.reviewedAt ? html` · ${t('grant.reviewedOn', { date: this.dateLabel(this.reviewedAt) })}` : nothing}
+      </p>
+      <ul class="docs">
+        ${received.map(
+          ([part, key]) => html`<li data-testid=${`grant-doc-${part}`}><ion-icon name="checkmark-circle-outline"></ion-icon>${t(key)}</li>`,
+        )}
+      </ul>
+    </div>`;
+  }
+
+  /** Every submission with its outcome. One row would only repeat the block above, so it needs two. */
+  private renderHistory(t: (k: string, p?: Record<string, unknown>) => string) {
+    if (this.history.length < 2) return nothing;
+    return html`<div class="history" data-testid="grant-history">
+      <h4>${t('grant.historyTitle')}</h4>
+      <ul class="rows">
+        ${this.history.map(
+          (row) => html`<li data-testid="grant-history-row">
+            <span class="k">${t('grant.historyRow', { n: row.version, date: this.dateLabel(row.submitted_at) })}</span>
+            <span>${t(this.historyKey(row))}${row.rejected_reason && !row.superseded ? `: ${row.rejected_reason}` : ''}</span>
+          </li>`,
+        )}
+      </ul>
+    </div>`;
+  }
+
+  /** «Send again», and once asked for, what happens to the submission that is already there. */
+  private renderResend(t: (k: string, p?: Record<string, unknown>) => string) {
+    if (!this.canResend) return nothing;
+    if (!this.resendOpen) {
+      return html`<div class="resend">
+        <ion-button fill="outline" size="small" data-testid="grant-resend" @click=${() => { this.resendOpen = true; }}>
+          <ion-icon slot="start" name="refresh-outline"></ion-icon>${t('grant.resend')}
+        </ion-button>
+      </div>`;
+    }
+    return html`<ok-inline-feedback tone="info" icon="information-circle-outline" data-testid="grant-resend-hint"
+        >${t(this.status === 'vigente' ? 'grant.resendHintInForce' : 'grant.resendHintPending')}</ok-inline-feedback
+      >
+      <div class="resend">
+        <ion-button fill="clear" size="small" data-testid="grant-resend-cancel" @click=${() => { this.resendOpen = false; }}>
+          ${t('grant.resendCancel')}
+        </ion-button>
+      </div>`;
   }
 
   /**
@@ -557,6 +705,9 @@ export class ErpVerifactuGrant extends LitElement {
             >`
           : nothing}
 
+        ${this.renderSubmitted(t)}
+        ${this.renderHistory(t)}
+        ${this.renderResend(t)}
         ${this.showForm ? this.renderForm(t) : nothing}
       </div>
     `;
