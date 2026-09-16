@@ -16,6 +16,14 @@ to the same ingestion command, which always creates an *alta*.
 AEAT **by mistake** — a rare case, handled by hand from the recovery screen. If you use it as a
 refund you are declaring that a real sale never happened.
 
+A rectifying record **stores what it rectifies** — the original invoice's number, date, issuer NIF,
+the rectification type and the amounts being corrected (verifactu#55) — as a fiscal snapshot on the
+row itself, the same pattern substitution (F3) already used. It is what lets the AEAT match the
+refund to the sale it corrects (`FacturasRectificadas`), and what lets contingency rebuild the exact
+same envelope on retry without re-reading the invoice. It is empty on every record that rectifies
+nothing, which is almost all of them, and — like the rest of a chained record — never changes once
+written.
+
 ## The chain is what makes the records trustworthy
 
 Each record carries the hash of the previous one, so the sequence cannot be reordered, have a record
@@ -84,10 +92,10 @@ reporting.
 
 ## The certificate belongs to the core, and the module never sees it
 
-The business `.p12` is uploaded in **Settings → Business** and lives in a core system table. The
-module only asks the core two things: *is there something to sign with*, and *whose certificate is
-it*. The private key and the password never cross into the module — the core does all the PKCS#12
-cryptography.
+The business `.p12` is uploaded from **this module's own Configuration screen** (*My certificate*
+tab, hub#1847) and lives in a core system table. The module only asks the core two things: *is
+there something to sign with*, and *whose certificate is it*. The private key and the password
+never cross into the module — the core does all the PKCS#12 cryptography.
 
 There is **one slot**: the business's own certificate. A hub holds that one or none at all —
 ERPlora's key is never handed down to it.
@@ -102,7 +110,8 @@ records reach the AEAT; it decides **by which of the two exclusive roads** they 
 
 On the delegated road nothing of ERPlora's reaches the hub: the hub builds the record and the cell
 transmits it, so that key never leaves the platform. What the hub needs there is not a certificate
-but the **signed authorisation** (Anexo I) and the secure connection of Settings → VeriFactu.
+but the **signed authorisation** (Anexo I) and the secure connection — both in this module's
+Configuration screen, "ERPlora files for me" tab (see [screens.md](screens.md)).
 
 The certificate's kind also decides **which AEAT endpoint** the hub uses on the own road: one
 carrying a natural person enters through the ordinary endpoint, an entity seal through the seal's.
@@ -143,6 +152,28 @@ software must do.
 A transmission writes the exact XML to storage first, and only then opens the connection. If the
 archive cannot be written, **nothing is transmitted**. On a retry the stored XML is reused rather
 than rebuilt, so what is retried is byte-for-byte what was built.
+
+## An arithmetically impossible record cannot be sealed
+
+The engine used to accept whatever amounts it was handed. A record declaring `rate 21.0` with a
+`tax_amount` nowhere near 21% of its `base_amount` would still get hashed, chained and queued for
+the AEAT — internally-consistent-looking numbers (`base + quota = total`) are not enough, because
+that check alone lets a quota that matches the wrong rate through. Since verifactu#53 the tax
+quota of every line in the breakdown is checked against the rate that line itself declares (±1
+cent of rounding tolerance) before a new `alta` record can be inserted at all — it is a table
+constraint, not application code, because `verifactu.records.create` is a public command and a
+table check is the one door nothing can route around. Already-chained records are exempt (`RD
+1007/2023`, they are immutable and cannot be revalidated retroactively): the rule judges what comes
+from now on.
+
+## Ingesting the same invoice twice never doubles a record
+
+An invoice reaches ingestion more than once through ordinary paths, not exotic ones:
+`records.ingest_invoice` is a **public** command, the outbox retries a listener whose first
+delivery failed, and a store can register its own sale through the API (sales#272). The guarantee
+is a unique index on the record's identity (`hub_id`, issuer NIF, invoice number, invoice date and
+record type — `uq_verifactu_record`, migration `001`): a second ingestion of the same invoice
+leaves exactly **one** row and does not burn a sequence number on the duplicate (verifactu#100).
 
 ## The module reads exactly one thing from `invoice`
 
