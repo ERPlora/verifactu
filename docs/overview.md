@@ -14,8 +14,10 @@ recover the chain after a database restore.
 
 - **It does not issue invoices.** `invoice` does that; this module reacts to it.
 - **It does not compute tax.** The amounts arrive already decided.
-- **It does not hold the certificate.** The business `.p12` is a **core** resource, uploaded in
-  Settings → Business. This module never sees its bytes or its password.
+- **It does not hold the certificate.** The business `.p12` is a **core** resource: this module's
+  own Configuration screen (*My certificate* tab, hub#1847) uploads it through the core's
+  business-certificate door, but the bytes and the password never cross into the module or leave
+  the core.
 - **It does not keep an event registry in the regulatory sense.** ERPlora is **VERI\*FACTU only**, and
   the AEAT states that the event registry is required only for non-verifiable systems. The module's
   own event log is our own traceability, voluntary, and does not make the product dual-mode.

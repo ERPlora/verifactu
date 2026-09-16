@@ -1,5 +1,7 @@
 # Módulo `verifactu` — cumplimiento fiscal español (AEAT)
 
+**Versión actual: 1.5.40** (`module.json`).
+
 Capa de compliance **VeriFactu** (RD 1007/2023) sobre `invoice`: genera, **firma** y **transmite** a
 la AEAT el registro de facturación de cada factura, lo **encadena** por SHA-256, gestiona la **cola
 de contingencia** y valida la integridad de la cadena.
@@ -19,11 +21,16 @@ de contingencia** y valida la integridad de la cadena.
 El camino es **el mismo** en pruebas y en producción; solo cambian dos cosas: qué entorno estampa
 el módulo en el payload, y si el token del Cloud lleva el grant. El entorno lo decide **este
 módulo** (su config, go-live de un solo sentido — guarda R1 de abajo); la celda gateway obedece al
-payload y no distingue auras ni remitentes. *(Ruta gateway en implementación:
+payload y no distingue auras ni remitentes. *(Ruta gateway YA IMPLEMENTADA y probada de punta a
+punta: dos hubs de PRE se enrolaron solos por mTLS y transmitieron con el Sello real, aceptados por
+la AEAT de preproducción el 2026-09-02 (ERPlora/hub#985, cerrada — cierra también
 [hub#1432](https://github.com/ERPlora/hub/issues/1432) ·
 [verifactu-gateway#42](https://github.com/ERPlora/verifactu-gateway/issues/42) ·
-[saas#1794](https://github.com/ERPlora/saas/issues/1794). Un hub con **certificado propio**
-transmite DIRECTO a la AEAT, sin celda — eso no cambia.)*
+[saas#1794](https://github.com/ERPlora/saas/issues/1794), las tres cerradas). Esa prueba fue en
+**nombre propio** (NIF de ERPlora); transmitir en representación de un tercero con un NIF de
+cliente real bajo un grant firmado ya tiene el código (hub#1460, cerrada) pero no consta un ensayo
+contra la AEAT todavía. Un hub con **certificado propio** transmite DIRECTO a la AEAT, sin celda —
+eso no cambia.)*
 
 ### Antes del go-live — todo va a la AEAT de pruebas
 
@@ -73,7 +80,7 @@ versión instalada y cita la de TU versión, no la de la última publicada. En i
 | Fichero | Para qué |
 | ------- | -------- |
 | [`docs/overview.md`](docs/overview.md) | Qué hace y qué NO hace; el vocabulario y la tarea de contingencia |
-| [`docs/screens.md`](docs/screens.md) | Records / Contingency / Events / Recovery / Settings paso a paso |
+| [`docs/screens.md`](docs/screens.md) | Records / Contingency / Events / Recovery / Configuration / Settings paso a paso |
 | [`docs/concepts.md`](docs/concepts.md) | **Nada se anula** (rectificativa = `RegistroAlta` con importes negativos), producción y pruebas son **DOS cadenas**, el **go-live es de un solo sentido**, el certificado es del CORE |
 | [`docs/limits.md`](docs/limits.md) | Rechazos reales (`verifactu.unsent_records`, `record_environment_unknown`…), backoff, permisos y diagnóstico |
 
@@ -102,7 +109,10 @@ versión instalada y cita la de TU versión, no la de la última publicada. En i
 | tarea | `process_contingency` — `*/5 * * * *` (backoff 5·10·20·40·60 min) | — |
 | emite | `verifactu.record.created/transmitted`, `contingency.*`, `config.changed`, `chain.*`, `aeat.queried`, `diagnostic.run` | — |
 
-Navegación: `erp-verifactu-records`, `-contingency`, `-events`, `-recovery`, `-settings`.
+Navegación: `erp-verifactu-records`, `-contingency`, `-events`, `-recovery`, `-config`
+(Configuration — el certificado, el otorgamiento y la identidad de máquina, v1.5.36) y `-settings`
+(corto desde la misma versión). `erp-verifactu-grant` no es una pestaña propia: vive embebido
+dentro de `-config`.
 
 ## Layout
 
@@ -121,8 +131,11 @@ docs/                         # documentación de usuario + corpus del asistente
 
 El estado vive en las **Issues de este repo**, no aquí. Huecos documentados en `docs/limits.md`:
 R1 **vive dentro del módulo** (se va con él) y solo cuenta `accepted`; las contraseñas de
-certificado siguen **en claro**; y el «enviar prueba» standalone aún usa el emisor propio del módulo
-en vez de la identidad global del hub.
+certificado siguen **en claro**; y el emisor del módulo puede divergir de la identidad global del
+hub una vez guardado una vez (`verifactu.config.save`) — solo la **primera** activación de un hub
+nuevo hereda el NIF/nombre de Ajustes → Negocio automáticamente (verifactu#107/#108).
 
-Doc de arquitectura: `architecture/modules/verifactu.md` + diseño en
-`architecture/saas/verifactu-gateway.md` (ADR-0202). Cargarlos antes de tocar el módulo.
+Doc de arquitectura: `architecture/modules/verifactu.md` + diseño de la ruta gateway en
+`architecture/saas/aeat-gateway.md` (ADR-0320) — **no** `architecture/saas/verifactu-gateway.md`,
+que ese mismo fichero marca como sustituido y redirige al anterior. Cargarlos antes de tocar el
+módulo.

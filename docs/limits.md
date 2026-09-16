@@ -7,8 +7,14 @@
 - **The guard only counts `accepted` records.** While a record is `transmitted` and the answer has not
   come back, the environment toggle can still go backwards.
 - **Certificate passwords are stored in clear.** Encryption at rest is still pending.
-- **The standalone "send test" and the config issuer field still use the module's own data** instead
-  of the hub's global business identity. The invoice flow already uses the global one.
+- **The config issuer field can still diverge from the hub's global business identity.** Since
+  verifactu#107/#108 a brand-new hub that has never saved falls back to `Settings → Business`'s tax
+  id/name for its **first** activation — the screen no longer refuses it for a missing NIF that was
+  actually set globally. But once the module's own `issuer_nif`/`issuer_name` columns hold a
+  non-empty value (any save), that stored value **wins** over the hub's global identity from then
+  on, by design (the engine anchors the chain on it) — so a hub that changes its fiscal name/NIF in
+  Settings → Business after its first save will not see it reflected here automatically. The
+  standalone "send test" reads the same columns, so it inherits the same behaviour.
 
 ## Refusals you will actually see
 
@@ -23,7 +29,7 @@
 | `ck_verifactu_record_quota_matches_row_rate` | No readable breakdown, and the quota does not match the row's own `tax_rate` | Same — nothing was sealed, no sequence number was spent |
 | `ck_verifactu_record_ordinary_total_not_negative` | An `F1`/`F2`/`F3` totalling below zero | A negative amount is a corrective invoice (`R1`…`R5`), issued by `invoice.rectify` |
 | Capability denied | The `certificate` or `network` grant is missing | Grant them in Settings → Permissions |
-| No road to the AEAT | The hub has neither an own certificate nor the delegated route enrolled, so its records are chained but stay `pending` | Upload a certificate in Settings → Business, or complete the secure connection with ERPlora in Settings → VeriFactu |
+| No road to the AEAT | The hub has neither an own certificate nor the delegated route enrolled, so its records are chained but stay `pending` | Open this module's Configuration screen: upload a certificate (*My certificate* tab), or complete the secure connection with ERPlora (*ERPlora files for me* tab) |
 
 Note the guard style: a violated assert **rolls the entire command back**, including the event that
 would have gone to the outbox. Nothing half-happens.
@@ -169,5 +175,5 @@ for.
 **"The QR does not appear on the sale document."** The document reads the record for that invoice. If
 no record exists yet — or the module never ingested the invoice — there is no QR.
 
-**"The certificate expired."** Records will fail to sign. Upload a new one in Settings → Business; the
-expiry is read from the certificate itself.
+**"The certificate expired."** Records will fail to sign. Upload a new one from this module's
+Configuration screen (*My certificate* tab); the expiry is read from the certificate itself.
