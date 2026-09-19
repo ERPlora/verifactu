@@ -12,6 +12,7 @@ import {
   ENGINE_CERT_REASON_CODES,
   ENGINE_MESSAGE_KEYS,
   ENGINE_SCHEMA_REASON_CODES,
+  ENGINE_WAIT_REASON_CODES,
   EVENT_CATALOG_PREFIX,
   EVENT_REASON_PREFIX,
   catalogKeyFor,
@@ -226,7 +227,14 @@ describe('catalogue parity — every key the engine emits, in both languages (AD
   // Spanish user, which is the defect this issue exists to remove. It cannot be caught by review.
   it('inspects the whole engine surface', () => {
     // Guards the guard: an emptied constant would make every loop below pass vacuously.
-    expect(ENGINE_MESSAGE_KEYS.length).toBe(17);
+    expect(ENGINE_MESSAGE_KEYS.length).toBe(18);
+  });
+
+  // verifactu#111 — a record that did not leave with its sale files WHY it waits. Without the key
+  // here the Records detail cannot say it in the reader's language, and the Events screen shows the
+  // engine's Spanish.
+  it('knows the audit row of a record that waits for the drain (verifactu#111)', () => {
+    expect(ENGINE_MESSAGE_KEYS).toContain('verifactu.transmission_deferred');
   });
 
   // hub#1485 — the THIRD verdict `run_diagnostics` can reach. On the delegated road a failed test
@@ -296,6 +304,8 @@ describe('catalogue parity — every key the engine emits, in both languages (AD
       'verifactu.aeat_queried': ['count', 'issuer_nif'],
       'verifactu.chain_recovered_from_aeat': ['source', 'issuer_nif', 'record_hash', 'sequence_number', 'found'],
       'verifactu.chain_continued_manually': ['source', 'issuer_nif', 'record_hash', 'sequence_number'],
+      // `why` is the engine's prose; the module overrides it with `why_reason` composed here.
+      'verifactu.transmission_deferred': ['why'],
     };
     expect(Object.keys(alwaysSent).sort()).toEqual([...ENGINE_MESSAGE_KEYS].sort());
 
@@ -718,5 +728,43 @@ describe('schema reason parity — every refusal the validator emits, in both la
         expect(sentence, `${lang} ${code}`).not.toContain('{detail}');
       }
     }
+  });
+});
+
+describe('wait parity — why a record did not leave with its sale (verifactu#111)', () => {
+  it('inspects both reasons the engine files', () => {
+    // Guards the guard: an emptied constant would make every loop below pass vacuously.
+    expect([...ENGINE_WAIT_REASON_CODES].sort()).toEqual([
+      'earlier_records_pending',
+      'no_transmission_route',
+    ]);
+  });
+
+  it.each(ENGINE_WAIT_REASON_CODES)('%s resolves in en and es, translated', (code) => {
+    type Evt = Record<string, Record<string, Record<string, Record<string, string>>>>;
+    const en = (CATALOG.en as Evt).ui.evt.reason[code];
+    const es = (CATALOG.es as Evt).ui.evt.reason[code];
+    expect(typeof en, `en is missing ${EVENT_REASON_PREFIX}${code}`).toBe('string');
+    expect(typeof es, `es is missing ${EVENT_REASON_PREFIX}${code}`).toBe('string');
+    expect(es, `es copies en for ${code}`).not.toBe(en);
+    // Factless: the engine files `{code}` alone, so any placeholder would print raw.
+    expect(en.match(/\{[a-z_]+\}/g)).toBeNull();
+    expect(es.match(/\{[a-z_]+\}/g)).toBeNull();
+  });
+
+  it('composes the reason in the reader language, never the engine prose', () => {
+    const ENGINE_WHY = 'antes tiene que salir un registro anterior de la misma cadena';
+    const details = JSON.stringify({
+      message_key: 'verifactu.transmission_deferred',
+      why: ENGINE_WHY,
+      why_reason: { code: 'earlier_records_pending' },
+    });
+
+    const sentence = eventMessage(CATALOG, 'en', interpolatingIn('en'), row(details));
+
+    type Evt = Record<string, Record<string, Record<string, Record<string, string>>>>;
+    expect(sentence).toContain((CATALOG.en as Evt).ui.evt.reason.earlier_records_pending);
+    expect(sentence).not.toContain(ENGINE_WHY);
+    expect(sentence).not.toContain('{why}');
   });
 });

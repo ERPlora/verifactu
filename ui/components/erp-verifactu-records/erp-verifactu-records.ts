@@ -8,6 +8,7 @@ import { createListController } from '@erplora/module-sdk';
 import type { ListController, ListClient, ListParams, ListPage } from '@erplora/module-sdk';
 import esLocale from '../../../locales/es.json';
 import enLocale from '../../../locales/en.json';
+import { eventMessage, type EventRow } from '../../lib/event-message';
 const CATALOG: Record<string, unknown> = { es: esLocale, en: enLocale };
 
 interface ErploraClientLike extends ListClient {
@@ -73,6 +74,36 @@ interface VerifactuRecordDetail {
   transmission_id: string;
 }
 
+/**
+ * Why a record that is not at the AEAT yet waits, and when it goes out on its own (verifactu#111).
+ * Both already in the reader's language. `'loading'` while the two lookups are on their way.
+ */
+interface WaitingNote {
+  why: string;
+  when: string;
+}
+
+/** The statuses of a record that has not reached the AEAT and will go out on its own. */
+const ON_ITS_WAY = new Set(['pending', 'error', 'retry']);
+
+/**
+ * The audit rows that say why a record did not go out: the deferral the engine files when a sale
+ * leaves without a road or behind an older record, and a failed attempt. `record_created` is
+ * written in the same instant as a deferral, so it is excluded by type, not by time.
+ */
+const REASON_EVENTS = new Set(['transmission_deferred', 'transmission_failure']);
+
+/** Queue entries that still have an attempt ahead (`failed`/`cancelled` do not). */
+const QUEUED = new Set(['pending', 'retrying']);
+
+/**
+ * `2026-09-19T10:20:00+02:00` → `2026-09-19 10:20`: the wall clock the hub wrote, without seconds
+ * or offset. No timezone conversion on purpose — the time is the hub's, whatever the reader's.
+ */
+function wallClock(iso: string): string {
+  return iso.length >= 16 ? iso.slice(0, 16).replace('T', ' ') : iso;
+}
+
 function erplora(): ErploraClientLike {
   const c = (globalThis as { erplora?: ErploraClientLike }).erplora;
   if (!c) throw new Error('erplora SDK no inicializado por el shell');
@@ -116,6 +147,9 @@ export class ErpVerifactuRecords extends LitElement {
   @state() private invoiceTotal: number | null = null;
 
   @state() private invoiceCountFailed = false;
+
+  /** Why the open record waits and when it leaves (verifactu#111); `null` = nothing to explain. */
+  @state() private waiting: WaitingNote | 'loading' | null = null;
 
   /** The open detail, or `null` when the screen is showing the list (verifactu#86). */
   @state() private detail: VerifactuRecordDetail | null = null;
@@ -296,6 +330,7 @@ export class ErpVerifactuRecords extends LitElement {
         return;
       }
       this.detail = record;
+      void this.explainWaiting(record);
     } catch (e) {
       this.detailError = e instanceof Error ? e.message : erplora().t(CATALOG, 'ui.errLoadDetail');
     } finally {
@@ -306,6 +341,73 @@ export class ErpVerifactuRecords extends LitElement {
   private closeDetail(): void {
     this.detail = null;
     this.detailError = '';
+    this.waiting = null;
+  }
+
+  /**
+   * WHY a record is not at the AEAT yet and WHEN it goes out on its own (verifactu#111).
+   *
+   * The engine sends these records by itself — in sequence order, declared as late remissions —
+   * so the screen offers no button: it says what is going on. WHY is the sentence of the record's
+   * own reason row, composed from its code; WHEN is its next attempt if it sits in the contingency
+   * queue, and otherwise the next automatic send (every 5 minutes, once the hub can file).
+   *
+   * Only for a record on its way: one the AEAT holds or refused has nothing to wait for, and is
+   * not worth two queries.
+   */
+  private async explainWaiting(record: VerifactuRecordDetail): Promise<void> {
+    this.waiting = null;
+    if (!ON_ITS_WAY.has(record.status)) return;
+    this.waiting = 'loading';
+    const client = erplora();
+    const t = (k: string, params?: Record<string, unknown>): string => client.t(CATALOG, k, params);
+    const filters = { record_id: record.id };
+    const [events, queue] = await Promise.allSettled([
+      client.queryPage<EventRow & { event_type: string }>('verifactu.events.list', {
+        filters,
+        sort: 'timestamp',
+        dir: 'desc',
+        limit: 20,
+        offset: 0,
+      }),
+      client.queryPage<{ status: string; next_attempt_at: string | null }>(
+        'verifactu.contingency.list',
+        { filters, limit: 1, offset: 0 },
+      ),
+    ]);
+    let why: string;
+    if (events.status === 'rejected') {
+      why = t('ui.pendingWhyUnavailable');
+    } else {
+      const reason = events.value.rows.find((row) => REASON_EVENTS.has(row.event_type));
+      why = reason
+        ? eventMessage(CATALOG, client.locale, (c, k, p) => client.t(c, k, p), reason)
+        : t('ui.pendingWhyUnknown');
+    }
+    const entry = queue.status === 'fulfilled'
+      ? queue.value.rows.find((row) => QUEUED.has(row.status) && row.next_attempt_at)
+      : undefined;
+    const when = entry?.next_attempt_at
+      ? t('ui.pendingWhenQueued', { at: wallClock(entry.next_attempt_at) })
+      : t('ui.pendingWhenNextSend');
+    // The user may have gone back, or opened another record, while the lookups ran.
+    if (this.detail?.id !== record.id) return;
+    this.waiting = { why, when };
+  }
+
+  private renderWaiting(t: (k: string) => string) {
+    if (!this.waiting) return nothing;
+    return html`<ok-inline-feedback
+      data-test="waiting"
+      tone="warning"
+      icon="hourglass-outline"
+      heading=${t('ui.pendingTitle')}
+    >
+      ${this.waiting === 'loading'
+        ? html`<p>${t('ui.loading')}</p>`
+        : html`<p data-test="waiting-why">${this.waiting.why}</p>
+            <p data-test="waiting-when">${this.waiting.when}</p>`}
+    </ok-inline-feedback>`;
   }
 
   /** A hash, truncated for a screen — the same 16-char convention `erp-verifactu-recovery` uses. */
@@ -337,6 +439,7 @@ export class ErpVerifactuRecords extends LitElement {
           ← ${t('ui.back')}
         </ion-button>
       </header>
+      ${this.renderWaiting(t)}
       <dl class="grid">
         <div><dt>${t('ui.colSeq')}</dt><dd>${d.sequence_number}</dd></div>
         <div><dt>${t('ui.colDate')}</dt><dd>${d.invoice_date}</dd></div>

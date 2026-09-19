@@ -100,8 +100,10 @@
         "schema_breakdown_reverse_charge_missing": "línea {line} del desglose: con inversión del sujeto pasivo (S2) {element} es obligatorio y va a 0 — no se omite",
         "schema_breakdown_vat_rate_not_allowed": "línea {line} del desglose: TipoImpositivo {value} no es un tipo de IVA; la AEAT solo admite 0, 2, 4, 5, 7,5, 10 y 21",
         "schema_breakdown_surcharge_rate_not_allowed": "línea {line} del desglose: TipoRecargoEquivalencia {value} no es un tipo de recargo de equivalencia; la AEAT admite 0, 0,26, 0,5, 0,62, 1, 1,4, 1,75 y 5,2",
-        "schema_simplified_over_ceiling": "una factura simplificada F2 no puede pasar de {ceiling} € (más {tolerance} € de tolerancia) sumando base y cuota de todas las líneas, y esta suma {total} €; con este importe hay que emitir factura completa identificando al destinatario"
-      }
+        "schema_simplified_over_ceiling": "una factura simplificada F2 no puede pasar de {ceiling} € (más {tolerance} € de tolerancia) sumando base y cuota de todas las líneas, y esta suma {total} €; con este importe hay que emitir factura completa identificando al destinatario",
+        "earlier_records_pending": "antes tiene que salir un registro anterior de la misma cadena, porque a la AEAT se envían en orden"
+      },
+      "transmission_deferred": "Aún no se ha enviado a la AEAT: {why}"
     },
     "colSeq": "Seq",
     "colInvoice": "Factura",
@@ -324,6 +326,11 @@
     "fieldAeatResponseMessage": "Mensaje de respuesta",
     "fieldRetryCount": "Reintentos",
     "fieldNextRetryAt": "Próximo reintento",
+    "pendingTitle": "Aún no está en la AEAT",
+    "pendingWhenNextSend": "Sale solo en el próximo envío automático —cada 5 minutos, en cuanto este hub pueda enviar—, en orden y declarado a la AEAT como envío tardío. No tienes que hacer nada.",
+    "pendingWhenQueued": "Está en la cola de contingencia y sale solo en su próximo intento, {at}, en orden y declarado a la AEAT como envío tardío. No tienes que hacer nada.",
+    "pendingWhyUnknown": "No salió al crearse.",
+    "pendingWhyUnavailable": "No se ha podido cargar el motivo.",
     "fieldQrUrl": "QR",
     "fieldQrUrlLink": "Abrir QR",
     "declTitle": "Declaración responsable",

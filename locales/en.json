@@ -99,8 +99,10 @@
         "schema_breakdown_reverse_charge_missing": "breakdown line {line}: under reverse charge (S2) {element} is required and goes to 0 — it is not left out",
         "schema_breakdown_vat_rate_not_allowed": "breakdown line {line}: TipoImpositivo {value} is not a VAT rate; the AEAT only admits 0, 2, 4, 5, 7.5, 10 and 21",
         "schema_breakdown_surcharge_rate_not_allowed": "breakdown line {line}: TipoRecargoEquivalencia {value} is not an equivalence surcharge rate; the AEAT admits 0, 0.26, 0.5, 0.62, 1, 1.4, 1.75 and 5.2",
-        "schema_simplified_over_ceiling": "a simplified F2 invoice cannot go over {ceiling} € (plus {tolerance} € of tolerance) adding base and tax of every line, and this one adds {total} €; at this amount a full invoice identifying the customer is required"
-      }
+        "schema_simplified_over_ceiling": "a simplified F2 invoice cannot go over {ceiling} € (plus {tolerance} € of tolerance) adding base and tax of every line, and this one adds {total} €; at this amount a full invoice identifying the customer is required",
+        "earlier_records_pending": "an earlier record of the same chain has to go first, because records reach the AEAT in order"
+      },
+      "transmission_deferred": "Not sent to the AEAT yet: {why}"
     },
     "colSeq": "Seq",
     "colInvoice": "Invoice",
@@ -323,6 +325,11 @@
     "fieldAeatResponseMessage": "Response message",
     "fieldRetryCount": "Retries",
     "fieldNextRetryAt": "Next retry at",
+    "pendingTitle": "Not at the AEAT yet",
+    "pendingWhenNextSend": "It goes out on its own at the next automatic send — every 5 minutes, as soon as this hub can file — in order and declared to the AEAT as a late submission. You don't need to do anything.",
+    "pendingWhenQueued": "It is in the contingency queue and goes out on its own at its next attempt, {at}, in order and declared to the AEAT as a late submission. You don't need to do anything.",
+    "pendingWhyUnknown": "It did not go out when it was created.",
+    "pendingWhyUnavailable": "The reason could not be loaded.",
     "fieldQrUrl": "QR",
     "fieldQrUrlLink": "Open QR",
     "declTitle": "Responsible declaration",

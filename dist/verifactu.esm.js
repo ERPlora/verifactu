@@ -2403,8 +2403,10 @@ var es_default = {
         schema_breakdown_reverse_charge_missing: "l\xEDnea {line} del desglose: con inversi\xF3n del sujeto pasivo (S2) {element} es obligatorio y va a 0 \u2014 no se omite",
         schema_breakdown_vat_rate_not_allowed: "l\xEDnea {line} del desglose: TipoImpositivo {value} no es un tipo de IVA; la AEAT solo admite 0, 2, 4, 5, 7,5, 10 y 21",
         schema_breakdown_surcharge_rate_not_allowed: "l\xEDnea {line} del desglose: TipoRecargoEquivalencia {value} no es un tipo de recargo de equivalencia; la AEAT admite 0, 0,26, 0,5, 0,62, 1, 1,4, 1,75 y 5,2",
-        schema_simplified_over_ceiling: "una factura simplificada F2 no puede pasar de {ceiling} \u20AC (m\xE1s {tolerance} \u20AC de tolerancia) sumando base y cuota de todas las l\xEDneas, y esta suma {total} \u20AC; con este importe hay que emitir factura completa identificando al destinatario"
-      }
+        schema_simplified_over_ceiling: "una factura simplificada F2 no puede pasar de {ceiling} \u20AC (m\xE1s {tolerance} \u20AC de tolerancia) sumando base y cuota de todas las l\xEDneas, y esta suma {total} \u20AC; con este importe hay que emitir factura completa identificando al destinatario",
+        earlier_records_pending: "antes tiene que salir un registro anterior de la misma cadena, porque a la AEAT se env\xEDan en orden"
+      },
+      transmission_deferred: "A\xFAn no se ha enviado a la AEAT: {why}"
     },
     colSeq: "Seq",
     colInvoice: "Factura",
@@ -2627,6 +2629,11 @@ var es_default = {
     fieldAeatResponseMessage: "Mensaje de respuesta",
     fieldRetryCount: "Reintentos",
     fieldNextRetryAt: "Pr\xF3ximo reintento",
+    pendingTitle: "A\xFAn no est\xE1 en la AEAT",
+    pendingWhenNextSend: "Sale solo en el pr\xF3ximo env\xEDo autom\xE1tico \u2014cada 5 minutos, en cuanto este hub pueda enviar\u2014, en orden y declarado a la AEAT como env\xEDo tard\xEDo. No tienes que hacer nada.",
+    pendingWhenQueued: "Est\xE1 en la cola de contingencia y sale solo en su pr\xF3ximo intento, {at}, en orden y declarado a la AEAT como env\xEDo tard\xEDo. No tienes que hacer nada.",
+    pendingWhyUnknown: "No sali\xF3 al crearse.",
+    pendingWhyUnavailable: "No se ha podido cargar el motivo.",
     fieldQrUrl: "QR",
     fieldQrUrlLink: "Abrir QR",
     declTitle: "Declaraci\xF3n responsable",
@@ -2889,8 +2896,10 @@ var en_default = {
         schema_breakdown_reverse_charge_missing: "breakdown line {line}: under reverse charge (S2) {element} is required and goes to 0 \u2014 it is not left out",
         schema_breakdown_vat_rate_not_allowed: "breakdown line {line}: TipoImpositivo {value} is not a VAT rate; the AEAT only admits 0, 2, 4, 5, 7.5, 10 and 21",
         schema_breakdown_surcharge_rate_not_allowed: "breakdown line {line}: TipoRecargoEquivalencia {value} is not an equivalence surcharge rate; the AEAT admits 0, 0.26, 0.5, 0.62, 1, 1.4, 1.75 and 5.2",
-        schema_simplified_over_ceiling: "a simplified F2 invoice cannot go over {ceiling} \u20AC (plus {tolerance} \u20AC of tolerance) adding base and tax of every line, and this one adds {total} \u20AC; at this amount a full invoice identifying the customer is required"
-      }
+        schema_simplified_over_ceiling: "a simplified F2 invoice cannot go over {ceiling} \u20AC (plus {tolerance} \u20AC of tolerance) adding base and tax of every line, and this one adds {total} \u20AC; at this amount a full invoice identifying the customer is required",
+        earlier_records_pending: "an earlier record of the same chain has to go first, because records reach the AEAT in order"
+      },
+      transmission_deferred: "Not sent to the AEAT yet: {why}"
     },
     colSeq: "Seq",
     colInvoice: "Invoice",
@@ -3113,6 +3122,11 @@ var en_default = {
     fieldAeatResponseMessage: "Response message",
     fieldRetryCount: "Retries",
     fieldNextRetryAt: "Next retry at",
+    pendingTitle: "Not at the AEAT yet",
+    pendingWhenNextSend: "It goes out on its own at the next automatic send \u2014 every 5 minutes, as soon as this hub can file \u2014 in order and declared to the AEAT as a late submission. You don't need to do anything.",
+    pendingWhenQueued: "It is in the contingency queue and goes out on its own at its next attempt, {at}, in order and declared to the AEAT as a late submission. You don't need to do anything.",
+    pendingWhyUnknown: "It did not go out when it was created.",
+    pendingWhyUnavailable: "The reason could not be loaded.",
     fieldQrUrl: "QR",
     fieldQrUrlLink: "Open QR",
     declTitle: "Responsible declaration",
@@ -6956,6 +6970,12 @@ define("erp-verifactu-events", ErpVerifactuEvents);
 
 // ui/components/erp-verifactu-records/erp-verifactu-records.ts
 var CATALOG5 = { es: es_default, en: en_default };
+var ON_ITS_WAY = /* @__PURE__ */ new Set(["pending", "error", "retry"]);
+var REASON_EVENTS = /* @__PURE__ */ new Set(["transmission_deferred", "transmission_failure"]);
+var QUEUED = /* @__PURE__ */ new Set(["pending", "retrying"]);
+function wallClock(iso) {
+  return iso.length >= 16 ? iso.slice(0, 16).replace("T", " ") : iso;
+}
 function erplora5() {
   const c5 = globalThis.erplora;
   if (!c5) throw new Error("erplora SDK no inicializado por el shell");
@@ -6975,6 +6995,7 @@ var _ErpVerifactuRecords = class _ErpVerifactuRecords extends i3 {
     this.tick = 0;
     this.invoiceTotal = null;
     this.invoiceCountFailed = false;
+    this.waiting = null;
     this.detail = null;
     this.detailError = "";
     this.detailLoading = false;
@@ -7141,6 +7162,7 @@ var _ErpVerifactuRecords = class _ErpVerifactuRecords extends i3 {
         return;
       }
       this.detail = record;
+      void this.explainWaiting(record);
     } catch (e6) {
       this.detailError = e6 instanceof Error ? e6.message : erplora5().t(CATALOG5, "ui.errLoadDetail");
     } finally {
@@ -7150,6 +7172,62 @@ var _ErpVerifactuRecords = class _ErpVerifactuRecords extends i3 {
   closeDetail() {
     this.detail = null;
     this.detailError = "";
+    this.waiting = null;
+  }
+  /**
+   * WHY a record is not at the AEAT yet and WHEN it goes out on its own (verifactu#111).
+   *
+   * The engine sends these records by itself — in sequence order, declared as late remissions —
+   * so the screen offers no button: it says what is going on. WHY is the sentence of the record's
+   * own reason row, composed from its code; WHEN is its next attempt if it sits in the contingency
+   * queue, and otherwise the next automatic send (every 5 minutes, once the hub can file).
+   *
+   * Only for a record on its way: one the AEAT holds or refused has nothing to wait for, and is
+   * not worth two queries.
+   */
+  async explainWaiting(record) {
+    this.waiting = null;
+    if (!ON_ITS_WAY.has(record.status)) return;
+    this.waiting = "loading";
+    const client = erplora5();
+    const t5 = (k2, params) => client.t(CATALOG5, k2, params);
+    const filters = { record_id: record.id };
+    const [events, queue] = await Promise.allSettled([
+      client.queryPage("verifactu.events.list", {
+        filters,
+        sort: "timestamp",
+        dir: "desc",
+        limit: 20,
+        offset: 0
+      }),
+      client.queryPage(
+        "verifactu.contingency.list",
+        { filters, limit: 1, offset: 0 }
+      )
+    ]);
+    let why;
+    if (events.status === "rejected") {
+      why = t5("ui.pendingWhyUnavailable");
+    } else {
+      const reason = events.value.rows.find((row) => REASON_EVENTS.has(row.event_type));
+      why = reason ? eventMessage(CATALOG5, client.locale, (c5, k2, p4) => client.t(c5, k2, p4), reason) : t5("ui.pendingWhyUnknown");
+    }
+    const entry = queue.status === "fulfilled" ? queue.value.rows.find((row) => QUEUED.has(row.status) && row.next_attempt_at) : void 0;
+    const when = entry?.next_attempt_at ? t5("ui.pendingWhenQueued", { at: wallClock(entry.next_attempt_at) }) : t5("ui.pendingWhenNextSend");
+    if (this.detail?.id !== record.id) return;
+    this.waiting = { why, when };
+  }
+  renderWaiting(t5) {
+    if (!this.waiting) return A;
+    return b2`<ok-inline-feedback
+      data-test="waiting"
+      tone="warning"
+      icon="hourglass-outline"
+      heading=${t5("ui.pendingTitle")}
+    >
+      ${this.waiting === "loading" ? b2`<p>${t5("ui.loading")}</p>` : b2`<p data-test="waiting-why">${this.waiting.why}</p>
+            <p data-test="waiting-when">${this.waiting.when}</p>`}
+    </ok-inline-feedback>`;
   }
   /** A hash, truncated for a screen — the same 16-char convention `erp-verifactu-recovery` uses. */
   static shortHash(hash) {
@@ -7178,6 +7256,7 @@ var _ErpVerifactuRecords = class _ErpVerifactuRecords extends i3 {
           ← ${t5("ui.back")}
         </ion-button>
       </header>
+      ${this.renderWaiting(t5)}
       <dl class="grid">
         <div><dt>${t5("ui.colSeq")}</dt><dd>${d3.sequence_number}</dd></div>
         <div><dt>${t5("ui.colDate")}</dt><dd>${d3.invoice_date}</dd></div>
@@ -7269,6 +7348,9 @@ __decorateClass([
 __decorateClass([
   r5()
 ], _ErpVerifactuRecords.prototype, "invoiceCountFailed", 2);
+__decorateClass([
+  r5()
+], _ErpVerifactuRecords.prototype, "waiting", 2);
 __decorateClass([
   r5()
 ], _ErpVerifactuRecords.prototype, "detail", 2);

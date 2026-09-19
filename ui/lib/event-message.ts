@@ -61,6 +61,8 @@ export const ENGINE_MESSAGE_KEYS = [
   'verifactu.aeat_queried',
   'verifactu.chain_recovered_from_aeat',
   'verifactu.chain_continued_manually',
+  // verifactu#111 — a record that did not leave with its sale says why it waits for the drain.
+  'verifactu.transmission_deferred',
 ] as const;
 
 /**
@@ -99,6 +101,16 @@ export const ENGINE_CERT_REASON_CODES = [
   'aeat_tls_rejected',
   'aeat_unreachable',
 ] as const;
+
+/**
+ * Why a sealed record did not leave with its sale — the `why_reason.code` of
+ * `verifactu.transmission_deferred`, filed by `records.rs` (verifactu#111).
+ *
+ * `no_transmission_route` is shared on purpose with the diagnostic above: it is the same fact
+ * («this hub has nowhere to file yet»), so it is one sentence. Same contract as the lists around
+ * it: not a lookup table, the surface the parity test walks.
+ */
+export const ENGINE_WAIT_REASON_CODES = ['no_transmission_route', 'earlier_records_pending'] as const;
 
 /**
  * The refusals `xsd.rs::validate_registro` files as codes (hub#1576) — the reason NESTED inside a
