@@ -45,6 +45,15 @@ MANIFEST = json.loads((MODULE_DIR / "module.json").read_text())
 # would have to delete to stop needing that core.
 CORE_REQUIREMENTS = (
     (
+        "hub#1943 — a record sold without a road leaves on its own, in chain order and declared "
+        "late; the records screen promises exactly that («you do not have to do anything») and "
+        "reads the reason the engine files (verifactu#111)",
+        (1, 1, 29),
+        "transmission_deferred",
+        "crates/plugins/verifactu/src/records.rs: `transmission_deferred` absent in v1.1.28, "
+        "present in v1.1.29 — below it the drain never picks up a record that was never queued",
+    ),
+    (
         "hub#1871 — the road switch is decided by the core (`PATCH /api/business/certificate`)",
         (1, 1, 24),
         "use_for_transmission",
