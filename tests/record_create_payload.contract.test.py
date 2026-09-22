@@ -70,8 +70,9 @@ ENGINE_COMPUTED = {
     "environment",
 }
 
-# Read from the payload but never persisted: they build `Destinatarios` in the inline SOAP.
-NON_PERSISTED_PAYLOAD_FIELDS = {"recipient_nif", "recipient_name"}
+# Who the customer is: they build `Destinatarios`, and they are PERSISTED with the record (hub#1975)
+# — a deferred send rebuilds the XML from the row, and an F1 without them is rejected with 1189.
+RECIPIENT_FIELDS = {"recipient_nif", "recipient_name", "recipient_country", "recipient_id_type"}
 
 # Read from the payload, never persisted and not sent either: they only tell the engine HOW TO
 # JUDGE the amounts it was handed (hub#1391). `line_count` says how many invoice lines the
@@ -124,16 +125,19 @@ def test_every_caller_supplied_field_is_declared():
     check("...and no field the ENGINE computes is offered to the caller", [], dead_knobs)
 
     check(
-        "the two fields that feed `Destinatarios` are declared too",
+        "the fields that feed `Destinatarios` are declared",
         [],
-        sorted(NON_PERSISTED_PAYLOAD_FIELDS - declared),
+        sorted(RECIPIENT_FIELDS - declared),
+    )
+    check(
+        "...and persisted with the record, so a deferred send still has them (hub#1975)",
+        [],
+        sorted(RECIPIENT_FIELDS - params),
     )
 
-    # Nothing else: a property that is neither a bound param nor one of the two SOAP-only fields
-    # is a field nobody reads, and the caller cannot tell that from one that works.
-    orphans = sorted(
-        declared - params - NON_PERSISTED_PAYLOAD_FIELDS - JUDGEMENT_ONLY_PAYLOAD_FIELDS
-    )
+    # Nothing else: a property that is not a bound param is a field nobody reads, and the caller
+    # cannot tell that from one that works.
+    orphans = sorted(declared - params - JUDGEMENT_ONLY_PAYLOAD_FIELDS)
     check("no declared field goes nowhere", [], orphans)
 
 
@@ -195,7 +199,7 @@ def test_the_new_fields_cannot_change_an_existing_call():
             "substitutes_date",
             "substitutes_nif",
         }
-        | NON_PERSISTED_PAYLOAD_FIELDS
+        | RECIPIENT_FIELDS
     ):
         spec = props.get(field)
         if spec is None:

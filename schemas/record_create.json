@@ -36,6 +36,18 @@
       "description": "Customer tax id for the Destinatarios block. Required by the AEAT for F1/F3/R1-R4 (it rejects them with error 1189 otherwise); empty for simplified tickets (F2)."
     },
     "recipient_name": { "type": "string", "default": "", "maxLength": 200 },
+    "recipient_country": {
+      "type": "string",
+      "default": "",
+      "maxLength": 2,
+      "description": "Customer's country, ISO 3166 alpha-2. With it a foreign customer is declared as IDOtro instead of a Spanish NIF. Empty when unknown: the prefix of recipient_nif decides."
+    },
+    "recipient_id_type": {
+      "type": "string",
+      "default": "",
+      "maxLength": 2,
+      "description": "AEAT IDType of the customer's document when it is not a Spanish NIF: 02 NIF-IVA, 03 passport, 04 id in the country of residence, 05 residence certificate, 06 other document, 07 not registered. Empty: 02 inside the EU, 04 elsewhere."
+    },
 
     "substitutes_number": {
       "type": "string",
