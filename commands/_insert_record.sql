@@ -15,6 +15,7 @@ INSERT INTO verifactu_record (
     rectifies_number, rectifies_date, rectifies_nif, rectification_type,
     rectified_base_amount, rectified_tax_amount, rectified_surcharge_amount,
     environment,
+    recipient_nif, recipient_name, recipient_country, recipient_id_type,
     is_deleted, created_by, updated_by, created_at, updated_at
 ) VALUES (
     :record_id, :hub_id, :record_type, :sequence_number, :invoice_id,
@@ -56,5 +57,9 @@ INSERT INTO verifactu_record (
              (SELECT environment FROM verifactu_config
               WHERE hub_id = :hub_id AND is_deleted = 0),
              'testing'),
+    -- Destinatarios (hub#1975): same snapshot, same reason as the substitutes_*/rectifies_*
+    -- above, and the same binder guardrail (NOT NULL in the table, NULL for an omitted param).
+    COALESCE(:recipient_nif, ''), COALESCE(:recipient_name, ''),
+    COALESCE(:recipient_country, ''), COALESCE(:recipient_id_type, ''),
     0, :current_user_id, :current_user_id, :now, :now
 );

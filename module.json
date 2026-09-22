@@ -136,7 +136,8 @@
         "kind": "contract",
         "since": "1.5.18"
       },
-      "migrations/postgres/016_transmission_fingerprint.sql"
+      "migrations/postgres/016_transmission_fingerprint.sql",
+      "migrations/postgres/017_recipient_snapshot.sql"
     ]
   },
   "queries": {
