@@ -388,10 +388,22 @@ export class ErpVerifactuSettings extends LitElement {
 
   /**
    * Where this hub files, as the CORE says it (`GET /api/fiscal/go-live`, hub#2079). `null` = the
-   * door did not answer — a runtime older than it — and only then does the old select remain,
-   * because on such a runtime the engine still files where the module row says.
+   * door gave no state: see `goLiveAbsent` and `goLiveUnavailable` for why.
    */
   @state() private goLive: GoLiveState | null = null;
+
+  /**
+   * The door answered 404: a runtime older than it. ONLY then does the old select remain, because
+   * on such a runtime the engine still files where the module row says.
+   */
+  @state() private goLiveAbsent = false;
+
+  /**
+   * The door exists but did not say where the hub files (403, no network, 5xx), as a catalogue key.
+   * Never the select here (verifactu#125): the engine no longer reads it, so «Production» saved
+   * there would leave the owner believing a hub that still files in testing.
+   */
+  @state() private goLiveUnavailable: string | null = null;
 
   /** A go-live or stand-down is on its way to the core. */
   @state() private switchingEnvironment = false;
@@ -470,11 +482,26 @@ export class ErpVerifactuSettings extends LitElement {
     }
   }
 
-  /** Where this hub files, from the core (hub#2079). A door that does not answer leaves `null`. */
+  /**
+   * Where this hub files, from the core (hub#2079). Only a 404 means «no door»; any other failure
+   * is the door refusing or unreachable, and says why (verifactu#125).
+   */
   private async loadGoLive() {
     const reply = await coreFetch(GO_LIVE_PATH);
     const envelope = reply.body as { data?: GoLiveState };
     this.goLive = reply.ok ? (envelope?.data ?? null) : null;
+    this.goLiveAbsent = reply.status === 404;
+    this.goLiveUnavailable = reply.ok || reply.status === 404 ? null : goLiveRefusalKey(reply.body);
+  }
+
+  /** Reads the door again after it failed to answer; the button stays off while it does. */
+  private async retryGoLive(): Promise<void> {
+    this.switchingEnvironment = true;
+    try {
+      await this.loadGoLive();
+    } finally {
+      this.switchingEnvironment = false;
+    }
   }
 
   /**
@@ -1094,6 +1121,26 @@ export class ErpVerifactuSettings extends LitElement {
     </ion-item>`;
   }
 
+  /**
+   * The door exists but did not answer (verifactu#125): the reason and a retry, read-only. No pill,
+   * because we do not know where the hub files; no select, because the engine does not read it.
+   */
+  private renderGoLiveUnavailable(t: (k: string) => string) {
+    return html`<ion-item lines="none">
+      <div class="prod">
+        <span class="k">${t('ui.envAeat')}</span>
+        <ok-inline-feedback tone="warning" data-testid="settings-go-live-unavailable">${t(this.goLiveUnavailable ?? 'ui.errGoLive')}</ok-inline-feedback>
+        ${this.goLiveNotice
+          ? html`<ok-inline-feedback tone=${this.goLiveNotice.tone} data-testid="settings-go-live-notice">${t(this.goLiveNotice.key)}</ok-inline-feedback>`
+          : nothing}
+        <ion-button size="small" fill="outline" data-testid="settings-go-live-retry" ?disabled=${this.switchingEnvironment} @click=${() => void this.retryGoLive()}>
+          <ion-icon slot="start" name="refresh-outline"></ion-icon>
+          ${t('ui.actionRetry')}
+        </ion-button>
+      </div>
+    </ion-item>`;
+  }
+
   render() {
     const t = (k: string): string => erplora().t(CATALOG, k);
     // Emisor EFECTIVO: `config.get` ya resuelve la identidad fiscal del hub cuando la columna del
@@ -1172,7 +1219,7 @@ export class ErpVerifactuSettings extends LitElement {
                 </ion-button>
               </div>
             </ion-item>
-            ${this.goLive ? this.renderEnvironment(t) : html`<ion-item>
+            ${this.goLive ? this.renderEnvironment(t) : this.goLiveUnavailable ? this.renderGoLiveUnavailable(t) : !this.goLiveAbsent ? nothing : html`<ion-item>
               <ion-select label=${t('ui.envAeat')} label-placement="stacked" .value=${this.cfg.environment || 'testing'} @ionChange=${(e: any) => this.set('environment', e.target.value)}>
                 <ion-select-option value="testing">${t('ui.envTesting')}</ion-select-option>
                 <ion-select-option value="production">${t('ui.envProduction')}</ion-select-option>
