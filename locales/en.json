@@ -13,6 +13,9 @@
     "recovery": {
       "label": "Recovery"
     },
+    "config": {
+      "label": "Configuration"
+    },
     "settings": {
       "label": "Settings"
     }
