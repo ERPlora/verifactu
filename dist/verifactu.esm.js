@@ -2317,6 +2317,9 @@ var es_default = {
     recovery: {
       label: "Recuperaci\xF3n"
     },
+    config: {
+      label: "Configuraci\xF3n"
+    },
     settings: {
       label: "Ajustes"
     }
@@ -2809,6 +2812,9 @@ var en_default = {
     },
     recovery: {
       label: "Recovery"
+    },
+    config: {
+      label: "Configuration"
     },
     settings: {
       label: "Settings"
