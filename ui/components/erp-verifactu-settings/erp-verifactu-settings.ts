@@ -245,6 +245,36 @@ export function routeRefusalKey(body: Record<string, unknown>): string {
   return 'ui.errRouteSwitch';
 }
 
+/** The core's go-live door (hub#2079): the ONE way to production, with every check it makes. */
+const GO_LIVE_PATH = '/api/fiscal/go-live';
+
+/** What `GET /api/fiscal/go-live` answers: where this hub files, from the core profile. */
+interface GoLiveState {
+  environment?: string;
+  can_go_live?: boolean;
+  /** A record already left for the real AEAT: the core refuses the way back (ADR-0273 D3). */
+  filed_for_real?: boolean;
+}
+
+/**
+ * Why the core refused to go live (or to stand down), as a catalogue key (hub#2079). By the stable
+ * CODE the runtime sends inside `error`, never by its sentence.
+ */
+export function goLiveRefusalKey(body: Record<string, unknown>): string {
+  const error = body?.error as { code?: string } | string | undefined;
+  const code = typeof error === 'string' ? error : error?.code ?? '';
+  const keys: Record<string, string> = {
+    'fiscal.no_representation_grant': 'ui.errGoLiveNeedsGrant',
+    'fiscal.not_ready': 'ui.errGoLiveNotReady',
+    'fiscal.go_live_forbidden': 'ui.errGoLiveDemo',
+    'fiscal.own_certificate_expired': 'ui.errGoLiveCertificateExpired',
+    'fiscal.hub_closed': 'ui.errGoLiveClosed',
+    'fiscal.already_emitted': 'ui.errGoLiveIsOneWay',
+    [CAPABILITY_DENIED]: 'ui.errCapabilityDenied',
+  };
+  return keys[code] ?? 'ui.errGoLive';
+}
+
 export class ErpVerifactuSettings extends LitElement {
   static styles = css`
     :host { display:block; height:100%; overflow:auto; font-family: system-ui, sans-serif; color: var(--ion-text-color, #1c1b18); }
@@ -356,6 +386,19 @@ export class ErpVerifactuSettings extends LitElement {
   /** The identity read is in flight, so the pill says «checking» rather than «not available». */
   @state() private gatewayLoading = true;
 
+  /**
+   * Where this hub files, as the CORE says it (`GET /api/fiscal/go-live`, hub#2079). `null` = the
+   * door did not answer — a runtime older than it — and only then does the old select remain,
+   * because on such a runtime the engine still files where the module row says.
+   */
+  @state() private goLive: GoLiveState | null = null;
+
+  /** A go-live or stand-down is on its way to the core. */
+  @state() private switchingEnvironment = false;
+
+  /** What the last go-live / stand-down did, as a catalogue key. */
+  @state() private goLiveNotice: { key: string; tone: 'success' | 'danger' } | null = null;
+
 
 
   private readonly onLocaleChange = (): void => this.requestUpdate();
@@ -364,6 +407,8 @@ export class ErpVerifactuSettings extends LitElement {
     super.connectedCallback();
     window.addEventListener('erplora:locale-changed', this.onLocaleChange);
     await this.refresh();
+    // Its own clock, like the certificate status: the road below must not wait for it.
+    void this.loadGoLive();
     await this.loadRoute();
     // The route is settled by the line above, so this is a decision and not a race: on the `own`
     // road there is nothing to ask for. The flag drops so no state keeps claiming a read that is
@@ -422,6 +467,78 @@ export class ErpVerifactuSettings extends LitElement {
       this.transmission = null;
     } finally {
       this.routeLoading = false;
+    }
+  }
+
+  /** Where this hub files, from the core (hub#2079). A door that does not answer leaves `null`. */
+  private async loadGoLive() {
+    const reply = await coreFetch(GO_LIVE_PATH);
+    const envelope = reply.body as { data?: GoLiveState };
+    this.goLive = reply.ok ? (envelope?.data ?? null) : null;
+  }
+
+  /**
+   * **The environment this hub files in** — the core's word when it gave one, the module row only
+   * on a runtime that predates the go-live door. One getter for every reader (the save, the test
+   * invoice, the block), so the screen cannot say two things.
+   */
+  private get environment(): string {
+    return (this.goLive?.environment || this.cfg.environment || 'testing').trim();
+  }
+
+  /**
+   * Asks for confirmation, then goes live (`POST`) or back to testing (`DELETE`) through the core.
+   * The confirmation is a DOCUMENT-level alert, the same shape as the chain recovery
+   * (verifactu#112): declared in this shadow root it would paint only the backdrop.
+   */
+  private async confirmEnvironment(live: boolean): Promise<void> {
+    const t = (k: string): string => erplora().t(CATALOG, k);
+    const alert = document.createElement('ion-alert') as HTMLElement & {
+      header?: string;
+      message?: string;
+      buttons?: Array<{ text: string; role?: string; cssClass?: string }>;
+      isOpen?: boolean;
+      present?: () => Promise<void>;
+    };
+    alert.header = t(live ? 'ui.goLiveConfirmTitle' : 'ui.standDownConfirmTitle');
+    alert.message = t(live ? 'ui.goLiveConfirmMessage' : 'ui.standDownConfirmMessage');
+    alert.buttons = [
+      { text: t('ui.recCancel'), role: 'cancel' },
+      { text: t(live ? 'ui.goLiveAction' : 'ui.standDownAction'), role: 'confirm', cssClass: 'alert-button-warning' },
+    ];
+    alert.addEventListener(
+      'ionAlertDidDismiss',
+      (ev) => {
+        alert.remove();
+        if ((ev as CustomEvent<{ role?: string }>).detail?.role === 'confirm') void this.switchEnvironment(live);
+      },
+      { once: true },
+    );
+    document.body.appendChild(alert);
+    try {
+      if (typeof alert.present === 'function') await alert.present();
+      else alert.isOpen = true;
+    } catch {
+      // An overlay that cannot open changes nothing: staying where the hub is, is the safe outcome.
+      alert.remove();
+    }
+  }
+
+  /** The core decides; the environment is READ back from its answer, never assumed. */
+  private async switchEnvironment(live: boolean): Promise<void> {
+    this.switchingEnvironment = true;
+    this.goLiveNotice = null;
+    try {
+      const reply = await coreFetch(GO_LIVE_PATH, { method: live ? 'POST' : 'DELETE' });
+      if (reply.ok) {
+        this.goLive = (reply.body as { data?: GoLiveState })?.data ?? this.goLive;
+        this.goLiveNotice = { key: live ? 'ui.goLiveDone' : 'ui.standDownDone', tone: 'success' };
+      } else {
+        this.goLiveNotice = { key: goLiveRefusalKey(reply.body), tone: 'danger' };
+        await this.loadGoLive();
+      }
+    } finally {
+      this.switchingEnvironment = false;
     }
   }
 
@@ -651,7 +768,9 @@ export class ErpVerifactuSettings extends LitElement {
       await erplora().command('verifactu.config.save', {
         enabled: !!this.cfg.enabled,
         mode: this.cfg.mode || 'verifactu',
-        environment: this.cfg.environment || 'testing',
+        // The core's environment (hub#2079): the row is a mirror now, and saving must not make it
+        // disagree with the profile. Only a runtime without the go-live door still reads it.
+        environment: this.environment,
         // Identificación del productor: SIEMPRE fija (no editable por el cliente).
         software_name: PRODUCER.software_name,
         software_version: PRODUCER.software_version,
@@ -876,7 +995,7 @@ export class ErpVerifactuSettings extends LitElement {
 
   private renderTestCard(t: (k: string) => string) {
     const d = this.diag;
-    const isTesting = this.cfg.environment === 'testing';
+    const isTesting = this.environment === 'testing';
     const hasIssuer = !!(this.cfg.issuer_nif || '').trim();
     const canCreateInvoice = isTesting && hasIssuer;
     return html`<div class="card">
@@ -938,6 +1057,42 @@ export class ErpVerifactuSettings extends LitElement {
 
 
   
+
+  /**
+   * Where the hub files and the ONE way to change it (hub#2079): the core's go-live, never a
+   * select. Buttons, not a form field, because it is not saved with the form — it is its own act,
+   * confirmed, with its own refusals.
+   */
+  private renderEnvironment(t: (k: string) => string) {
+    const live = this.environment === 'production';
+    const g = this.goLive ?? {};
+    return html`<ion-item lines="none">
+      <div class="prod">
+        <div class="kv">
+          <span class="k">${t('ui.envAeat')}</span>
+          <ok-status-pill data-testid="settings-environment" tone=${live ? 'success' : 'neutral'}>${t(live ? 'ui.envProduction' : 'ui.envTesting')}</ok-status-pill>
+        </div>
+        ${!live && g.can_go_live
+          ? html`<p class="hint">${t('ui.goLiveHint')}</p>
+            <ion-button size="small" data-testid="settings-go-live" ?disabled=${this.switchingEnvironment} @click=${() => void this.confirmEnvironment(true)}>
+              <ion-icon slot="start" name="rocket-outline"></ion-icon>
+              ${t('ui.goLiveAction')}
+            </ion-button>`
+          : nothing}
+        ${!live && !g.can_go_live ? html`<p class="hint">${t('ui.goLiveDemoHint')}</p>` : nothing}
+        ${live && !g.filed_for_real
+          ? html`<p class="hint">${t('ui.standDownHint')}</p>
+            <ion-button size="small" fill="outline" data-testid="settings-stand-down" ?disabled=${this.switchingEnvironment} @click=${() => void this.confirmEnvironment(false)}>
+              ${t('ui.standDownAction')}
+            </ion-button>`
+          : nothing}
+        ${live && g.filed_for_real ? html`<p class="hint">${t('ui.goLiveOneWayHint')}</p>` : nothing}
+        ${this.goLiveNotice
+          ? html`<ok-inline-feedback tone=${this.goLiveNotice.tone} data-testid="settings-go-live-notice">${t(this.goLiveNotice.key)}</ok-inline-feedback>`
+          : nothing}
+      </div>
+    </ion-item>`;
+  }
 
   render() {
     const t = (k: string): string => erplora().t(CATALOG, k);
@@ -1017,12 +1172,12 @@ export class ErpVerifactuSettings extends LitElement {
                 </ion-button>
               </div>
             </ion-item>
-            <ion-item>
+            ${this.goLive ? this.renderEnvironment(t) : html`<ion-item>
               <ion-select label=${t('ui.envAeat')} label-placement="stacked" .value=${this.cfg.environment || 'testing'} @ionChange=${(e: any) => this.set('environment', e.target.value)}>
                 <ion-select-option value="testing">${t('ui.envTesting')}</ion-select-option>
                 <ion-select-option value="production">${t('ui.envProduction')}</ion-select-option>
               </ion-select>
-            </ion-item>
+            </ion-item>`}
             <ion-item>
           </ion-list>
           <div class="card-actions">
