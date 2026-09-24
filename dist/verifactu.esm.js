@@ -7805,6 +7805,8 @@ var ErpVerifactuSettings = class extends i3 {
     this.gateway = null;
     this.gatewayLoading = true;
     this.goLive = null;
+    this.goLiveAbsent = false;
+    this.goLiveUnavailable = null;
     this.switchingEnvironment = false;
     this.goLiveNotice = null;
     this.onLocaleChange = () => this.requestUpdate();
@@ -7898,11 +7900,25 @@ var ErpVerifactuSettings = class extends i3 {
       this.routeLoading = false;
     }
   }
-  /** Where this hub files, from the core (hub#2079). A door that does not answer leaves `null`. */
+  /**
+   * Where this hub files, from the core (hub#2079). Only a 404 means «no door»; any other failure
+   * is the door refusing or unreachable, and says why (verifactu#125).
+   */
   async loadGoLive() {
     const reply = await coreFetch(GO_LIVE_PATH);
     const envelope = reply.body;
     this.goLive = reply.ok ? envelope?.data ?? null : null;
+    this.goLiveAbsent = reply.status === 404;
+    this.goLiveUnavailable = reply.ok || reply.status === 404 ? null : goLiveRefusalKey(reply.body);
+  }
+  /** Reads the door again after it failed to answer; the button stays off while it does. */
+  async retryGoLive() {
+    this.switchingEnvironment = true;
+    try {
+      await this.loadGoLive();
+    } finally {
+      this.switchingEnvironment = false;
+    }
   }
   /**
    * **The environment this hub files in** — the core's word when it gave one, the module row only
@@ -8413,6 +8429,23 @@ var ErpVerifactuSettings = class extends i3 {
       </div>
     </ion-item>`;
   }
+  /**
+   * The door exists but did not answer (verifactu#125): the reason and a retry, read-only. No pill,
+   * because we do not know where the hub files; no select, because the engine does not read it.
+   */
+  renderGoLiveUnavailable(t5) {
+    return b2`<ion-item lines="none">
+      <div class="prod">
+        <span class="k">${t5("ui.envAeat")}</span>
+        <ok-inline-feedback tone="warning" data-testid="settings-go-live-unavailable">${t5(this.goLiveUnavailable ?? "ui.errGoLive")}</ok-inline-feedback>
+        ${this.goLiveNotice ? b2`<ok-inline-feedback tone=${this.goLiveNotice.tone} data-testid="settings-go-live-notice">${t5(this.goLiveNotice.key)}</ok-inline-feedback>` : A}
+        <ion-button size="small" fill="outline" data-testid="settings-go-live-retry" ?disabled=${this.switchingEnvironment} @click=${() => void this.retryGoLive()}>
+          <ion-icon slot="start" name="refresh-outline"></ion-icon>
+          ${t5("ui.actionRetry")}
+        </ion-button>
+      </div>
+    </ion-item>`;
+  }
   render() {
     const t5 = (k2) => erplora7().t(CATALOG7, k2);
     const issuerNif = (this.cfg.issuer_nif || "").trim();
@@ -8479,7 +8512,7 @@ var ErpVerifactuSettings = class extends i3 {
                 </ion-button>
               </div>
             </ion-item>
-            ${this.goLive ? this.renderEnvironment(t5) : b2`<ion-item>
+            ${this.goLive ? this.renderEnvironment(t5) : this.goLiveUnavailable ? this.renderGoLiveUnavailable(t5) : !this.goLiveAbsent ? A : b2`<ion-item>
               <ion-select label=${t5("ui.envAeat")} label-placement="stacked" .value=${this.cfg.environment || "testing"} @ionChange=${(e6) => this.set("environment", e6.target.value)}>
                 <ion-select-option value="testing">${t5("ui.envTesting")}</ion-select-option>
                 <ion-select-option value="production">${t5("ui.envProduction")}</ion-select-option>
@@ -8567,6 +8600,12 @@ __decorateClass([
 __decorateClass([
   r5()
 ], ErpVerifactuSettings.prototype, "goLive", 2);
+__decorateClass([
+  r5()
+], ErpVerifactuSettings.prototype, "goLiveAbsent", 2);
+__decorateClass([
+  r5()
+], ErpVerifactuSettings.prototype, "goLiveUnavailable", 2);
 __decorateClass([
   r5()
 ], ErpVerifactuSettings.prototype, "switchingEnvironment", 2);
