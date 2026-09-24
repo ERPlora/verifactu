@@ -26,7 +26,7 @@ type GoLive = { environment: string; can_go_live: boolean; filed_for_real: boole
 
 let calls: Call[];
 let commands: Array<{ name: string; payload: Record<string, unknown> }>;
-let door: GoLive | 'missing' | 'denied' | 'offline' | 'broken';
+let door: GoLive | 'missing' | 'denied' | 'offline' | 'broken' | 'pending';
 let postReply: { status: number; body: Record<string, unknown> } | null;
 let rowEnvironment: string;
 const originalFetch = globalThis.fetch;
@@ -50,6 +50,7 @@ beforeEach(() => {
       if (door === 'denied') return json(403, { ok: false, error: { code: 'capability_denied', message: 'x' } });
       if (door === 'broken') return json(500, { ok: false, error: { code: 'internal', message: 'x' } });
       if (door === 'offline') throw new TypeError('Failed to fetch');
+      if (door === 'pending') return new Promise<Response>(() => {});
       if (method === 'POST') {
         if (postReply) return json(postReply.status, postReply.body);
         door = { ...door, environment: 'production' };
@@ -239,6 +240,12 @@ describe('«Production» goes through the core go-live (hub#2079)', () => {
       await settle(el);
       expect(q(el, 'settings-go-live-unavailable')).toBeNull();
       expect(q(el, 'settings-environment')?.textContent).toContain('ui.envProduction');
+    });
+
+    it('while the door has not answered yet, no select either', async () => {
+      door = 'pending';
+      const el = await mount();
+      expect(noSelect(el)).toBeNull();
     });
 
     it('a server error is not «no door» either', async () => {
