@@ -13,7 +13,10 @@
 //  - «Back to testing» exists only while nothing has been filed for real (`DELETE`);
 //  - a demo cannot go live, and says why;
 //  - saving the form never overrides the core: it sends the environment the core reports;
-//  - a runtime older than the door (404) keeps the old select, so the module never strands a hub.
+//  - a runtime older than the door (404) keeps the old select, so the module never strands a hub;
+//  - a door that EXISTS but says no (403, no network, 5xx) never brings the select back: the owner
+//    would pick «Production», save, and believe it while the engine keeps filing in testing
+//    (verifactu#125). It says why, offers a retry, and nothing writes the environment.
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import './erp-verifactu-settings';
 import { goLiveRefusalKey } from './erp-verifactu-settings';
@@ -23,7 +26,7 @@ type GoLive = { environment: string; can_go_live: boolean; filed_for_real: boole
 
 let calls: Call[];
 let commands: Array<{ name: string; payload: Record<string, unknown> }>;
-let door: GoLive | 'missing';
+let door: GoLive | 'missing' | 'denied' | 'offline' | 'broken' | 'pending';
 let postReply: { status: number; body: Record<string, unknown> } | null;
 let rowEnvironment: string;
 const originalFetch = globalThis.fetch;
@@ -44,6 +47,10 @@ beforeEach(() => {
     calls.push({ path, method, headers: (init?.headers ?? {}) as Record<string, string> });
     if (path === '/api/fiscal/go-live') {
       if (door === 'missing') return json(404, {});
+      if (door === 'denied') return json(403, { ok: false, error: { code: 'capability_denied', message: 'x' } });
+      if (door === 'broken') return json(500, { ok: false, error: { code: 'internal', message: 'x' } });
+      if (door === 'offline') throw new TypeError('Failed to fetch');
+      if (door === 'pending') return new Promise<Response>(() => {});
       if (method === 'POST') {
         if (postReply) return json(postReply.status, postReply.body);
         door = { ...door, environment: 'production' };
@@ -209,5 +216,53 @@ describe('«Production» goes through the core go-live (hub#2079)', () => {
     const el = await mount();
     expect(el.shadowRoot.querySelector('ion-select-option[value="production"]')).not.toBeNull();
     expect(q(el, 'settings-go-live')).toBeNull();
+  });
+
+  describe('a door that exists but does not answer never brings the select back (verifactu#125)', () => {
+    const noSelect = (el: El) => el.shadowRoot.querySelector('ion-select-option[value="production"]');
+
+    it('the permission revoked: says so, no select, no go-live', async () => {
+      door = 'denied';
+      const el = await mount();
+      expect(noSelect(el), 'a 403 is not «no door»: the select would lie').toBeNull();
+      expect(q(el, 'settings-go-live')).toBeNull();
+      expect(q(el, 'settings-go-live-unavailable')?.textContent).toContain('ui.errCapabilityDenied');
+    });
+
+    it('no network: says so and offers a retry that reads the door again', async () => {
+      door = 'offline';
+      const el = await mount();
+      expect(noSelect(el)).toBeNull();
+      expect(q(el, 'settings-go-live-unavailable')?.textContent).toContain('ui.errGoLive');
+
+      door = { environment: 'production', can_go_live: true, filed_for_real: false };
+      q(el, 'settings-go-live-retry')!.click();
+      await settle(el);
+      expect(q(el, 'settings-go-live-unavailable')).toBeNull();
+      expect(q(el, 'settings-environment')?.textContent).toContain('ui.envProduction');
+    });
+
+    it('while the door has not answered yet, no select either', async () => {
+      door = 'pending';
+      const el = await mount();
+      expect(noSelect(el)).toBeNull();
+    });
+
+    it('a server error is not «no door» either', async () => {
+      door = 'broken';
+      const el = await mount();
+      expect(noSelect(el)).toBeNull();
+      expect(q(el, 'settings-go-live-unavailable')?.textContent).toContain('ui.errGoLive');
+    });
+
+    it('a refused go-live whose re-read fails keeps no select on screen', async () => {
+      postReply = { status: 409, body: { ok: false, error: { code: 'fiscal.not_ready', message: 'x' } } };
+      const el = await mount();
+      q(el, 'settings-go-live')!.click();
+      await settle(el);
+      door = 'offline';
+      await answerAlert(el, 'confirm');
+      expect(noSelect(el)).toBeNull();
+    });
   });
 });

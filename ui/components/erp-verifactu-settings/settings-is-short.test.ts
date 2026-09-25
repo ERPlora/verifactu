@@ -15,11 +15,25 @@
 // arriba del todo con su botón («Todavía no puedes facturar»), y eso lo alimenta el bloque `setup`
 // del propio `module.json`. Un aviso que solo aparece cuando hace falta le gana a cuatro filas que
 // están siempre.
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import './erp-verifactu-settings';
+
+const originalFetch = globalThis.fetch;
 
 beforeEach(() => {
   document.body.replaceChildren();
+  // The core's go-live door answers as on a real hub (hub#2079): where the hub files is read from
+  // there. Without it the screen used to fall back to the old select, and this test passed only
+  // because of that fallback — the very thing verifactu#125 removes for a door that fails.
+  globalThis.fetch = (async (path: string) =>
+    new Response(
+      JSON.stringify(
+        path === '/api/fiscal/go-live'
+          ? { ok: true, data: { environment: 'testing', can_go_live: true, filed_for_real: false } }
+          : {},
+      ),
+      { status: 200, headers: { 'Content-Type': 'application/json' } },
+    )) as typeof fetch;
   (globalThis as Record<string, unknown>).erplora = {
     query: async (name: string) =>
       name === 'verifactu.config.get'
@@ -47,6 +61,10 @@ async function mount() {
   return el as HTMLElement & { shadowRoot: ShadowRoot };
 }
 
+afterEach(() => {
+  globalThis.fetch = originalFetch;
+});
+
 const text = async () => (await mount()).shadowRoot.textContent ?? '';
 
 describe('Ajustes del módulo · corto a propósito', () => {
@@ -54,10 +72,9 @@ describe('Ajustes del módulo · corto a propósito', () => {
     const body = await text();
 
     expect(body, 'el interruptor de VeriFactu').toContain('ui.enableVerifactu');
-    // Las OPCIONES del entorno, que sí son texto; el rótulo del `ion-select` viaja en un
-    // atributo y no aparece en `textContent`.
+    // Where the hub files, and the one way to change it: the core's go-live (hub#2079).
     expect(body, 'el entorno (pruebas / producción)').toContain('ui.envTesting');
-    expect(body).toContain('ui.envProduction');
+    expect(body, 'pasar a producción').toContain('ui.goLiveAction');
     expect(body, 'guardar').toContain('ui.save');
     // La prueba se queda aquí: corre con la configuración que se acaba de guardar, que es lo que
     // la hace útil. Lightspeed hace lo mismo — se prueba desde el modo en el que estás.
