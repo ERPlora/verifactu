@@ -2473,6 +2473,7 @@ var es_default = {
     standDownConfirmMessage: "Las facturas volver\xE1n a ir al entorno de pruebas de la AEAT y no contar\xE1n ante Hacienda.",
     standDownDone: "Tu hub ha vuelto al entorno de pruebas.",
     errGoLive: "No se ha podido pasar a producci\xF3n. Int\xE9ntalo de nuevo en un momento.",
+    errGoLiveStateUnavailable: "No se ha podido comprobar si este hub env\xEDa en pruebas o en producci\xF3n. Revisa la conexi\xF3n y reint\xE9ntalo.",
     errGoLiveNeedsGrant: "Para pasar a producci\xF3n, ERPlora necesita tu autorizaci\xF3n firmada para remitir en tu nombre, aprobada por nuestro equipo. F\xEDrmala en Configuraci\xF3n.",
     errGoLiveNotReady: "Tu hub a\xFAn no est\xE1 listo para producci\xF3n: faltan tus datos fiscales o una v\xEDa para remitir (tu propio certificado o el de ERPlora). Revisa Configuraci\xF3n.",
     errGoLiveDemo: "Este es un hub de demostraci\xF3n y no puede pasar a producci\xF3n. Crea tu propio hub para facturar de verdad.",
@@ -2987,6 +2988,7 @@ var en_default = {
     standDownConfirmMessage: "Invoices will go to the AEAT's test environment again, and will not count before the tax authority.",
     standDownDone: "Your hub is back in the test environment.",
     errGoLive: "Could not go live. Try again in a moment.",
+    errGoLiveStateUnavailable: "Could not read whether this hub files in testing or production. Check the connection and retry.",
     errGoLiveNeedsGrant: "To go live, ERPlora needs your signed authorisation to file on your behalf, approved by our team. Sign it in Configuration.",
     errGoLiveNotReady: "Your hub is not ready to go live yet: it needs your business tax details and a way to file (your own certificate or ERPlora's). Check Configuration.",
     errGoLiveDemo: "This is a demo hub and cannot go live. Create your own hub to file for real.",
@@ -7779,6 +7781,10 @@ function goLiveRefusalKey(body) {
   };
   return keys[code] ?? "ui.errGoLive";
 }
+function goLiveStateUnavailableKey(body) {
+  const key = goLiveRefusalKey(body);
+  return key === "ui.errCapabilityDenied" ? key : "ui.errGoLiveStateUnavailable";
+}
 var ErpVerifactuSettings = class extends i3 {
   constructor() {
     super(...arguments);
@@ -7909,7 +7915,7 @@ var ErpVerifactuSettings = class extends i3 {
     const envelope = reply.body;
     this.goLive = reply.ok ? envelope?.data ?? null : null;
     this.goLiveAbsent = reply.status === 404;
-    this.goLiveUnavailable = reply.ok || reply.status === 404 ? null : goLiveRefusalKey(reply.body);
+    this.goLiveUnavailable = reply.ok || reply.status === 404 ? null : goLiveStateUnavailableKey(reply.body);
   }
   /** Reads the door again after it failed to answer; the button stays off while it does. */
   async retryGoLive() {
@@ -8437,7 +8443,7 @@ var ErpVerifactuSettings = class extends i3 {
     return b2`<ion-item lines="none">
       <div class="prod">
         <span class="k">${t5("ui.envAeat")}</span>
-        <ok-inline-feedback tone="warning" data-testid="settings-go-live-unavailable">${t5(this.goLiveUnavailable ?? "ui.errGoLive")}</ok-inline-feedback>
+        <ok-inline-feedback tone="warning" data-testid="settings-go-live-unavailable">${t5(this.goLiveUnavailable ?? "ui.errGoLiveStateUnavailable")}</ok-inline-feedback>
         ${this.goLiveNotice ? b2`<ok-inline-feedback tone=${this.goLiveNotice.tone} data-testid="settings-go-live-notice">${t5(this.goLiveNotice.key)}</ok-inline-feedback>` : A}
         <ion-button size="small" fill="outline" data-testid="settings-go-live-retry" ?disabled=${this.switchingEnvironment} @click=${() => void this.retryGoLive()}>
           <ion-icon slot="start" name="refresh-outline"></ion-icon>
