@@ -169,6 +169,7 @@
     "standDownConfirmMessage": "Invoices will go to the AEAT's test environment again, and will not count before the tax authority.",
     "standDownDone": "Your hub is back in the test environment.",
     "errGoLive": "Could not go live. Try again in a moment.",
+    "errGoLiveStateUnavailable": "Could not read whether this hub files in testing or production. Check the connection and retry.",
     "errGoLiveNeedsGrant": "To go live, ERPlora needs your signed authorisation to file on your behalf, approved by our team. Sign it in Configuration.",
     "errGoLiveNotReady": "Your hub is not ready to go live yet: it needs your business tax details and a way to file (your own certificate or ERPlora's). Check Configuration.",
     "errGoLiveDemo": "This is a demo hub and cannot go live. Create your own hub to file for real.",

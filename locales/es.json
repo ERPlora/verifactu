@@ -170,6 +170,7 @@
     "standDownConfirmMessage": "Las facturas volverán a ir al entorno de pruebas de la AEAT y no contarán ante Hacienda.",
     "standDownDone": "Tu hub ha vuelto al entorno de pruebas.",
     "errGoLive": "No se ha podido pasar a producción. Inténtalo de nuevo en un momento.",
+    "errGoLiveStateUnavailable": "No se ha podido comprobar si este hub envía en pruebas o en producción. Revisa la conexión y reinténtalo.",
     "errGoLiveNeedsGrant": "Para pasar a producción, ERPlora necesita tu autorización firmada para remitir en tu nombre, aprobada por nuestro equipo. Fírmala en Configuración.",
     "errGoLiveNotReady": "Tu hub aún no está listo para producción: faltan tus datos fiscales o una vía para remitir (tu propio certificado o el de ERPlora). Revisa Configuración.",
     "errGoLiveDemo": "Este es un hub de demostración y no puede pasar a producción. Crea tu propio hub para facturar de verdad.",

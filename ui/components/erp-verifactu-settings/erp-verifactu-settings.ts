@@ -275,6 +275,16 @@ export function goLiveRefusalKey(body: Record<string, unknown>): string {
   return keys[code] ?? 'ui.errGoLive';
 }
 
+/**
+ * Why the core did not say where the hub files when the screen READ it (verifactu#127). Opening
+ * the screen is not a go-live attempt: only a revoked permission has its own sentence; no network
+ * or a server error says the state could not be read, never «could not go live».
+ */
+export function goLiveStateUnavailableKey(body: Record<string, unknown>): string {
+  const key = goLiveRefusalKey(body);
+  return key === 'ui.errCapabilityDenied' ? key : 'ui.errGoLiveStateUnavailable';
+}
+
 export class ErpVerifactuSettings extends LitElement {
   static styles = css`
     :host { display:block; height:100%; overflow:auto; font-family: system-ui, sans-serif; color: var(--ion-text-color, #1c1b18); }
@@ -491,7 +501,7 @@ export class ErpVerifactuSettings extends LitElement {
     const envelope = reply.body as { data?: GoLiveState };
     this.goLive = reply.ok ? (envelope?.data ?? null) : null;
     this.goLiveAbsent = reply.status === 404;
-    this.goLiveUnavailable = reply.ok || reply.status === 404 ? null : goLiveRefusalKey(reply.body);
+    this.goLiveUnavailable = reply.ok || reply.status === 404 ? null : goLiveStateUnavailableKey(reply.body);
   }
 
   /** Reads the door again after it failed to answer; the button stays off while it does. */
@@ -1129,7 +1139,7 @@ export class ErpVerifactuSettings extends LitElement {
     return html`<ion-item lines="none">
       <div class="prod">
         <span class="k">${t('ui.envAeat')}</span>
-        <ok-inline-feedback tone="warning" data-testid="settings-go-live-unavailable">${t(this.goLiveUnavailable ?? 'ui.errGoLive')}</ok-inline-feedback>
+        <ok-inline-feedback tone="warning" data-testid="settings-go-live-unavailable">${t(this.goLiveUnavailable ?? 'ui.errGoLiveStateUnavailable')}</ok-inline-feedback>
         ${this.goLiveNotice
           ? html`<ok-inline-feedback tone=${this.goLiveNotice.tone} data-testid="settings-go-live-notice">${t(this.goLiveNotice.key)}</ok-inline-feedback>`
           : nothing}

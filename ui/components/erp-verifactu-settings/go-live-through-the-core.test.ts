@@ -17,6 +17,8 @@
 //  - a door that EXISTS but says no (403, no network, 5xx) never brings the select back: the owner
 //    would pick «Production», save, and believe it while the engine keeps filing in testing
 //    (verifactu#125). It says why, offers a retry, and nothing writes the environment.
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import './erp-verifactu-settings';
 import { goLiveRefusalKey } from './erp-verifactu-settings';
@@ -233,13 +235,26 @@ describe('«Production» goes through the core go-live (hub#2079)', () => {
       door = 'offline';
       const el = await mount();
       expect(noSelect(el)).toBeNull();
-      expect(q(el, 'settings-go-live-unavailable')?.textContent).toContain('ui.errGoLive');
+      expect(q(el, 'settings-go-live-unavailable')?.textContent?.trim()).toBe('ui.errGoLiveStateUnavailable');
 
       door = { environment: 'production', can_go_live: true, filed_for_real: false };
       q(el, 'settings-go-live-retry')!.click();
       await settle(el);
       expect(q(el, 'settings-go-live-unavailable')).toBeNull();
       expect(q(el, 'settings-environment')?.textContent).toContain('ui.envProduction');
+    });
+
+    // verifactu#127: opening the screen offline is not a go-live attempt. The owner reads that the
+    // hub could not say where it files, never «could not go live», before AND after a failed retry.
+    it('a failed read never says a go-live failed, not even after a failed retry', async () => {
+      door = 'offline';
+      const el = await mount();
+      const said = () => q(el, 'settings-go-live-unavailable')?.textContent?.trim();
+      expect(said()).toBe('ui.errGoLiveStateUnavailable');
+      q(el, 'settings-go-live-retry')!.click();
+      await settle(el);
+      expect(said()).toBe('ui.errGoLiveStateUnavailable');
+      expect(text(el)).not.toMatch(/ui\.errGoLive(?![A-Za-z])/);
     });
 
     it('while the door has not answered yet, no select either', async () => {
@@ -252,7 +267,7 @@ describe('«Production» goes through the core go-live (hub#2079)', () => {
       door = 'broken';
       const el = await mount();
       expect(noSelect(el)).toBeNull();
-      expect(q(el, 'settings-go-live-unavailable')?.textContent).toContain('ui.errGoLive');
+      expect(q(el, 'settings-go-live-unavailable')?.textContent?.trim()).toBe('ui.errGoLiveStateUnavailable');
     });
 
     it('a refused go-live whose re-read fails keeps no select on screen', async () => {
@@ -264,5 +279,17 @@ describe('«Production» goes through the core go-live (hub#2079)', () => {
       await answerAlert(el, 'confirm');
       expect(noSelect(el)).toBeNull();
     });
+  });
+});
+
+describe('the failed read has its own sentence in both locales (verifactu#127)', () => {
+  it('ui.errGoLiveStateUnavailable exists in en and es and is not the go-live failure', () => {
+    for (const lang of ['en', 'es']) {
+      const ui = (JSON.parse(readFileSync(join(__dirname, '..', '..', '..', 'locales', `${lang}.json`), 'utf8')) as {
+        ui: Record<string, string>;
+      }).ui;
+      expect(ui.errGoLiveStateUnavailable, `locales/${lang}.json misses ui.errGoLiveStateUnavailable`).toBeTruthy();
+      expect(ui.errGoLiveStateUnavailable).not.toBe(ui.errGoLive);
+    }
   });
 });
