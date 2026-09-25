@@ -2460,6 +2460,24 @@ var es_default = {
     envAeat: "Entorno AEAT",
     envTesting: "Pruebas (AEAT Test)",
     envProduction: "Producci\xF3n",
+    goLiveAction: "Pasar a producci\xF3n",
+    goLiveHint: "Tus facturas van al entorno de pruebas de la AEAT. Cuando est\xE9 todo listo, pasa a producci\xF3n: ERPlora comprueba antes que no falte nada.",
+    goLiveConfirmTitle: "\xBFEnviar tus facturas a la AEAT de verdad?",
+    goLiveConfirmMessage: "A partir de ahora cada factura se remite a la AEAT real. Solo podr\xE1s volver a pruebas hasta que se remita la primera.",
+    goLiveDone: "Tu hub est\xE1 en producci\xF3n: las facturas ya se remiten a la AEAT real.",
+    goLiveDemoHint: "Este es un hub de demostraci\xF3n: siempre remite al entorno de pruebas de la AEAT. Crea tu propio hub para pasar a producci\xF3n.",
+    goLiveOneWayHint: "Tu hub ya ha remitido facturas a la AEAT real, as\xED que no puede volver a pruebas. Para hacer pruebas, usa otro hub.",
+    standDownAction: "Volver a pruebas",
+    standDownHint: "Todav\xEDa no se ha remitido ninguna factura a la AEAT real, as\xED que a\xFAn puedes volver a pruebas.",
+    standDownConfirmTitle: "\xBFVolver al entorno de pruebas?",
+    standDownConfirmMessage: "Las facturas volver\xE1n a ir al entorno de pruebas de la AEAT y no contar\xE1n ante Hacienda.",
+    standDownDone: "Tu hub ha vuelto al entorno de pruebas.",
+    errGoLive: "No se ha podido pasar a producci\xF3n. Int\xE9ntalo de nuevo en un momento.",
+    errGoLiveNeedsGrant: "Para pasar a producci\xF3n, ERPlora necesita tu autorizaci\xF3n firmada para remitir en tu nombre, aprobada por nuestro equipo. F\xEDrmala en Configuraci\xF3n.",
+    errGoLiveNotReady: "Tu hub a\xFAn no est\xE1 listo para producci\xF3n: faltan tus datos fiscales o una v\xEDa para remitir (tu propio certificado o el de ERPlora). Revisa Configuraci\xF3n.",
+    errGoLiveDemo: "Este es un hub de demostraci\xF3n y no puede pasar a producci\xF3n. Crea tu propio hub para facturar de verdad.",
+    errGoLiveCertificateExpired: "Tu certificado propio ha caducado y la AEAT no lo acepta. Sube uno renovado, o deja que remita ERPlora, y vuelve a intentarlo.",
+    errGoLiveClosed: "Este hub ces\xF3 su actividad y ya no emite facturas.",
     softwareNif: "NIF del software / emisor",
     softwareName: "Nombre del software",
     softwareId: "ID del software",
@@ -2956,6 +2974,24 @@ var en_default = {
     envAeat: "AEAT environment",
     envTesting: "Testing (AEAT Test)",
     envProduction: "Production",
+    goLiveAction: "Go live",
+    goLiveHint: "Your invoices are going to the AEAT's test environment. When everything is ready, go live: ERPlora checks that nothing is missing first.",
+    goLiveConfirmTitle: "Send your invoices to the AEAT for real?",
+    goLiveConfirmMessage: "From now on every invoice is filed with the real AEAT. You can go back to testing only until the first invoice is filed.",
+    goLiveDone: "Your hub is live: invoices are now filed with the real AEAT.",
+    goLiveDemoHint: "This is a demo hub: it always files with the AEAT's test environment. Create your own hub to go live.",
+    goLiveOneWayHint: "Your hub has already filed invoices with the real AEAT, so it cannot go back to testing. To try things out, use another hub.",
+    standDownAction: "Back to testing",
+    standDownHint: "No invoice has been filed with the real AEAT yet, so you can still go back to testing.",
+    standDownConfirmTitle: "Go back to the test environment?",
+    standDownConfirmMessage: "Invoices will go to the AEAT's test environment again, and will not count before the tax authority.",
+    standDownDone: "Your hub is back in the test environment.",
+    errGoLive: "Could not go live. Try again in a moment.",
+    errGoLiveNeedsGrant: "To go live, ERPlora needs your signed authorisation to file on your behalf, approved by our team. Sign it in Configuration.",
+    errGoLiveNotReady: "Your hub is not ready to go live yet: it needs your business tax details and a way to file (your own certificate or ERPlora's). Check Configuration.",
+    errGoLiveDemo: "This is a demo hub and cannot go live. Create your own hub to file for real.",
+    errGoLiveCertificateExpired: "Your own certificate has expired and the AEAT does not accept it. Upload a renewed one, or let ERPlora file for you, and try again.",
+    errGoLiveClosed: "This hub ceased activity and does not issue invoices any more.",
     softwareNif: "Software / issuer tax ID",
     softwareName: "Software name",
     softwareId: "Software ID",
@@ -7728,6 +7764,21 @@ function routeRefusalKey(body) {
   if (code === "fiscal.own_certificate_not_uploaded") return "ui.errRouteNeedsCertificate";
   return "ui.errRouteSwitch";
 }
+var GO_LIVE_PATH = "/api/fiscal/go-live";
+function goLiveRefusalKey(body) {
+  const error = body?.error;
+  const code = typeof error === "string" ? error : error?.code ?? "";
+  const keys = {
+    "fiscal.no_representation_grant": "ui.errGoLiveNeedsGrant",
+    "fiscal.not_ready": "ui.errGoLiveNotReady",
+    "fiscal.go_live_forbidden": "ui.errGoLiveDemo",
+    "fiscal.own_certificate_expired": "ui.errGoLiveCertificateExpired",
+    "fiscal.hub_closed": "ui.errGoLiveClosed",
+    "fiscal.already_emitted": "ui.errGoLiveIsOneWay",
+    [CAPABILITY_DENIED]: "ui.errCapabilityDenied"
+  };
+  return keys[code] ?? "ui.errGoLive";
+}
 var ErpVerifactuSettings = class extends i3 {
   constructor() {
     super(...arguments);
@@ -7753,6 +7804,9 @@ var ErpVerifactuSettings = class extends i3 {
     this.routeNotice = null;
     this.gateway = null;
     this.gatewayLoading = true;
+    this.goLive = null;
+    this.switchingEnvironment = false;
+    this.goLiveNotice = null;
     this.onLocaleChange = () => this.requestUpdate();
   }
   static {
@@ -7795,6 +7849,7 @@ var ErpVerifactuSettings = class extends i3 {
     super.connectedCallback();
     window.addEventListener("erplora:locale-changed", this.onLocaleChange);
     await this.refresh();
+    void this.loadGoLive();
     await this.loadRoute();
     if (this.usesGatewayIdentity) await this.loadGatewayIdentity();
     else this.gatewayLoading = false;
@@ -7841,6 +7896,67 @@ var ErpVerifactuSettings = class extends i3 {
       this.transmission = null;
     } finally {
       this.routeLoading = false;
+    }
+  }
+  /** Where this hub files, from the core (hub#2079). A door that does not answer leaves `null`. */
+  async loadGoLive() {
+    const reply = await coreFetch(GO_LIVE_PATH);
+    const envelope = reply.body;
+    this.goLive = reply.ok ? envelope?.data ?? null : null;
+  }
+  /**
+   * **The environment this hub files in** — the core's word when it gave one, the module row only
+   * on a runtime that predates the go-live door. One getter for every reader (the save, the test
+   * invoice, the block), so the screen cannot say two things.
+   */
+  get environment() {
+    return (this.goLive?.environment || this.cfg.environment || "testing").trim();
+  }
+  /**
+   * Asks for confirmation, then goes live (`POST`) or back to testing (`DELETE`) through the core.
+   * The confirmation is a DOCUMENT-level alert, the same shape as the chain recovery
+   * (verifactu#112): declared in this shadow root it would paint only the backdrop.
+   */
+  async confirmEnvironment(live) {
+    const t5 = (k2) => erplora7().t(CATALOG7, k2);
+    const alert = document.createElement("ion-alert");
+    alert.header = t5(live ? "ui.goLiveConfirmTitle" : "ui.standDownConfirmTitle");
+    alert.message = t5(live ? "ui.goLiveConfirmMessage" : "ui.standDownConfirmMessage");
+    alert.buttons = [
+      { text: t5("ui.recCancel"), role: "cancel" },
+      { text: t5(live ? "ui.goLiveAction" : "ui.standDownAction"), role: "confirm", cssClass: "alert-button-warning" }
+    ];
+    alert.addEventListener(
+      "ionAlertDidDismiss",
+      (ev) => {
+        alert.remove();
+        if (ev.detail?.role === "confirm") void this.switchEnvironment(live);
+      },
+      { once: true }
+    );
+    document.body.appendChild(alert);
+    try {
+      if (typeof alert.present === "function") await alert.present();
+      else alert.isOpen = true;
+    } catch {
+      alert.remove();
+    }
+  }
+  /** The core decides; the environment is READ back from its answer, never assumed. */
+  async switchEnvironment(live) {
+    this.switchingEnvironment = true;
+    this.goLiveNotice = null;
+    try {
+      const reply = await coreFetch(GO_LIVE_PATH, { method: live ? "POST" : "DELETE" });
+      if (reply.ok) {
+        this.goLive = reply.body?.data ?? this.goLive;
+        this.goLiveNotice = { key: live ? "ui.goLiveDone" : "ui.standDownDone", tone: "success" };
+      } else {
+        this.goLiveNotice = { key: goLiveRefusalKey(reply.body), tone: "danger" };
+        await this.loadGoLive();
+      }
+    } finally {
+      this.switchingEnvironment = false;
     }
   }
   /** Whether a `.p12` is uploaded and switched on, from the core door. `null` = it did not answer. */
@@ -8039,7 +8155,9 @@ var ErpVerifactuSettings = class extends i3 {
       await erplora7().command("verifactu.config.save", {
         enabled: !!this.cfg.enabled,
         mode: this.cfg.mode || "verifactu",
-        environment: this.cfg.environment || "testing",
+        // The core's environment (hub#2079): the row is a mirror now, and saving must not make it
+        // disagree with the profile. Only a runtime without the go-live door still reads it.
+        environment: this.environment,
         // Identificación del productor: SIEMPRE fija (no editable por el cliente).
         software_name: PRODUCER.software_name,
         software_version: PRODUCER.software_version,
@@ -8212,7 +8330,7 @@ var ErpVerifactuSettings = class extends i3 {
   }
   renderTestCard(t5) {
     const d3 = this.diag;
-    const isTesting = this.cfg.environment === "testing";
+    const isTesting = this.environment === "testing";
     const hasIssuer = !!(this.cfg.issuer_nif || "").trim();
     const canCreateInvoice = isTesting && hasIssuer;
     return b2`<div class="card">
@@ -8265,6 +8383,35 @@ var ErpVerifactuSettings = class extends i3 {
             ` : b2`<p class="hint">${t5("ui.testNoRun")}</p>`}
       </div>
     </div>`;
+  }
+  /**
+   * Where the hub files and the ONE way to change it (hub#2079): the core's go-live, never a
+   * select. Buttons, not a form field, because it is not saved with the form — it is its own act,
+   * confirmed, with its own refusals.
+   */
+  renderEnvironment(t5) {
+    const live = this.environment === "production";
+    const g3 = this.goLive ?? {};
+    return b2`<ion-item lines="none">
+      <div class="prod">
+        <div class="kv">
+          <span class="k">${t5("ui.envAeat")}</span>
+          <ok-status-pill data-testid="settings-environment" tone=${live ? "success" : "neutral"}>${t5(live ? "ui.envProduction" : "ui.envTesting")}</ok-status-pill>
+        </div>
+        ${!live && g3.can_go_live ? b2`<p class="hint">${t5("ui.goLiveHint")}</p>
+            <ion-button size="small" data-testid="settings-go-live" ?disabled=${this.switchingEnvironment} @click=${() => void this.confirmEnvironment(true)}>
+              <ion-icon slot="start" name="rocket-outline"></ion-icon>
+              ${t5("ui.goLiveAction")}
+            </ion-button>` : A}
+        ${!live && !g3.can_go_live ? b2`<p class="hint">${t5("ui.goLiveDemoHint")}</p>` : A}
+        ${live && !g3.filed_for_real ? b2`<p class="hint">${t5("ui.standDownHint")}</p>
+            <ion-button size="small" fill="outline" data-testid="settings-stand-down" ?disabled=${this.switchingEnvironment} @click=${() => void this.confirmEnvironment(false)}>
+              ${t5("ui.standDownAction")}
+            </ion-button>` : A}
+        ${live && g3.filed_for_real ? b2`<p class="hint">${t5("ui.goLiveOneWayHint")}</p>` : A}
+        ${this.goLiveNotice ? b2`<ok-inline-feedback tone=${this.goLiveNotice.tone} data-testid="settings-go-live-notice">${t5(this.goLiveNotice.key)}</ok-inline-feedback>` : A}
+      </div>
+    </ion-item>`;
   }
   render() {
     const t5 = (k2) => erplora7().t(CATALOG7, k2);
@@ -8332,12 +8479,12 @@ var ErpVerifactuSettings = class extends i3 {
                 </ion-button>
               </div>
             </ion-item>
-            <ion-item>
+            ${this.goLive ? this.renderEnvironment(t5) : b2`<ion-item>
               <ion-select label=${t5("ui.envAeat")} label-placement="stacked" .value=${this.cfg.environment || "testing"} @ionChange=${(e6) => this.set("environment", e6.target.value)}>
                 <ion-select-option value="testing">${t5("ui.envTesting")}</ion-select-option>
                 <ion-select-option value="production">${t5("ui.envProduction")}</ion-select-option>
               </ion-select>
-            </ion-item>
+            </ion-item>`}
             <ion-item>
           </ion-list>
           <div class="card-actions">
@@ -8417,4 +8564,13 @@ __decorateClass([
 __decorateClass([
   r5()
 ], ErpVerifactuSettings.prototype, "gatewayLoading", 2);
+__decorateClass([
+  r5()
+], ErpVerifactuSettings.prototype, "goLive", 2);
+__decorateClass([
+  r5()
+], ErpVerifactuSettings.prototype, "switchingEnvironment", 2);
+__decorateClass([
+  r5()
+], ErpVerifactuSettings.prototype, "goLiveNotice", 2);
 define("erp-verifactu-settings", ErpVerifactuSettings);
