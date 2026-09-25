@@ -122,6 +122,12 @@ By role: **admin** has everything. **manager** has view, manage and transmit —
 `configure_verifactu`, so a manager cannot change the environment or recover the chain. **employee**
 is **read-only**.
 
+Not an exception: when a send comes back refused for its chain (2007), the send itself consults the
+AEAT, files the recovered anchor and re-chains the record. That is part of sending, not an
+on-demand recovery, so its internal writes (`_insert_recovery`, `_rechain_record`) ask for
+`transmit_verifactu`: a manager who processes the queue by hand gets the same result as the
+scheduled drain (hub#2132). The recovery screens stay admin only.
+
 ## Dependencies — what breaks if something is missing
 
 **`invoice` is required** and is installed with VeriFactu. Without it nothing emits the invoice
