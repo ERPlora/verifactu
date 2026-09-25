@@ -626,7 +626,7 @@
       ]
     },
     "verifactu._insert_recovery": {
-      "permission": "verifactu.configure_verifactu",
+      "permission": "verifactu.transmit_verifactu",
       "sql": [
         "commands/_insert_recovery.sql"
       ]
