@@ -143,4 +143,16 @@ describe('Ajustes del módulo · corto a propósito', () => {
   it('conserva la declaración responsable: no es un ajuste, es lo que exige el art. 13.2', async () => {
     expect(await text()).toContain('ui.declTitle');
   });
+
+  // verifactu#132: an unclosed `<ion-item>` right before `</ion-list>` was closed by the HTML
+  // parser, leaving a row with nothing but its separator line above «Save». Every row of the
+  // settings list has to carry something the person can read or touch.
+  it('leaves no empty row in the settings list', async () => {
+    const el = await mount();
+    const rows = [...el.shadowRoot.querySelectorAll('form ion-list ion-item')];
+
+    expect(rows.length, 'the settings list rendered no rows').toBeGreaterThan(0);
+    const empty = rows.filter((row) => row.children.length === 0 && !(row.textContent ?? '').trim());
+    expect(empty.length, 'empty rows in the settings list').toBe(0);
+  });
 });
