@@ -1235,7 +1235,6 @@ export class ErpVerifactuSettings extends LitElement {
                 <ion-select-option value="production">${t('ui.envProduction')}</ion-select-option>
               </ion-select>
             </ion-item>`}
-            <ion-item>
           </ion-list>
           <div class="card-actions">
             <ion-button type="submit" ?disabled=${this.saving || this.loading}>${this.saving ? t('ui.saving') : t('ui.save')}</ion-button>
