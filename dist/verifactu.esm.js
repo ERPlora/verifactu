@@ -8524,7 +8524,6 @@ var ErpVerifactuSettings = class extends i3 {
                 <ion-select-option value="production">${t5("ui.envProduction")}</ion-select-option>
               </ion-select>
             </ion-item>`}
-            <ion-item>
           </ion-list>
           <div class="card-actions">
             <ion-button type="submit" ?disabled=${this.saving || this.loading}>${this.saving ? t5("ui.saving") : t5("ui.save")}</ion-button>
