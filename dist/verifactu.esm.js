@@ -6695,6 +6695,10 @@ function createListController(client, queryName, onChange = () => {
 }, opts = {}) {
   return new ListController(client, queryName, onChange, opts);
 }
+function majorToMinor(amount, decimals) {
+  const n6 = Number(amount);
+  return Number.isFinite(n6) ? Math.round(n6 * 10 ** decimals) : 0;
+}
 
 // ui/components/erp-verifactu-contingency/erp-verifactu-contingency.ts
 var CATALOG3 = { es: es_default, en: en_default };
@@ -7020,6 +7024,19 @@ var QUEUED = /* @__PURE__ */ new Set(["pending", "retrying"]);
 function wallClock(iso) {
   return iso.length >= 16 ? iso.slice(0, 16).replace("T", " ") : iso;
 }
+var MONEY_RANGE_FILTERS = /* @__PURE__ */ new Set(["total_amount"]);
+function moneyEdgeToMinor(edge, decimals) {
+  const text = typeof edge === "string" ? edge.trim().replace(",", ".") : edge;
+  if (text === "" || text === null || text === void 0) return "";
+  const n6 = Number(text);
+  return Number.isFinite(n6) ? majorToMinor(n6, decimals) : "";
+}
+function moneyRangeToMinor(value, decimals) {
+  if (value === null || typeof value !== "object") return value;
+  return Object.fromEntries(
+    Object.entries(value).map(([edge, v3]) => [edge, moneyEdgeToMinor(v3, decimals)])
+  );
+}
 function erplora5() {
   const c5 = globalThis.erplora;
   if (!c5) throw new Error("erplora SDK no inicializado por el shell");
@@ -7185,6 +7202,10 @@ var _ErpVerifactuRecords = class _ErpVerifactuRecords extends i3 {
   go(path) {
     window.history.pushState({}, "", path);
     window.dispatchEvent(new PopStateEvent("popstate"));
+  }
+  /** A column filter from the table: money ranges travel in the minor unit (pm#498). */
+  onFilterChange(col, value) {
+    this.ctrl.setFilter(col, MONEY_RANGE_FILTERS.has(col) ? moneyRangeToMinor(value, erplora5().currencyDecimals) : value);
   }
   /**
    * Opens the detail of one record (verifactu#86) — the door `record.get` never had a screen
@@ -7379,7 +7400,7 @@ var _ErpVerifactuRecords = class _ErpVerifactuRecords extends i3 {
               ${t5("ui.recordsSealingUnknown")}
             </ok-inline-feedback>` : A}
         <!-- rowClickable opens the detail verifactu#86 adds: record.get had no screen behind it. -->
-        <ok-data-table .serverSide=${true} .views=${true} .rowClickable=${true} .cardTitle=${(row) => String(row.invoice_number ?? row.sequence_number ?? "")} .columns=${this.columns} .rows=${this.ctrl?.rows ?? []} .total=${this.ctrl?.total ?? 0} .page=${this.ctrl?.state.page ?? 0} .pageSize=${this.ctrl?.state.pageSize ?? 50} .sort=${this.ctrl?.state.sort} .sortDir=${this.ctrl?.state.dir ?? "asc"} .searchable=${true} .searchPlaceholder=${t5("ui.recordsSearchPlaceholder")} .emptyMessage=${this.emptyMessage(t5)} @rowClick=${(e6) => this.openDetail(String(e6.detail.row.id))} @pageChange=${(e6) => this.ctrl.setPage(e6.detail)} @sortChange=${(e6) => this.ctrl.setSort(e6.detail.sort, e6.detail.dir)} @searchChange=${(e6) => this.ctrl.setSearch(e6.detail)} @filterChange=${(e6) => this.ctrl.setFilter(e6.detail.col, e6.detail.value)}></ok-data-table>
+        <ok-data-table .serverSide=${true} .views=${true} .rowClickable=${true} .cardTitle=${(row) => String(row.invoice_number ?? row.sequence_number ?? "")} .columns=${this.columns} .rows=${this.ctrl?.rows ?? []} .total=${this.ctrl?.total ?? 0} .page=${this.ctrl?.state.page ?? 0} .pageSize=${this.ctrl?.state.pageSize ?? 50} .sort=${this.ctrl?.state.sort} .sortDir=${this.ctrl?.state.dir ?? "asc"} .searchable=${true} .searchPlaceholder=${t5("ui.recordsSearchPlaceholder")} .emptyMessage=${this.emptyMessage(t5)} @rowClick=${(e6) => this.openDetail(String(e6.detail.row.id))} @pageChange=${(e6) => this.ctrl.setPage(e6.detail)} @sortChange=${(e6) => this.ctrl.setSort(e6.detail.sort, e6.detail.dir)} @searchChange=${(e6) => this.ctrl.setSearch(e6.detail)} @filterChange=${(e6) => this.onFilterChange(e6.detail.col, e6.detail.value)}></ok-data-table>
       </div>`;
   }
 };
