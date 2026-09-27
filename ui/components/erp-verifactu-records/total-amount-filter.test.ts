@@ -114,6 +114,25 @@ describe('«Total» range filter compares in the unit the column shows (pm#498)'
     expect(await type(el, 'total_amount', null)).toEqual({});
   });
 
+  it('typed in the real Filters panel: asks for cents and the field still shows what was typed', async () => {
+    const el = await mount();
+    type Table = HTMLElement & { open(panel: 'filters'): void; shadowRoot: ShadowRoot; updateComplete: Promise<unknown> };
+    const table = el.shadowRoot.querySelector('ok-data-table') as Table;
+    table.open('filters');
+    await table.updateComplete;
+    const fromOfTotal = (): HTMLInputElement => {
+      const label = [...table.shadowRoot.querySelectorAll('.flabel')].find((l) => l.textContent === 'ui.colTotal');
+      return label!.parentElement!.querySelector('ion-input') as unknown as HTMLInputElement;
+    };
+    fromOfTotal().value = '12';
+    fromOfTotal().dispatchEvent(new CustomEvent('ionInput', { bubbles: true, composed: true }));
+    await settle(el);
+    await table.updateComplete;
+    expect(asked[asked.length - 1]).toEqual({ total_amount: { from: 1200 } });
+    // The cents only travel to the hub: the field keeps «12», never «1200».
+    expect(String(fromOfTotal().value)).toBe('12');
+  });
+
   it('other columns travel untouched: dates stay ISO and the sequence stays the number typed', async () => {
     const el = await mount();
     expect(await type(el, 'invoice_date', { from: '2026-09-01' })).toEqual({ invoice_date: { from: '2026-09-01' } });
