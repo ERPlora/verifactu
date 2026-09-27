@@ -4,7 +4,7 @@ import { define } from '@erplora/outfitkit/define';
 import '@erplora/outfitkit/ok-data-table';
 import '@erplora/outfitkit/ok-inline-feedback';
 import type { DataTableColumn } from '@erplora/outfitkit';
-import { createListController } from '@erplora/module-sdk';
+import { createListController, majorToMinor } from '@erplora/module-sdk';
 import type { ListController, ListClient, ListParams, ListPage } from '@erplora/module-sdk';
 import esLocale from '../../../locales/es.json';
 import enLocale from '../../../locales/en.json';
@@ -20,6 +20,8 @@ interface ErploraClientLike extends ListClient {
   t(catalog: Record<string, unknown>, key: string, params?: Record<string, unknown>): string;
   /** Money (ADR-0123): takes the INTEGER in the minor unit; currency and scale of the hub. */
   formatMoney(minor: number): string;
+  /** Decimals of the hub currency — the scale between what a person types and the stored integer. */
+  currencyDecimals: number;
 }
 
 interface VerifactuRecord {
@@ -106,6 +108,33 @@ const QUEUED = new Set(['pending', 'retrying']);
  */
 function wallClock(iso: string): string {
   return iso.length >= 16 ? iso.slice(0, 16).replace('T', ' ') : iso;
+}
+
+/**
+ * Columns whose `range` filter is money (pm#498). The column paints the INTEGER in the minor unit
+ * as money of the hub («12,10 €»), so the person types the major unit («12»); the dispatcher
+ * compares against the integer, so each edge is scaled before the list is asked for.
+ */
+const MONEY_RANGE_FILTERS = new Set(['total_amount']);
+
+/**
+ * One typed edge of a money range → minor units, with the hub's currency decimals. The table emits
+ * a Number from the panel and text from the inline control («12,5» included). Empty or not a
+ * number → `''`, which the list controller drops: a stray keystroke never becomes «from 0».
+ */
+function moneyEdgeToMinor(edge: unknown, decimals: number): number | '' {
+  const text = typeof edge === 'string' ? edge.trim().replace(',', '.') : edge;
+  if (text === '' || text === null || text === undefined) return '';
+  const n = Number(text);
+  return Number.isFinite(n) ? majorToMinor(n, decimals) : '';
+}
+
+/** The `{ from?, to? }` a money range emits, scaled edge by edge; any other shape travels as is. */
+function moneyRangeToMinor(value: unknown, decimals: number): unknown {
+  if (value === null || typeof value !== 'object') return value;
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>).map(([edge, v]) => [edge, moneyEdgeToMinor(v, decimals)]),
+  );
 }
 
 function erplora(): ErploraClientLike {
@@ -312,6 +341,11 @@ export class ErpVerifactuRecords extends LitElement {
   private go(path: string): void {
     window.history.pushState({}, '', path);
     window.dispatchEvent(new PopStateEvent('popstate'));
+  }
+
+  /** A column filter from the table: money ranges travel in the minor unit (pm#498). */
+  private onFilterChange(col: string, value: unknown): void {
+    this.ctrl.setFilter(col, MONEY_RANGE_FILTERS.has(col) ? moneyRangeToMinor(value, erplora().currencyDecimals) : value);
   }
 
   /**
@@ -532,7 +566,7 @@ export class ErpVerifactuRecords extends LitElement {
             </ok-inline-feedback>`
           : nothing}
         <!-- rowClickable opens the detail verifactu#86 adds: record.get had no screen behind it. -->
-        <ok-data-table .serverSide=${true} .views=${true} .rowClickable=${true} .cardTitle=${(row: Record<string, unknown>) => String(row.invoice_number ?? row.sequence_number ?? '')} .columns=${this.columns} .rows=${this.ctrl?.rows ?? []} .total=${this.ctrl?.total ?? 0} .page=${this.ctrl?.state.page ?? 0} .pageSize=${this.ctrl?.state.pageSize ?? 50} .sort=${this.ctrl?.state.sort} .sortDir=${this.ctrl?.state.dir ?? 'asc'} .searchable=${true} .searchPlaceholder=${t('ui.recordsSearchPlaceholder')} .emptyMessage=${this.emptyMessage(t)} @rowClick=${(e: CustomEvent<{ row: Record<string, unknown> }>) => this.openDetail(String(e.detail.row.id))} @pageChange=${(e: CustomEvent<number>) => this.ctrl.setPage(e.detail)} @sortChange=${(e: CustomEvent<{ sort: string; dir: 'asc' | 'desc' }>) => this.ctrl.setSort(e.detail.sort, e.detail.dir)} @searchChange=${(e: CustomEvent<string>) => this.ctrl.setSearch(e.detail)} @filterChange=${(e: CustomEvent<{ col: string; value: unknown }>) => this.ctrl.setFilter(e.detail.col, e.detail.value)}></ok-data-table>
+        <ok-data-table .serverSide=${true} .views=${true} .rowClickable=${true} .cardTitle=${(row: Record<string, unknown>) => String(row.invoice_number ?? row.sequence_number ?? '')} .columns=${this.columns} .rows=${this.ctrl?.rows ?? []} .total=${this.ctrl?.total ?? 0} .page=${this.ctrl?.state.page ?? 0} .pageSize=${this.ctrl?.state.pageSize ?? 50} .sort=${this.ctrl?.state.sort} .sortDir=${this.ctrl?.state.dir ?? 'asc'} .searchable=${true} .searchPlaceholder=${t('ui.recordsSearchPlaceholder')} .emptyMessage=${this.emptyMessage(t)} @rowClick=${(e: CustomEvent<{ row: Record<string, unknown> }>) => this.openDetail(String(e.detail.row.id))} @pageChange=${(e: CustomEvent<number>) => this.ctrl.setPage(e.detail)} @sortChange=${(e: CustomEvent<{ sort: string; dir: 'asc' | 'desc' }>) => this.ctrl.setSort(e.detail.sort, e.detail.dir)} @searchChange=${(e: CustomEvent<string>) => this.ctrl.setSearch(e.detail)} @filterChange=${(e: CustomEvent<{ col: string; value: unknown }>) => this.onFilterChange(e.detail.col, e.detail.value)}></ok-data-table>
       </div>`;
   }
 }
