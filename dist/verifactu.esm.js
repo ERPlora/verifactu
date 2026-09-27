@@ -7098,7 +7098,7 @@ var _ErpVerifactuRecords = class _ErpVerifactuRecords extends i3 {
         sortable: true,
         filterable: true,
         filterType: "range",
-        format: (r6) => Number(r6.total_amount).toFixed(2)
+        format: (r6) => erplora5().formatMoney(Number(r6.total_amount))
       },
       {
         key: "status",
@@ -7307,7 +7307,7 @@ var _ErpVerifactuRecords = class _ErpVerifactuRecords extends i3 {
         <div><dt>${t5("ui.colType")}</dt><dd>${typeLabels[d3.record_type] ?? d3.record_type}</dd></div>
         <div><dt>${t5("ui.colInvoiceType")}</dt><dd>${d3.invoice_type}</dd></div>
         <div><dt>${t5("ui.colIssuer")}</dt><dd>${d3.issuer_name} (${d3.issuer_nif})</dd></div>
-        <div><dt>${t5("ui.colTotal")}</dt><dd>${Number(d3.total_amount).toFixed(2)}</dd></div>
+        <div><dt>${t5("ui.colTotal")}</dt><dd>${erplora5().formatMoney(Number(d3.total_amount))}</dd></div>
         <div><dt>${t5("ui.fieldGeneratedAt")}</dt><dd>${d3.generation_timestamp}</dd></div>
         <div><dt>${t5("ui.fieldTransmittedAt")}</dt><dd>${d3.transmission_timestamp || "\u2014"}</dd></div>
       </dl>

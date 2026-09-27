@@ -18,6 +18,8 @@ interface ErploraClientLike extends ListClient {
   on(event: string, cb: (payload: unknown) => void): () => void;
   locale: string;
   t(catalog: Record<string, unknown>, key: string, params?: Record<string, unknown>): string;
+  /** Money (ADR-0123): takes the INTEGER in the minor unit; currency and scale of the hub. */
+  formatMoney(minor: number): string;
 }
 
 interface VerifactuRecord {
@@ -29,7 +31,8 @@ interface VerifactuRecord {
   invoice_type: string;
   issuer_nif: string;
   issuer_name: string;
-  total_amount: string;
+  /** Cents (INTEGER, ADR-0123). */
+  total_amount: number;
   status: string;
   retry_count: number;
   aeat_csv: string;
@@ -51,10 +54,11 @@ interface VerifactuRecordDetail {
   issuer_nif: string;
   issuer_name: string;
   description: string;
-  base_amount: string;
+  /** Amounts in cents (INTEGER, ADR-0123); `tax_rate` is a percentage. */
+  base_amount: number;
   tax_rate: string;
-  tax_amount: string;
-  total_amount: string;
+  tax_amount: number;
+  total_amount: number;
   record_hash: string;
   previous_hash: string;
   is_first_record: number;
@@ -202,7 +206,7 @@ export class ErpVerifactuRecords extends LitElement {
       sortable: true,
       filterable: true,
       filterType: 'range',
-      format: (r) => Number(r.total_amount).toFixed(2),
+      format: (r) => erplora().formatMoney(Number(r.total_amount)),
     },
     {
       key: 'status',
@@ -446,7 +450,7 @@ export class ErpVerifactuRecords extends LitElement {
         <div><dt>${t('ui.colType')}</dt><dd>${typeLabels[d.record_type] ?? d.record_type}</dd></div>
         <div><dt>${t('ui.colInvoiceType')}</dt><dd>${d.invoice_type}</dd></div>
         <div><dt>${t('ui.colIssuer')}</dt><dd>${d.issuer_name} (${d.issuer_nif})</dd></div>
-        <div><dt>${t('ui.colTotal')}</dt><dd>${Number(d.total_amount).toFixed(2)}</dd></div>
+        <div><dt>${t('ui.colTotal')}</dt><dd>${erplora().formatMoney(Number(d.total_amount))}</dd></div>
         <div><dt>${t('ui.fieldGeneratedAt')}</dt><dd>${d.generation_timestamp}</dd></div>
         <div><dt>${t('ui.fieldTransmittedAt')}</dt><dd>${d.transmission_timestamp || '—'}</dd></div>
       </dl>

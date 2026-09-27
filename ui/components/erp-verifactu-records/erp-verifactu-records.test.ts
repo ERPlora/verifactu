@@ -39,6 +39,8 @@ beforeEach(() => {
       translated.push({ key, params });
       return key;
     },
+
+    formatMoney: (minor: number) => `MONEY(${minor})`,
   };
 });
 

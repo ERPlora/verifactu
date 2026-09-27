@@ -27,10 +27,10 @@ function record(over: Record<string, unknown> = {}) {
     issuer_nif: 'B12345674',
     issuer_name: 'Salon Lucia SL',
     description: 'Corte',
-    base_amount: '24.71',
+    base_amount: 2471,
     tax_rate: '21.00',
-    tax_amount: '5.19',
-    total_amount: '29.90',
+    tax_amount: 519,
+    total_amount: 2990,
     record_hash: 'b'.repeat(64),
     previous_hash: 'c'.repeat(64),
     is_first_record: 0,
@@ -110,6 +110,8 @@ beforeEach(() => {
     locale: 'en',
     t: (_catalog: unknown, key: string, params?: Record<string, unknown>) =>
       params && Object.keys(params).length ? `${key} ${JSON.stringify(params)}` : key,
+
+    formatMoney: (minor: number) => `MONEY(${minor})`,
   };
 });
 
