@@ -46,10 +46,10 @@ function fullRow(over: Record<string, unknown> = {}) {
     issuer_nif: 'B12345678',
     issuer_name: 'Bar Pepe SL',
     description: 'Comida',
-    base_amount: '10.00',
+    base_amount: 1000,
     tax_rate: '21.00',
-    tax_amount: '2.10',
-    total_amount: '12.10',
+    tax_amount: 210,
+    total_amount: 1210,
     record_hash: 'b'.repeat(64),
     previous_hash: 'c'.repeat(64),
     is_first_record: 0,
@@ -95,6 +95,8 @@ beforeEach(() => {
     on: () => () => {},
     locale: 'en',
     t: (_catalog: unknown, key: string) => key,
+
+    formatMoney: (minor: number) => `MONEY(${minor})`,
   };
 });
 
