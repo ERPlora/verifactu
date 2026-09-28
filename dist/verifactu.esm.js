@@ -2755,6 +2755,10 @@ var es_default = {
       title: "Eventos AEAT recientes"
     }
   },
+  setup: {
+    title: "Configura VeriFactu",
+    description: "Activa VeriFactu y sube el certificado del negocio para enviar tus facturas a la AEAT."
+  },
   grant: {
     intro: "ERPlora remite tus registros de facturaci\xF3n a la Agencia Tributaria EN TU NOMBRE. La ley exige tu consentimiento firmado: el modelo oficial del acuerdo de colaboraci\xF3n social. Lo descargas, lo firmas fuera de esta pantalla y lo vuelves a subir.",
     stateVigente: "Aprobado el {date}. ERPlora puede remitir en tu nombre.",
@@ -3268,6 +3272,10 @@ var en_default = {
     dropErrorSize: "\u201C{name}\u201D is larger than {size}.",
     dropRemove: "Remove {name}",
     cfgP12Choose: "Business certificate (.p12 or .pfx)"
+  },
+  setup: {
+    title: "Set up VeriFactu",
+    description: "Turn on VeriFactu and upload your business certificate to send your invoices to the AEAT."
   },
   grant: {
     intro: "ERPlora files your invoicing records with the tax authority ON YOUR BEHALF. Spanish law needs your signed consent for that: the official form of the colaboraci\xF3n social agreement. You download it, sign it away from this screen, and upload it back.",

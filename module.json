@@ -1,7 +1,7 @@
 {
   "id": "verifactu",
   "name": "VeriFactu",
-  "version": "1.5.52",
+  "version": "1.5.53",
   "fiscal_regime": {
     "country": "ES",
     "regime": "verifactu",
@@ -106,8 +106,8 @@
         "truthy": true
       }
     ],
-    "title": "Configura VeriFactu",
-    "description": "Activa VeriFactu y sube el certificado del negocio en Ajustes para enviar facturas a la AEAT.",
+    "title": "Set up VeriFactu",
+    "description": "Turn on VeriFactu and upload your business certificate to send your invoices to the AEAT.",
     "icon": "shield-checkmark-outline",
     "route": "/m/verifactu/config",
     "permission": "verifactu.configure_verifactu"
