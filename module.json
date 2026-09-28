@@ -775,23 +775,7 @@
         "general"
       ],
       "default": false,
-      "kind": "timeline",
-      "query": "verifactu.stats.events_recent",
-      "refresh_on": [
-        "verifactu.record.created",
-        "verifactu.record.transmitted",
-        "verifactu.contingency.processed"
-      ],
-      "map": {
-        "id": "id",
-        "title": "title",
-        "description": "description",
-        "time": "timestamp",
-        "status": "status"
-      },
-      "options": {
-        "align": "left"
-      }
+      "component": "erp-verifactu-events-widget"
     }
   },
   "scheduled_tasks": [

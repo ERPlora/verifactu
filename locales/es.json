@@ -49,6 +49,7 @@
     "eventsTitle": "Eventos de auditoría",
     "eventsSearchPlaceholder": "Buscar tipo o mensaje…",
     "eventsEmpty": "Sin eventos.",
+    "eventsWidgetError": "No se han podido cargar los últimos eventos de la AEAT.",
     "evt": {
       "record_created": "Registro {record_type} #{sequence_number} de la factura {invoice_number} sellado",
       "invoice_type_downgraded": "La factura {invoice_number} se declaró {declared} y se ha registrado como {effective}: sin NIF de destinatario la AEAT rechaza el tipo declarado (error 1189)",
