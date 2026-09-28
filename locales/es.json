@@ -452,6 +452,10 @@
       "title": "Eventos AEAT recientes"
     }
   },
+  "setup": {
+    "title": "Configura VeriFactu",
+    "description": "Activa VeriFactu y sube el certificado del negocio para enviar tus facturas a la AEAT."
+  },
   "grant": {
     "intro": "ERPlora remite tus registros de facturación a la Agencia Tributaria EN TU NOMBRE. La ley exige tu consentimiento firmado: el modelo oficial del acuerdo de colaboración social. Lo descargas, lo firmas fuera de esta pantalla y lo vuelves a subir.",
     "stateVigente": "Aprobado el {date}. ERPlora puede remitir en tu nombre.",

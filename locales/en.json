@@ -435,6 +435,10 @@
     "dropRemove": "Remove {name}",
     "cfgP12Choose": "Business certificate (.p12 or .pfx)"
   },
+  "setup": {
+    "title": "Set up VeriFactu",
+    "description": "Turn on VeriFactu and upload your business certificate to send your invoices to the AEAT."
+  },
   "grant": {
     "intro": "ERPlora files your invoicing records with the tax authority ON YOUR BEHALF. Spanish law needs your signed consent for that: the official form of the colaboración social agreement. You download it, sign it away from this screen, and upload it back.",
     "stateVigente": "Approved on {date}. ERPlora may file on your behalf.",
