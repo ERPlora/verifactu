@@ -895,4 +895,35 @@ describe('the F2 ceiling refusal paints its amounts with the hub money formatter
 
     expect(sentence).toContain('MONEY(484000)');
   });
+
+  // Only a decimal amount crosses into money: anything else turned into cents would be `NaN → 0`
+  // and the reader would see a confident «0,00 €» where the hub sent something it could not parse.
+  it('leaves a legacy value that is not a decimal amount as the hub sent it', () => {
+    const sentence = reasonSentence(
+      CATALOG,
+      'es',
+      interpolatingIn('es'),
+      { ...OVER_CEILING_OLDER_HUB, total: 'n/a' },
+      moneyEcho,
+    );
+
+    expect(sentence).toContain('n/a');
+    expect(sentence).not.toContain('MONEY(0)');
+    expect(sentence).toContain('MONEY(300000)');
+  });
+
+  // The minor unit is an integer by contract (ADR-0123): a fractional one is not cents, so the
+  // decimal string beside it wins.
+  it('falls back to the decimal string when the cents are not an integer', () => {
+    const sentence = reasonSentence(
+      CATALOG,
+      'es',
+      interpolatingIn('es'),
+      { ...OVER_CEILING, total_cents: 4840.5 },
+      moneyEcho,
+    );
+
+    expect(sentence).toContain('MONEY(484000)');
+    expect(sentence).not.toContain('MONEY(4840.5)');
+  });
 });
