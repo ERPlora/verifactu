@@ -7579,7 +7579,6 @@ var ErpVerifactuEventsWidget = class extends i3 {
       this.rows = Array.isArray(rows) ? rows : [];
       this.failed = false;
     } catch {
-      this.rows = null;
       this.failed = true;
     }
   }

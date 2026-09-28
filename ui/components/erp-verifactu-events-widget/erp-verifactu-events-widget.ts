@@ -101,8 +101,8 @@ export class ErpVerifactuEventsWidget extends LitElement {
       this.rows = Array.isArray(rows) ? rows : [];
       this.failed = false;
     } catch {
-      // A failed refresh never leaves the previous list passing for fresh.
-      this.rows = null;
+      // A failed refresh never leaves the previous list passing for fresh: `render` checks
+      // `failed` before `rows`.
       this.failed = true;
     }
   }
