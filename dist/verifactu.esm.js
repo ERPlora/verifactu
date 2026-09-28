@@ -7534,12 +7534,6 @@ define("ok-empty-state", OkEmptyState);
 
 // ui/components/erp-verifactu-events-widget/erp-verifactu-events-widget.ts
 var CATALOG5 = { es: es_default, en: en_default };
-var QUERY = "verifactu.stats.events_recent";
-var REFRESH_ON = [
-  "verifactu.record.created",
-  "verifactu.record.transmitted",
-  "verifactu.contingency.processed"
-];
 var SEVERITY_COLOR = { warning: "warning", error: "danger", critical: "danger" };
 var ErpVerifactuEventsWidget = class extends i3 {
   constructor() {
@@ -7564,7 +7558,12 @@ var ErpVerifactuEventsWidget = class extends i3 {
     super.connectedCallback();
     window.addEventListener("erplora:locale-changed", this.onLocaleChange);
     const client = this.api();
-    this.unsubs = REFRESH_ON.map((event) => client.on(event, () => void this.load()));
+    const reload = () => void this.load();
+    this.unsubs = [
+      client.on("verifactu.record.created", reload),
+      client.on("verifactu.record.transmitted", reload),
+      client.on("verifactu.contingency.processed", reload)
+    ];
     void this.load();
   }
   disconnectedCallback() {
@@ -7575,7 +7574,7 @@ var ErpVerifactuEventsWidget = class extends i3 {
   }
   async load() {
     try {
-      const rows = await this.api().query(QUERY);
+      const rows = await this.api().query("verifactu.stats.events_recent");
       this.rows = Array.isArray(rows) ? rows : [];
       this.failed = false;
     } catch {

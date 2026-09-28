@@ -23,14 +23,6 @@ import { formatEventTime } from '../../lib/event-time';
 
 const CATALOG: Record<string, unknown> = { es: esLocale, en: enLocale };
 
-/** The query behind the card, and the domain events after which it is stale. */
-const QUERY = 'verifactu.stats.events_recent';
-const REFRESH_ON = [
-  'verifactu.record.created',
-  'verifactu.record.transmitted',
-  'verifactu.contingency.processed',
-] as const;
-
 /** Dot colour of the severities that deserve one; the rest keep the timeline's neutral dot. */
 const SEVERITY_COLOR: Record<string, string> = { warning: 'warning', error: 'danger', critical: 'danger' };
 
@@ -84,7 +76,14 @@ export class ErpVerifactuEventsWidget extends LitElement {
     super.connectedCallback();
     window.addEventListener('erplora:locale-changed', this.onLocaleChange);
     const client = this.api();
-    this.unsubs = REFRESH_ON.map((event) => client.on(event, () => void this.load()));
+    const reload = (): void => void this.load();
+    // The domain events after which the card is stale. Literal names: the SDK contracts are read
+    // statically from these calls (ADR-0127).
+    this.unsubs = [
+      client.on('verifactu.record.created', reload),
+      client.on('verifactu.record.transmitted', reload),
+      client.on('verifactu.contingency.processed', reload),
+    ];
     void this.load();
   }
 
@@ -97,7 +96,7 @@ export class ErpVerifactuEventsWidget extends LitElement {
 
   private async load(): Promise<void> {
     try {
-      const rows = await this.api().query<RecentEvent[]>(QUERY);
+      const rows = await this.api().query<RecentEvent[]>('verifactu.stats.events_recent');
       this.rows = Array.isArray(rows) ? rows : [];
       this.failed = false;
     } catch {
