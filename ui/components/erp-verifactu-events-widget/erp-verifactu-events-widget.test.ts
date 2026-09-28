@@ -249,6 +249,30 @@ describe('live refresh', () => {
     expect(el.shadowRoot?.querySelector('ok-timeline')).toBeNull();
     expect(mutedMessage(el)).toBe(enLocale.ui.eventsWidgetError);
   });
+
+  it('comes back to the events once a refresh after a failure answers', async () => {
+    // A network blip must not leave the card on «could not load» until the page is reloaded.
+    const el = await mount();
+    failWith = new Error('network down');
+    handlers.get('verifactu.record.transmitted')!();
+    await settle(el);
+    failWith = null;
+    handlers.get('verifactu.record.created')!();
+    await settle(el);
+    expect(el.shadowRoot?.querySelector('ok-empty-state')).toBeNull();
+    expect(items(el).map((i) => i.id)).toEqual(['ev-2', 'ev-1']);
+  });
+
+  it('follows a language change of the shell without being mounted again', async () => {
+    const el = await mount();
+    locale = 'es';
+    window.dispatchEvent(new CustomEvent('erplora:locale-changed', { detail: { locale } }));
+    await settle(el);
+    expect(items(el).map((i) => i.title)).toEqual([
+      esLocale.ui.evtType.transmission_deferred,
+      esLocale.ui.evtType.record_created,
+    ]);
+  });
 });
 
 describe('the home widget is this component', () => {
