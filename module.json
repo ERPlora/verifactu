@@ -1,7 +1,7 @@
 {
   "id": "verifactu",
   "name": "VeriFactu",
-  "version": "1.5.53",
+  "version": "1.5.54",
   "fiscal_regime": {
     "country": "ES",
     "regime": "verifactu",
@@ -300,6 +300,11 @@
       "permission": "verifactu.view_verifactu",
       "sql": "queries/events_list.sql",
       "list": {
+        "search": [
+          "message",
+          "event_type",
+          "type_label"
+        ],
         "sort": [
           "id",
           "record_id",
@@ -309,8 +314,8 @@
           "details",
           "timestamp"
         ],
-        "default_sort": "id",
-        "default_dir": "asc",
+        "default_sort": "timestamp",
+        "default_dir": "desc",
         "filters": {
           "record_id": {
             "op": "eq"
