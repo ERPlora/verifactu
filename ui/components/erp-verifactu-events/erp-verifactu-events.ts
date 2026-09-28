@@ -127,8 +127,9 @@ export class ErpVerifactuEvents extends LitElement {
     window.addEventListener('erplora:locale-changed', this.onLocaleChange);
     this.ctrl = createListController<VerifactuEvent>(erplora(), 'verifactu.events.list', () => this.requestUpdate(), {
       pageSize: 50,
-      sort: 'id',
-      dir: 'asc',
+      // verifactu#144: an activity log opens on what just happened — the manifest's default too.
+      sort: 'timestamp',
+      dir: 'desc',
     });
     await this.ctrl.load();
   }
