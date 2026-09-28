@@ -9,6 +9,7 @@ import esLocale from '../../../locales/es.json';
 import enLocale from '../../../locales/en.json';
 import { eventMessage, type Translate } from '../../lib/event-message';
 import { ENGINE_EVENT_TYPES, EVENT_SEVERITIES, eventTypeLabel, severityLabel } from '../../lib/event-labels';
+import { formatEventTime } from '../../lib/event-time';
 const CATALOG: Record<string, unknown> = { es: esLocale, en: enLocale };
 
 interface ErploraClientLike extends ListClient {
@@ -17,6 +18,8 @@ interface ErploraClientLike extends ListClient {
   command<T = unknown>(name: string, payload?: Record<string, unknown>): Promise<T>;
   on(event: string, cb: (payload: unknown) => void): () => void;
   locale: string;
+  /** Hub IANA zone the shell publishes; `formatEventTime` degrades a missing one to UTC. */
+  timezone?: string;
   t(catalog: Record<string, unknown>, key: string, params?: Record<string, unknown>): string;
 }
 
@@ -55,7 +58,16 @@ export class ErpVerifactuEvents extends LitElement {
     const t = (k: string): string => client.t(CATALOG, k);
     const translate: Translate = (catalog, key, params) => client.t(catalog, key, params);
     return [
-    { key: 'timestamp', header: t('ui.colWhen'), sortable: true, filterable: true, filterType: 'daterange' },
+    {
+      key: 'timestamp',
+      header: t('ui.colWhen'),
+      sortable: true,
+      filterable: true,
+      filterType: 'daterange',
+      // verifactu#141: the CELL reads as a date and time on the hub clock; sorting and the date
+      // range still travel to the query over the stored ISO text.
+      format: (r) => formatEventTime(r.timestamp, { locale: client.locale, timezone: client.timezone ?? '' }),
+    },
     {
       key: 'severity',
       header: t('ui.colSeverity'),

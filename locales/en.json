@@ -48,6 +48,7 @@
     "eventsTitle": "Audit events",
     "eventsSearchPlaceholder": "Search type or message…",
     "eventsEmpty": "No events.",
+    "eventsWidgetError": "Couldn't load the latest AEAT events.",
     "evt": {
       "record_created": "{record_type} record #{sequence_number} sealed for invoice {invoice_number}",
       "invoice_type_downgraded": "Invoice {invoice_number} was declared {declared} and registered as {effective}: without a recipient tax ID the AEAT rejects the declared type (error 1189)",

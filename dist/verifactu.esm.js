@@ -2352,6 +2352,7 @@ var es_default = {
     eventsTitle: "Eventos de auditor\xEDa",
     eventsSearchPlaceholder: "Buscar tipo o mensaje\u2026",
     eventsEmpty: "Sin eventos.",
+    eventsWidgetError: "No se han podido cargar los \xFAltimos eventos de la AEAT.",
     evt: {
       record_created: "Registro {record_type} #{sequence_number} de la factura {invoice_number} sellado",
       invoice_type_downgraded: "La factura {invoice_number} se declar\xF3 {declared} y se ha registrado como {effective}: sin NIF de destinatario la AEAT rechaza el tipo declarado (error 1189)",
@@ -2881,6 +2882,7 @@ var en_default = {
     eventsTitle: "Audit events",
     eventsSearchPlaceholder: "Search type or message\u2026",
     eventsEmpty: "No events.",
+    eventsWidgetError: "Couldn't load the latest AEAT events.",
     evt: {
       record_created: "{record_type} record #{sequence_number} sealed for invoice {invoice_number}",
       invoice_type_downgraded: "Invoice {invoice_number} was declared {declared} and registered as {effective}: without a recipient tax ID the AEAT rejects the declared type (error 1189)",
@@ -7038,6 +7040,37 @@ function severityLabel(catalog, _locale, t5, code) {
   return t5(catalog, SEVERITY_LABEL_KEYS[code]);
 }
 
+// ui/lib/event-time.ts
+function usableZone(timezone) {
+  if (!timezone) return "UTC";
+  try {
+    new Intl.DateTimeFormat("en", { timeZone: timezone });
+    return timezone;
+  } catch {
+    return "UTC";
+  }
+}
+function formatEventTime(value, opts) {
+  const raw2 = value == null ? "" : String(value);
+  if (!raw2) return "";
+  const instant = new Date(raw2);
+  if (Number.isNaN(instant.getTime())) return raw2;
+  try {
+    return new Intl.DateTimeFormat(opts.locale || "es", {
+      timeZone: usableZone(opts.timezone),
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hourCycle: "h23"
+    }).format(instant);
+  } catch {
+    return raw2;
+  }
+}
+
 // ui/components/erp-verifactu-events/erp-verifactu-events.ts
 var CATALOG4 = { es: es_default, en: en_default };
 function erplora4() {
@@ -7070,7 +7103,16 @@ var ErpVerifactuEvents = class extends i3 {
     const t5 = (k2) => client.t(CATALOG4, k2);
     const translate = (catalog, key, params) => client.t(catalog, key, params);
     return [
-      { key: "timestamp", header: t5("ui.colWhen"), sortable: true, filterable: true, filterType: "daterange" },
+      {
+        key: "timestamp",
+        header: t5("ui.colWhen"),
+        sortable: true,
+        filterable: true,
+        filterType: "daterange",
+        // verifactu#141: the CELL reads as a date and time on the hub clock; sorting and the date
+        // range still travel to the query over the stored ISO text.
+        format: (r6) => formatEventTime(r6.timestamp, { locale: client.locale, timezone: client.timezone ?? "" })
+      },
       {
         key: "severity",
         header: t5("ui.colSeverity"),
@@ -7143,8 +7185,440 @@ __decorateClass([
 ], ErpVerifactuEvents.prototype, "tick", 2);
 define("erp-verifactu-events", ErpVerifactuEvents);
 
-// ui/components/erp-verifactu-records/erp-verifactu-records.ts
+// @erplora/outfitkit/dist/ok-timeline.js
+var __defProp6 = Object.defineProperty;
+var __decorateClass6 = (decorators, target, key, kind) => {
+  var result = void 0;
+  for (var i7 = decorators.length - 1, decorator; i7 >= 0; i7--)
+    if (decorator = decorators[i7])
+      result = decorator(target, key, result) || result;
+  if (result) __defProp6(target, key, result);
+  return result;
+};
+var OkTimeline = class extends i3 {
+  constructor() {
+    super(...arguments);
+    this.items = [];
+    this.align = "left";
+  }
+  static {
+    this.styles = i`
+    :host {
+      /* Vars overridable (estilo Ionic), default = cadena --ok-* -> --ion-* -> hex */
+      --color: var(--ok-text, var(--ion-text-color, #1c1b17));
+      --color-muted: var(--ok-text-muted, rgba(var(--ion-text-color-rgb, 28, 27, 23), 0.55));
+      --primary-color: var(--ok-primary, var(--ion-color-primary, #3880ff));
+      --primary-contrast: var(--ok-primary-contrast, var(--ion-color-primary-contrast, #ffffff));
+      --done-color: var(--ok-success, var(--ion-color-success, #2dd36f));
+      --pending-color: var(--ok-medium, var(--ion-color-medium, #92949c));
+      --line-color: var(--ok-border-soft, rgba(var(--ion-text-color-rgb, 28, 27, 23), 0.14));
+      --hover-bg: var(--ok-hover, rgba(var(--ion-text-color-rgb, 28, 27, 23), 0.06));
+      --current-bg: var(
+        --ok-current-bg,
+        rgba(var(--ion-color-primary-rgb, 56, 128, 255), 0.1)
+      );
+      --border-radius: var(--ok-radius, 8px);
+      --dot-size: var(--ok-timeline-dot, 28px);
+      --gutter: var(--ok-timeline-gutter, 14px);
+      --font: var(--ok-font, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif);
+
+      /* Por defecto ocupa el ancho del contenedor y es responsive. */
+      display: block;
+      width: 100%;
+      color: var(--color);
+      font-family: var(--font);
+      font-size: 0.95rem;
+    }
+
+    .timeline {
+      position: relative;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    /* Item: rejilla [punto | contenido]. La línea vertical se dibuja en la columna del punto. */
+    .item {
+      position: relative;
+      display: grid;
+      grid-template-columns: var(--dot-size) 1fr;
+      column-gap: var(--gutter);
+      padding: 0.15rem 0 0.9rem;
+    }
+    .item:last-child {
+      padding-bottom: 0;
+    }
+
+    /* Columna del punto: contiene el dot y el segmento de línea que baja al siguiente. */
+    .marker {
+      position: relative;
+      display: flex;
+      justify-content: center;
+    }
+    /* Segmento de línea: arranca bajo el dot y llega al final del item. */
+    .marker::before {
+      content: '';
+      position: absolute;
+      top: var(--dot-size);
+      bottom: calc(-0.9rem);
+      left: 50%;
+      width: 2px;
+      transform: translateX(-50%);
+      background: var(--line-color);
+    }
+    .item:last-child .marker::before {
+      display: none;
+    }
+
+    .dot {
+      position: relative;
+      z-index: 1;
+      flex: 0 0 auto;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: var(--dot-size);
+      height: var(--dot-size);
+      border-radius: 50%;
+      background: var(--dot-color, var(--pending-color));
+      color: var(--dot-contrast, #ffffff);
+      box-shadow: 0 0 0 3px var(--ok-surface, var(--ion-background-color, #ffffff));
+    }
+    .dot ion-icon {
+      font-size: calc(var(--dot-size) * 0.5);
+    }
+
+    /* Contenido del hito; es un botón accesible para emitir el click. */
+    .content {
+      min-width: 0;
+      text-align: left;
+      width: 100%;
+      margin: 0;
+      padding: 0.35rem 0.55rem;
+      border: 0;
+      background: none;
+      color: inherit;
+      font: inherit;
+      cursor: pointer;
+      border-radius: var(--border-radius);
+      transition: background-color var(--ok-transition, 150ms ease),
+        color var(--ok-transition, 150ms ease), border-color var(--ok-transition, 150ms ease),
+        box-shadow var(--ok-transition, 150ms ease), transform 120ms ease;
+    }
+    @media (hover: hover) {
+      .content:hover {
+        background: var(--hover-bg);
+      }
+    }
+    .content:active {
+      transform: scale(var(--ok-press-scale, 0.97));
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .content:active {
+        transform: none;
+      }
+    }
+    .item.current .content {
+      background: var(--current-bg);
+    }
+
+    .head {
+      display: flex;
+      align-items: baseline;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .title {
+      font-weight: 600;
+      min-width: 0;
+    }
+    .item.current .title {
+      color: var(--primary-color);
+    }
+    .time {
+      font-size: 0.8rem;
+      color: var(--color-muted);
+      white-space: nowrap;
+    }
+    .desc {
+      margin-top: 0.2rem;
+      color: var(--color-muted);
+      font-size: 0.88rem;
+      line-height: 1.35;
+    }
+
+    /* Modo alternado (solo en pantallas anchas): los items pares van a la derecha. */
+    @media (min-width: 640px) {
+      .timeline.alternate .item {
+        grid-template-columns: 1fr var(--dot-size) 1fr;
+      }
+      .timeline.alternate .marker {
+        grid-column: 2;
+        order: 0;
+      }
+      .timeline.alternate .item .content {
+        grid-column: 3;
+      }
+      .timeline.alternate .item.alt .content {
+        grid-column: 1;
+        text-align: right;
+      }
+      .timeline.alternate .item.alt .head {
+        justify-content: flex-end;
+      }
+    }
+  `;
+  }
+  // Resuelve el color del punto: explícito en el item, o derivado del status.
+  dotColor(item) {
+    if (item.color) {
+      return /^[a-z-]+$/.test(item.color) ? `var(--ion-color-${item.color}, ${item.color})` : item.color;
+    }
+    switch (item.status) {
+      case "done":
+        return "var(--done-color)";
+      case "current":
+        return "var(--primary-color)";
+      default:
+        return "var(--pending-color)";
+    }
+  }
+  // Emite `ok-item-click` con el item pulsado.
+  emitClick(item) {
+    this.dispatchEvent(
+      new CustomEvent("ok-item-click", {
+        detail: { id: item.id, item },
+        bubbles: true,
+        composed: true
+      })
+    );
+  }
+  renderItem(item, index) {
+    const isCurrent = item.status === "current";
+    const isAlt = this.align === "alternate" && index % 2 === 1;
+    const classes = ["item", isCurrent ? "current" : "", isAlt ? "alt" : ""].filter(Boolean).join(" ");
+    const dotStyle = `--dot-color: ${this.dotColor(item)}`;
+    return b2`<li class=${classes}>
+      <span class="marker">
+        <span class="dot" style=${dotStyle}>
+          ${item.icon ? b2`<ion-icon .icon=${okIcon(item.icon)}></ion-icon>` : ""}
+        </span>
+      </span>
+      <button
+        type="button"
+        class="content"
+        @click=${() => this.emitClick(item)}
+      >
+        <span class="head">
+          <span class="title">${item.title}</span>
+          ${item.time ? b2`<span class="time">${item.time}</span>` : ""}
+        </span>
+        ${item.description ? b2`<div class="desc">${item.description}</div>` : ""}
+      </button>
+    </li>`;
+  }
+  render() {
+    const listClass = `timeline ${this.align === "alternate" ? "alternate" : ""}`.trim();
+    return b2`<ul class=${listClass}>
+      ${this.items.map((item, i7) => this.renderItem(item, i7))}
+    </ul>`;
+  }
+};
+__decorateClass6([
+  n4({ attribute: false })
+], OkTimeline.prototype, "items");
+__decorateClass6([
+  n4()
+], OkTimeline.prototype, "align");
+define("ok-timeline", OkTimeline);
+
+// @erplora/outfitkit/dist/ok-empty-state.js
+var __defProp7 = Object.defineProperty;
+var __decorateClass7 = (decorators, target, key, kind) => {
+  var result = void 0;
+  for (var i7 = decorators.length - 1, decorator; i7 >= 0; i7--)
+    if (decorator = decorators[i7])
+      result = decorator(target, key, result) || result;
+  if (result) __defProp7(target, key, result);
+  return result;
+};
+var OkEmptyState = class extends i3 {
+  constructor() {
+    super(...arguments);
+    this.icon = "file-tray-outline";
+  }
+  static {
+    this.styles = i`
+    /* Ancho máximo del contenedor; bloque a 100%. */
+    :host {
+      display: block;
+      width: 100%;
+      /* Tokens propios estilo Ionic (overridables): --ok-* → --ion-* → hex. */
+      --icon-color: var(--ok-color-medium, var(--ion-color-medium, #92949c));
+      --heading-color: var(--ok-text-color, var(--ion-text-color, #1f2933));
+      --message-color: var(--ok-color-medium, var(--ion-color-medium, #92949c));
+      --icon-size: 64px;
+      --padding: 2.5rem 1.25rem;
+    }
+
+    /* Centrado vertical y horizontal del contenido. */
+    .wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      gap: 0.5rem;
+      padding: var(--padding);
+      box-sizing: border-box;
+      width: 100%;
+    }
+
+    ion-icon {
+      font-size: var(--icon-size);
+      color: var(--icon-color);
+      opacity: 0.5; /* atenuado */
+      margin-bottom: 0.25rem;
+    }
+
+    .heading {
+      margin: 0;
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: var(--heading-color);
+    }
+
+    .message {
+      margin: 0;
+      font-size: 0.9375rem;
+      color: var(--message-color);
+      max-width: 38ch;
+    }
+
+    /* Acción debajo del texto. */
+    .action {
+      margin-top: 1rem;
+    }
+
+    /* Oculta los wrappers si no hay contenido. */
+    .heading:empty,
+    .message:empty {
+      display: none;
+    }
+  `;
+  }
+  render() {
+    return b2`
+      <div class="wrap">
+        <ion-icon .icon=${okIcon(this.icon)} aria-hidden="true"></ion-icon>
+        ${this.heading ? b2`<h2 class="heading">${this.heading}</h2>` : null}
+        ${this.message ? b2`<p class="message">${this.message}</p>` : null}
+        <slot></slot>
+        <div class="action">
+          <slot name="action"></slot>
+        </div>
+      </div>
+    `;
+  }
+};
+__decorateClass7([
+  n4()
+], OkEmptyState.prototype, "icon");
+__decorateClass7([
+  n4()
+], OkEmptyState.prototype, "heading");
+__decorateClass7([
+  n4()
+], OkEmptyState.prototype, "message");
+define("ok-empty-state", OkEmptyState);
+
+// ui/components/erp-verifactu-events-widget/erp-verifactu-events-widget.ts
 var CATALOG5 = { es: es_default, en: en_default };
+var SEVERITY_COLOR = { warning: "warning", error: "danger", critical: "danger" };
+var ErpVerifactuEventsWidget = class extends i3 {
+  constructor() {
+    super(...arguments);
+    this.rows = null;
+    this.failed = false;
+    this.unsubs = [];
+    this.onLocaleChange = () => this.requestUpdate();
+  }
+  static {
+    this.styles = i`
+    :host { display: block; }
+    .loading { display: flex; align-items: center; gap: .5rem; opacity: .6; }
+  `;
+  }
+  api() {
+    const c5 = this.client ?? globalThis.erplora;
+    if (!c5) throw new Error("erplora SDK not initialised by the shell");
+    return c5;
+  }
+  connectedCallback() {
+    super.connectedCallback();
+    window.addEventListener("erplora:locale-changed", this.onLocaleChange);
+    const client = this.api();
+    const reload = () => void this.load();
+    this.unsubs = [
+      client.on("verifactu.record.created", reload),
+      client.on("verifactu.record.transmitted", reload),
+      client.on("verifactu.contingency.processed", reload)
+    ];
+    void this.load();
+  }
+  disconnectedCallback() {
+    window.removeEventListener("erplora:locale-changed", this.onLocaleChange);
+    for (const unsub of this.unsubs) unsub();
+    this.unsubs = [];
+    super.disconnectedCallback();
+  }
+  async load() {
+    try {
+      const rows = await this.api().query("verifactu.stats.events_recent");
+      this.rows = Array.isArray(rows) ? rows : [];
+      this.failed = false;
+    } catch {
+      this.failed = true;
+    }
+  }
+  items(rows) {
+    const client = this.api();
+    const translate = (catalog, key, params) => client.t(catalog, key, params);
+    return rows.map((r6) => ({
+      id: String(r6.id),
+      title: eventTypeLabel(CATALOG5, client.locale, translate, r6.event_type),
+      description: eventMessage(CATALOG5, client.locale, translate, { message: String(r6.message ?? ""), details: r6.details }),
+      time: formatEventTime(r6.timestamp, { locale: client.locale, timezone: client.timezone ?? "" }),
+      color: SEVERITY_COLOR[r6.severity]
+    }));
+  }
+  render() {
+    const t5 = (k2) => this.api().t(CATALOG5, k2);
+    if (this.failed) {
+      return b2`<ok-empty-state icon="alert-circle-outline" .message=${t5("ui.eventsWidgetError")}></ok-empty-state>`;
+    }
+    if (this.rows === null) {
+      return b2`<div class="loading"><ion-spinner name="crescent"></ion-spinner><span>${t5("ui.loading")}</span></div>`;
+    }
+    if (this.rows.length === 0) {
+      return b2`<ok-empty-state icon="file-tray-outline" .message=${t5("ui.eventsEmpty")}></ok-empty-state>`;
+    }
+    return b2`<ok-timeline align="left" .items=${this.items(this.rows)}></ok-timeline>`;
+  }
+};
+__decorateClass([
+  n4({ attribute: false })
+], ErpVerifactuEventsWidget.prototype, "client", 2);
+__decorateClass([
+  r5()
+], ErpVerifactuEventsWidget.prototype, "rows", 2);
+__decorateClass([
+  r5()
+], ErpVerifactuEventsWidget.prototype, "failed", 2);
+define("erp-verifactu-events-widget", ErpVerifactuEventsWidget);
+
+// ui/components/erp-verifactu-records/erp-verifactu-records.ts
+var CATALOG6 = { es: es_default, en: en_default };
 var ON_ITS_WAY = /* @__PURE__ */ new Set(["pending", "error", "retry"]);
 var REASON_EVENTS = /* @__PURE__ */ new Set(["transmission_deferred", "transmission_failure"]);
 var QUEUED = /* @__PURE__ */ new Set(["pending", "retrying"]);
@@ -7209,7 +7683,7 @@ var _ErpVerifactuRecords = class _ErpVerifactuRecords extends i3 {
   `;
   }
   get columns() {
-    const t5 = (k2) => erplora5().t(CATALOG5, k2);
+    const t5 = (k2) => erplora5().t(CATALOG6, k2);
     const statusLabels = {
       pending: t5("ui.statusPending"),
       transmitted: t5("ui.statusTransmitted"),
@@ -7343,7 +7817,7 @@ var _ErpVerifactuRecords = class _ErpVerifactuRecords extends i3 {
     this.detailError = "";
     this.detailLoading = true;
     try {
-      const t5 = (k2) => erplora5().t(CATALOG5, k2);
+      const t5 = (k2) => erplora5().t(CATALOG6, k2);
       const row = await erplora5().query(
         "verifactu.records.get",
         { record_id: id }
@@ -7356,7 +7830,7 @@ var _ErpVerifactuRecords = class _ErpVerifactuRecords extends i3 {
       this.detail = record;
       void this.explainWaiting(record);
     } catch (e6) {
-      this.detailError = e6 instanceof Error ? e6.message : erplora5().t(CATALOG5, "ui.errLoadDetail");
+      this.detailError = e6 instanceof Error ? e6.message : erplora5().t(CATALOG6, "ui.errLoadDetail");
     } finally {
       this.detailLoading = false;
     }
@@ -7382,7 +7856,7 @@ var _ErpVerifactuRecords = class _ErpVerifactuRecords extends i3 {
     if (!ON_ITS_WAY.has(record.status)) return;
     this.waiting = "loading";
     const client = erplora5();
-    const t5 = (k2, params) => client.t(CATALOG5, k2, params);
+    const t5 = (k2, params) => client.t(CATALOG6, k2, params);
     const filters = { record_id: record.id };
     const [events, queue] = await Promise.allSettled([
       client.queryPage("verifactu.events.list", {
@@ -7402,7 +7876,7 @@ var _ErpVerifactuRecords = class _ErpVerifactuRecords extends i3 {
       why = t5("ui.pendingWhyUnavailable");
     } else {
       const reason = events.value.rows.find((row) => REASON_EVENTS.has(row.event_type));
-      why = reason ? eventMessage(CATALOG5, client.locale, (c5, k2, p4) => client.t(c5, k2, p4), reason) : t5("ui.pendingWhyUnknown");
+      why = reason ? eventMessage(CATALOG6, client.locale, (c5, k2, p4) => client.t(c5, k2, p4), reason) : t5("ui.pendingWhyUnknown");
     }
     const entry = queue.status === "fulfilled" ? queue.value.rows.find((row) => QUEUED.has(row.status) && row.next_attempt_at) : void 0;
     const when = entry?.next_attempt_at ? t5("ui.pendingWhenQueued", { at: wallClock(entry.next_attempt_at) }) : t5("ui.pendingWhenNextSend");
@@ -7426,7 +7900,7 @@ var _ErpVerifactuRecords = class _ErpVerifactuRecords extends i3 {
     return hash ? `${hash.slice(0, 16)}\u2026` : "\u2014";
   }
   renderDetail() {
-    const t5 = (k2, params) => erplora5().t(CATALOG5, k2, params);
+    const t5 = (k2, params) => erplora5().t(CATALOG6, k2, params);
     const d3 = this.detail;
     const statusLabels = {
       pending: t5("ui.statusPending"),
@@ -7495,7 +7969,7 @@ var _ErpVerifactuRecords = class _ErpVerifactuRecords extends i3 {
   }
   render() {
     if (this.detail) return this.renderDetail();
-    const t5 = (k2, params) => erplora5().t(CATALOG5, k2, params);
+    const t5 = (k2, params) => erplora5().t(CATALOG6, k2, params);
     return b2`<div>
         <header>
           <h2>${t5("ui.recordsTitle")}</h2>
@@ -7556,7 +8030,7 @@ var ErpVerifactuRecords = _ErpVerifactuRecords;
 define("erp-verifactu-records", ErpVerifactuRecords);
 
 // ui/components/erp-verifactu-recovery/erp-verifactu-recovery.ts
-var CATALOG6 = { es: es_default, en: en_default };
+var CATALOG7 = { es: es_default, en: en_default };
 function erplora6() {
   const c5 = globalThis.erplora;
   if (!c5) throw new Error("erplora SDK no inicializado por el shell");
@@ -7592,7 +8066,7 @@ var ErpVerifactuRecovery = class extends i3 {
   `;
   }
   get columns() {
-    const t5 = (k2) => erplora6().t(CATALOG6, k2);
+    const t5 = (k2) => erplora6().t(CATALOG7, k2);
     return [
       { key: "invoice_number", header: t5("ui.colInvoice"), sortable: true, filterable: true, filterType: "text" },
       // A from/to, like the sibling Records table over the same column (verifactu#68). Both hold
@@ -7644,11 +8118,11 @@ var ErpVerifactuRecovery = class extends i3 {
     this.done = "";
     try {
       await fn();
-      this.done = erplora6().t(CATALOG6, "ui.recDone");
+      this.done = erplora6().t(CATALOG7, "ui.recDone");
       await this.loadMeta();
       await this.ctrl.load();
     } catch (e6) {
-      this.error = e6 instanceof Error ? e6.message : erplora6().t(CATALOG6, errKey);
+      this.error = e6 instanceof Error ? e6.message : erplora6().t(CATALOG7, errKey);
     } finally {
       this.busy = "";
     }
@@ -7665,7 +8139,7 @@ var ErpVerifactuRecovery = class extends i3 {
   recoverManual() {
     const hash = this.manualHash.trim();
     if (!HEX64.test(hash)) {
-      this.error = erplora6().t(CATALOG6, "ui.recErrHash");
+      this.error = erplora6().t(CATALOG7, "ui.recErrHash");
       return void 0;
     }
     return this.run("recoverManual", () => erplora6().command("verifactu.recovery.manual", {
@@ -7677,7 +8151,7 @@ var ErpVerifactuRecovery = class extends i3 {
   }
   requestRecovery(kind) {
     if (kind === "manual" && !HEX64.test(this.manualHash.trim())) {
-      this.error = erplora6().t(CATALOG6, "ui.recErrHash");
+      this.error = erplora6().t(CATALOG7, "ui.recErrHash");
       return;
     }
     this.error = "";
@@ -7690,7 +8164,7 @@ var ErpVerifactuRecovery = class extends i3 {
    * `sales` asking to void a sale; `ui/guards/ion-alert-not-in-shadow-root.test.ts` keeps it so.
    */
   async confirmRecovery(kind) {
-    const t5 = (k2) => erplora6().t(CATALOG6, k2);
+    const t5 = (k2) => erplora6().t(CATALOG7, k2);
     const alert = document.createElement("ion-alert");
     alert.header = kind === "manual" ? t5("ui.recConfirmManualTitle") : t5("ui.recConfirmAeatTitle");
     alert.message = kind === "manual" ? t5("ui.recConfirmManualMessage") : t5("ui.recConfirmAeatMessage");
@@ -7728,7 +8202,7 @@ var ErpVerifactuRecovery = class extends i3 {
     return this.status.event_type === "chain_validated" ? t5("ui.recChainValid") : t5("ui.recChainBroken");
   }
   render() {
-    const t5 = (k2) => erplora6().t(CATALOG6, k2);
+    const t5 = (k2) => erplora6().t(CATALOG7, k2);
     const blocked = this.busy !== "" || !this.nif;
     return b2`
       <h2>${t5("ui.recoveryTitle")}</h2>
@@ -7871,7 +8345,7 @@ async function fetchResponsibleDeclaration() {
 }
 
 // ui/components/erp-verifactu-settings/erp-verifactu-settings.ts
-var CATALOG7 = { es: es_default, en: en_default };
+var CATALOG8 = { es: es_default, en: en_default };
 function erplora7() {
   const c5 = globalThis.erplora;
   if (!c5) throw new Error("erplora SDK no inicializado por el shell");
@@ -8024,7 +8498,7 @@ var ErpVerifactuSettings = class extends i3 {
       const c5 = Array.isArray(rows) ? rows[0] : rows;
       this.cfg = c5 ?? {};
     } catch (e6) {
-      this.error = e6 instanceof Error ? e6.message : erplora7().t(CATALOG7, "ui.errLoadConfig");
+      this.error = e6 instanceof Error ? e6.message : erplora7().t(CATALOG8, "ui.errLoadConfig");
     } finally {
       this.loading = false;
     }
@@ -8088,7 +8562,7 @@ var ErpVerifactuSettings = class extends i3 {
    * (verifactu#112): declared in this shadow root it would paint only the backdrop.
    */
   async confirmEnvironment(live) {
-    const t5 = (k2) => erplora7().t(CATALOG7, k2);
+    const t5 = (k2) => erplora7().t(CATALOG8, k2);
     const alert = document.createElement("ion-alert");
     alert.header = t5(live ? "ui.goLiveConfirmTitle" : "ui.standDownConfirmTitle");
     alert.message = t5(live ? "ui.goLiveConfirmMessage" : "ui.standDownConfirmMessage");
@@ -8319,7 +8793,7 @@ var ErpVerifactuSettings = class extends i3 {
     this.savedEnabled = false;
     try {
       if (this.cfg.enabled && !(this.cfg.issuer_nif || "").trim()) {
-        this.error = erplora7().t(CATALOG7, "ui.errIssuerRequired");
+        this.error = erplora7().t(CATALOG8, "ui.errIssuerRequired");
         return;
       }
       await erplora7().command("verifactu.config.save", {
@@ -8345,7 +8819,7 @@ var ErpVerifactuSettings = class extends i3 {
     } catch (e6) {
       const key = refusalKey2(e6);
       const message = e6 instanceof Error ? e6.message : "";
-      this.error = key ? erplora7().t(CATALOG7, key) : message || erplora7().t(CATALOG7, "ui.errSaveConfig");
+      this.error = key ? erplora7().t(CATALOG8, key) : message || erplora7().t(CATALOG8, "ui.errSaveConfig");
     } finally {
       this.saving = false;
     }
@@ -8360,7 +8834,7 @@ var ErpVerifactuSettings = class extends i3 {
     } catch (e6) {
       this.noteCapability(e6);
       const key = refusalKey2(e6);
-      this.error = key ? erplora7().t(CATALOG7, key) : (e6 instanceof Error ? e6.message : "") || erplora7().t(CATALOG7, "ui.errTestRun");
+      this.error = key ? erplora7().t(CATALOG8, key) : (e6 instanceof Error ? e6.message : "") || erplora7().t(CATALOG8, "ui.errTestRun");
     } finally {
       this.testing = false;
     }
@@ -8392,7 +8866,7 @@ var ErpVerifactuSettings = class extends i3 {
       this.invoiceCreated = true;
     } catch (e6) {
       const key = refusalKey2(e6);
-      this.error = key ? erplora7().t(CATALOG7, key) : (e6 instanceof Error ? e6.message : "") || erplora7().t(CATALOG7, "ui.errTestInvoice");
+      this.error = key ? erplora7().t(CATALOG8, key) : (e6 instanceof Error ? e6.message : "") || erplora7().t(CATALOG8, "ui.errTestInvoice");
     } finally {
       this.creatingInvoice = false;
     }
@@ -8425,7 +8899,7 @@ var ErpVerifactuSettings = class extends i3 {
       return b2`<ok-inline-feedback tone="neutral" icon="information-circle-outline">${t5(filedByErplora ? "ui.testAeatNotSentDelegated" : "ui.testAeatNotSent")}</ok-inline-feedback>`;
     }
     if (a3.error) {
-      const why = reasonSentence(CATALOG7, erplora7().locale, (catalog, key, params) => erplora7().t(catalog, key, params), a3.reason);
+      const why = reasonSentence(CATALOG8, erplora7().locale, (catalog, key, params) => erplora7().t(catalog, key, params), a3.reason);
       return b2`<ok-inline-feedback tone="danger" heading=${t5("ui.testAeatError")} icon="alert-circle-outline">${why ?? a3.error}${a3.detail ? b2`<p class="hint">${a3.detail}</p>` : A}</ok-inline-feedback>`;
     }
     if (a3.ok) {
@@ -8536,7 +9010,7 @@ var ErpVerifactuSettings = class extends i3 {
                    (hub#1575). The same composer the events list uses, so the two surfaces cannot
                    describe one run differently; the engine prose stays as the fallback for a run
                    this catalogue cannot name. -->
-              <ok-inline-feedback tone=${d3.cert_ok ? "success" : "danger"} heading=${t5("ui.testCert")} icon="ribbon-outline">${certReasonSentence(CATALOG7, erplora7().locale, (catalog, key, params) => erplora7().t(catalog, key, params), d3) ?? d3.cert_message ?? ""}</ok-inline-feedback>
+              <ok-inline-feedback tone=${d3.cert_ok ? "success" : "danger"} heading=${t5("ui.testCert")} icon="ribbon-outline">${certReasonSentence(CATALOG8, erplora7().locale, (catalog, key, params) => erplora7().t(catalog, key, params), d3) ?? d3.cert_message ?? ""}</ok-inline-feedback>
               ${this.renderTestGateway(t5)}
               <!-- WHICH road answered (hub#1485). Read off the RUN and not off the current state:
                    a diagnostic from before an enrolment describes the road it actually took, and
@@ -8601,7 +9075,7 @@ var ErpVerifactuSettings = class extends i3 {
     </ion-item>`;
   }
   render() {
-    const t5 = (k2) => erplora7().t(CATALOG7, k2);
+    const t5 = (k2) => erplora7().t(CATALOG8, k2);
     const issuerNif = (this.cfg.issuer_nif || "").trim();
     return b2`
       <h2>${t5("ui.settingsTitle")}</h2>

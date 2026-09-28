@@ -42,6 +42,7 @@ beforeEach(() => {
     get locale() {
       return locale;
     },
+    timezone: 'Europe/Madrid',
     // The real `t`, so this test exercises the catalogue the module actually ships.
     t: (catalog: Record<string, unknown>, key: string, params?: Record<string, unknown>) => {
       const dict = (catalog[locale] ?? catalog.en ?? {}) as Record<string, unknown>;
@@ -161,5 +162,33 @@ describe('the missing-NIF verdict of the cell road stands on its own (hub#1531)'
     expect(cell).not.toContain(ENGINE_CERT_MESSAGE);
     expect(cell).not.toBe(NIF_MISSING_ROW.message);
     expect(cell).not.toMatch(/\{[a-z_]+\}/);
+  });
+});
+
+describe('«When» reads as a date and time, not as ISO-8601 (verifactu#141)', () => {
+  async function whenColumn(): Promise<Record<string, unknown>> {
+    const el = await mount();
+    const column = el.columns.find((c) => c.key === 'timestamp');
+    expect(column, 'the When column disappeared from the table').toBeDefined();
+    return column!;
+  }
+
+  it('paints the stored timestamp in the hub language and zone', async () => {
+    locale = 'es';
+    const column = await whenColumn();
+    const format = column.format as ((r: Record<string, unknown>) => string) | undefined;
+    expect(format, 'the When column carries no formatter: the screen still prints the ISO text')
+      .toBeInstanceOf(Function);
+    expect(format!(ROW)).toBe('29/08/2026, 10:00:00');
+    locale = 'en';
+    expect(format!(ROW)).toBe('08/29/2026, 10:00:00');
+  });
+
+  it('only changes the CELL: sorting and the date-range filter stay on the stored column', async () => {
+    const column = await whenColumn();
+    expect(column.sortable).toBe(true);
+    expect(column.filterable).toBe(true);
+    expect(column.filterType).toBe('daterange');
+    expect(column.render).toBeUndefined();
   });
 });
