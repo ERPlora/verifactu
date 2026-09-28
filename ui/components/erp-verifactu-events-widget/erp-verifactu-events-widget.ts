@@ -32,6 +32,8 @@ interface WidgetClient {
   locale: string;
   timezone?: string;
   t(catalog: Record<string, unknown>, key: string, params?: Record<string, unknown>): string;
+  /** Money (ADR-0123): takes the INTEGER in the minor unit; currency and scale of the hub. */
+  formatMoney(minor: number): string;
 }
 
 interface RecentEvent {
@@ -112,7 +114,13 @@ export class ErpVerifactuEventsWidget extends LitElement {
     return rows.map((r) => ({
       id: String(r.id),
       title: eventTypeLabel(CATALOG, client.locale, translate, r.event_type),
-      description: eventMessage(CATALOG, client.locale, translate, { message: String(r.message ?? ''), details: r.details }),
+      description: eventMessage(
+        CATALOG,
+        client.locale,
+        translate,
+        { message: String(r.message ?? ''), details: r.details },
+        (minor) => client.formatMoney(minor),
+      ),
       time: formatEventTime(r.timestamp, { locale: client.locale, timezone: client.timezone ?? '' }),
       color: SEVERITY_COLOR[r.severity],
     }));

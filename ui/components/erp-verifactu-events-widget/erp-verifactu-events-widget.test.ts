@@ -78,6 +78,8 @@ function client() {
     },
     timezone: 'Europe/Madrid',
     t: realT,
+    // hub#2269: names the minor units it was handed, so a test can say WHICH amount reached it.
+    formatMoney: (minor: number) => `MONEY(${minor})`,
   };
 }
 
@@ -288,5 +290,35 @@ describe('the home widget is this component', () => {
     const queries = manifest.queries as Record<string, { permission?: string }>;
     expect(widget.permission).toBe('verifactu.view_verifactu');
     expect(queries['verifactu.stats.events_recent'].permission).toBe(widget.permission);
+  });
+});
+
+describe('the F2 ceiling refusal paints its amounts with the handed client formatter (hub#2269)', () => {
+  it('hands client.formatMoney the three amounts instead of printing «4840.00 €»', async () => {
+    rows = [{
+      id: 'ev-3',
+      event_type: 'xsd_invalid',
+      severity: 'error',
+      message: 'XML no conforme al esquema de la AEAT; no se ha transmitido: … y suma 4840.00 €',
+      details: JSON.stringify({
+        message_key: 'verifactu.xsd_invalid',
+        validation_error: 'una factura simplificada F2 no puede pasar de 3.000,00 € … y suma 4840.00 €',
+        validation_error_reason: {
+          code: 'schema_simplified_over_ceiling',
+          total: '4840.00',
+          ceiling: '3000.00',
+          tolerance: '10.00',
+          total_cents: 484000,
+          ceiling_cents: 300000,
+          tolerance_cents: 1000,
+        },
+      }),
+      timestamp: '2026-09-27T10:00:00+02:00',
+    }];
+    locale = 'es';
+    const [item] = items(await mount());
+    expect(item.description).toContain('MONEY(484000)');
+    expect(item.description).toContain('MONEY(1000)');
+    expect(item.description).not.toContain('4840.00');
   });
 });

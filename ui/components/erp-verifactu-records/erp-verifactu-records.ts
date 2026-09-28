@@ -419,7 +419,7 @@ export class ErpVerifactuRecords extends LitElement {
     } else {
       const reason = events.value.rows.find((row) => REASON_EVENTS.has(row.event_type));
       why = reason
-        ? eventMessage(CATALOG, client.locale, (c, k, p) => client.t(c, k, p), reason)
+        ? eventMessage(CATALOG, client.locale, (c, k, p) => client.t(c, k, p), reason, (minor) => client.formatMoney(minor))
         : t('ui.pendingWhyUnknown');
     }
     const entry = queue.status === 'fulfilled'
