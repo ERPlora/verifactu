@@ -44,6 +44,7 @@ beforeEach(() => {
 
 type Column = {
   key: string;
+  filterable?: boolean;
   filterType?: string;
   options?: Array<{ value: string; label: string }>;
   format?: (r: Record<string, unknown>) => string;
@@ -80,6 +81,7 @@ describe('the Severity column', () => {
 
   it('still filters by the code the list compares with `eq`', async () => {
     const col = await column('severity');
+    expect(col.filterable, 'the Severity filter disappeared from the table').toBe(true);
     expect(col.filterType).toBe('select');
     expect(col.options!.map((o) => o.value)).toEqual([...EVENT_SEVERITIES]);
     expect(col.options!.find((o) => o.value === 'info')!.label).toBe(esLocale.ui.sevInfo);
@@ -102,6 +104,7 @@ describe('the Type column', () => {
   it('filters by picking a label, sending the exact code the list compares with `eq`', async () => {
     // A text box over an `op: eq` filter only ever matched when the owner typed the internal code.
     const col = await column('event_type');
+    expect(col.filterable, 'the Type filter disappeared from the table').toBe(true);
     expect(col.filterType).toBe('select');
     expect(col.options!.map((o) => o.value)).toEqual([...ENGINE_EVENT_TYPES]);
     for (const option of col.options!) {
@@ -117,5 +120,13 @@ describe('the card view (mobile)', () => {
       cardTitle: (row: Record<string, unknown>) => string;
     };
     expect(table.cardTitle(ROW)).toBe(esLocale.ui.evtType.transmission_deferred);
+  });
+
+  it('titles a card with no type by its message, never an empty title', async () => {
+    const el = await mount();
+    const table = el.shadowRoot!.querySelector('ok-data-table') as unknown as {
+      cardTitle: (row: Record<string, unknown>) => string;
+    };
+    expect(table.cardTitle({ ...ROW, event_type: null })).toBe(ROW.message);
   });
 });

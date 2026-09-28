@@ -64,9 +64,13 @@ describe('the event types the engine files', () => {
   }
 
   it('follows the reader: the Spanish label is not the English one', () => {
-    const en = eventTypeLabel(CATALOG, 'en', translator('en'), 'transmission_deferred');
-    const es = eventTypeLabel(CATALOG, 'es', translator('es'), 'transmission_deferred');
-    expect(es).not.toBe(en);
+    // Every type, not one sample: a Spanish entry copied from the English one is the bug this
+    // issue was filed for, one row at a time.
+    for (const code of ENGINE_EVENT_TYPES) {
+      const en = eventTypeLabel(CATALOG, 'en', translator('en'), code);
+      const es = eventTypeLabel(CATALOG, 'es', translator('es'), code);
+      expect(es, `${code}: the Spanish label is the English one`).not.toBe(en);
+    }
   });
 
   it('keeps the code for a type this catalogue does not know yet', () => {
