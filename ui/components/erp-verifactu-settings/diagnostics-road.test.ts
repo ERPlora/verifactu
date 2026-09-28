@@ -32,6 +32,9 @@ type ShellT = (catalog: unknown, key: string, params?: Record<string, unknown>) 
 /** The shell's `t`, minus the wording: returns the key, so a test names a KEY and never prose. */
 const keyEcho: ShellT = (_catalog, key) => key;
 
+/** The shell's `formatMoney`, reduced to a marker that names the minor units it was handed. */
+const hubMoney = (minor: number) => `[${minor} minor]`;
+
 const ENROLLED = { has_key: true, has_certificate: true, common_name: 'hub-h1.fiscal.erplora.internal', not_after: '2099-01-01' };
 
 /**
@@ -40,8 +43,11 @@ const ENROLLED = { has_key: true, has_certificate: true, common_name: 'hub-h1.fi
  * not enrolled yet.
  */
 async function mountWith(
-  { route, details, identity = ENROLLED, locale = 'es', t = keyEcho }:
-  { route: string; details?: Record<string, unknown>; identity?: unknown; locale?: string; t?: ShellT },
+  { route, details, identity = ENROLLED, locale = 'es', t = keyEcho, formatMoney = hubMoney }:
+  {
+    route: string; details?: Record<string, unknown>; identity?: unknown; locale?: string; t?: ShellT;
+    formatMoney?: (minor: number) => string;
+  },
 ) {
   (globalThis as Record<string, unknown>).erplora = {
     query: async (name: string) => {
@@ -58,6 +64,7 @@ async function mountWith(
     // never prose (ADR-0055). Which sentence each key carries is pinned by the catalogue parity
     // test — and rendered for real, in both languages, by the last block of this file.
     t,
+    formatMoney,
   };
   globalThis.fetch = (async (path: string) => (path === '/api/business/gateway-identity'
     ? new Response(JSON.stringify(identity), { status: 200 })
@@ -652,5 +659,62 @@ describe('the boxes speak the reader language from the catalogue, mounted for re
     );
     expect(text, 'the engine wording was pasted instead of composed').not.toContain('revisa que no esté caducado');
     expect(text, 'the chain the support desk reads was dropped').toContain('certificate verify failed');
+  });
+});
+
+// ── hub#2269: a schema refusal with AMOUNTS reads them in the hub's money ─────────────────────
+//
+// The over-ceiling refusal of a simplified invoice carries three amounts. Nested in a diagnostic
+// (`detail_reason`, hub#1576) it reaches both boxes of this card through the same resolver the
+// Events screen uses, and each box has to hand that resolver the hub's `formatMoney` — or the
+// amount comes out as the engine's bare «4840.00», without currency and in no one's locale.
+describe('a refused sample over the F2 ceiling reads its amounts in the hub money (hub#2269)', () => {
+  const OVER_CEILING = {
+    code: 'sample_record_schema_invalid',
+    detail: 'payload inválido: una factura simplificada F2 no puede pasar de 3.000,00 €',
+    detail_reason: {
+      code: 'schema_simplified_over_ceiling',
+      total: '4840.00', ceiling: '3000.00', tolerance: '10.00',
+      total_cents: 484_000, ceiling_cents: 300_000, tolerance_cents: 1_000,
+    },
+  };
+
+  function expectHubMoney(text: string) {
+    expect(text).toContain('[300000 minor]');
+    expect(text).toContain('[1000 minor]');
+    expect(text).toContain('[484000 minor]');
+    expect(text, 'the engine decimal string reached the screen').not.toContain('4840.00');
+  }
+
+  it('in the AEAT box', async () => {
+    const el = await mountWith({
+      route: 'own',
+      locale: 'en',
+      t: realT('en'),
+      details: {
+        cert_ok: true, cert_message: 'ok', cert_reason: { code: 'certificate_loaded' },
+        route: 'own', environment: 'testing', gateway: null,
+        aeat: { ok: false, error: 'XML no conforme al esquema', reason: OVER_CEILING },
+      },
+    });
+
+    const box = [...el.shadowRoot.querySelectorAll('ok-inline-feedback')]
+      .find((b) => b.getAttribute('heading') === enLocale.ui.testAeatError);
+    if (!box) throw new Error('the AEAT error box is not on the screen');
+    expectHubMoney(box.innerHTML);
+  });
+
+  it('in the certificate box', async () => {
+    const el = await mountWith({
+      route: 'delegated',
+      locale: 'en',
+      t: realT('en'),
+      details: {
+        cert_ok: false, cert_message: 'XML no conforme al esquema', cert_reason: OVER_CEILING,
+        route: 'delegated', environment: 'testing', aeat: null, gateway: null,
+      },
+    });
+
+    expectHubMoney(translatedCardText(el, 'en'));
   });
 });

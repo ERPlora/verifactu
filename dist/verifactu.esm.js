@@ -7909,7 +7909,7 @@ var _ErpVerifactuRecords = class _ErpVerifactuRecords extends i3 {
       why = t5("ui.pendingWhyUnavailable");
     } else {
       const reason = events.value.rows.find((row) => REASON_EVENTS.has(row.event_type));
-      why = reason ? eventMessage(CATALOG6, client.locale, (c5, k2, p4) => client.t(c5, k2, p4), reason, (minor) => client.formatMoney(minor)) : t5("ui.pendingWhyUnknown");
+      why = reason ? eventMessage(CATALOG6, client.locale, (c5, k2, p4) => client.t(c5, k2, p4), reason) : t5("ui.pendingWhyUnknown");
     }
     const entry = queue.status === "fulfilled" ? queue.value.rows.find((row) => QUEUED.has(row.status) && row.next_attempt_at) : void 0;
     const when = entry?.next_attempt_at ? t5("ui.pendingWhenQueued", { at: wallClock(entry.next_attempt_at) }) : t5("ui.pendingWhenNextSend");
