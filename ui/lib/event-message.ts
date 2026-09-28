@@ -244,7 +244,7 @@ function parseDetails(raw: unknown): Record<string, unknown> {
 }
 
 /** Whether the catalogue can actually build this sentence, in the active language or in the source. */
-function catalogHas(catalog: Record<string, unknown>, locale: string, key: string): boolean {
+export function catalogHas(catalog: Record<string, unknown>, locale: string, key: string): boolean {
   for (const lang of [locale, 'en']) {
     let cursor: unknown = catalog[lang];
     for (const part of key.split('.')) {
