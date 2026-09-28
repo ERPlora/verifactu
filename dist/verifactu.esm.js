@@ -2330,11 +2330,25 @@ var es_default = {
     colSeverity: "Severidad",
     colType: "Tipo",
     colMessage: "Mensaje",
-    sevDebug: "Debug",
-    sevInfo: "Info",
+    sevDebug: "Depuraci\xF3n",
+    sevInfo: "Informaci\xF3n",
     sevWarning: "Aviso",
     sevError: "Error",
     sevCritical: "Cr\xEDtico",
+    evtType: {
+      record_created: "Registro creado",
+      invoice_type_downgraded: "Tipo de factura cambiado",
+      transmission_deferred: "Env\xEDo aplazado",
+      transmission_success: "Env\xEDo aceptado",
+      transmission_warning: "Aceptado con avisos",
+      transmission_failure: "Env\xEDo fallido",
+      contingency_processed: "Cola de contingencia procesada",
+      chain_validated: "Cadena verificada",
+      chain_error: "Cadena rota",
+      aeat_queried: "Consulta a la AEAT",
+      chain_recovered: "Cadena recuperada",
+      diagnostic: "Prueba de conexi\xF3n"
+    },
     eventsTitle: "Eventos de auditor\xEDa",
     eventsSearchPlaceholder: "Buscar tipo o mensaje\u2026",
     eventsEmpty: "Sin eventos.",
@@ -2850,6 +2864,20 @@ var en_default = {
     sevWarning: "Warning",
     sevError: "Error",
     sevCritical: "Critical",
+    evtType: {
+      record_created: "Record created",
+      invoice_type_downgraded: "Invoice type changed",
+      transmission_deferred: "Submission postponed",
+      transmission_success: "Submission accepted",
+      transmission_warning: "Accepted with warnings",
+      transmission_failure: "Submission failed",
+      contingency_processed: "Contingency queue processed",
+      chain_validated: "Chain verified",
+      chain_error: "Chain broken",
+      aeat_queried: "AEAT query",
+      chain_recovered: "Chain recovered",
+      diagnostic: "Connection test"
+    },
     eventsTitle: "Audit events",
     eventsSearchPlaceholder: "Search type or message\u2026",
     eventsEmpty: "No events.",
@@ -4274,10 +4302,10 @@ var ErpVerifactuConfig = class extends i3 {
   }
   /** La fecha de subida en el idioma de quien mira, o `''` si no hay ninguna que enseñar. */
   uploadedLabel() {
-    const raw = (this.cert?.uploaded_at ?? "").trim();
-    if (!raw) return "";
-    const d3 = new Date(raw);
-    return Number.isNaN(d3.getTime()) ? raw : d3.toLocaleDateString(erplora2().locale || void 0);
+    const raw2 = (this.cert?.uploaded_at ?? "").trim();
+    if (!raw2) return "";
+    const d3 = new Date(raw2);
+    return Number.isNaN(d3.getTime()) ? raw2 : d3.toLocaleDateString(erplora2().locale || void 0);
   }
   /**
    * **Mi certificado** — subirlo, verlo y quitarlo. Nada más.
@@ -5535,19 +5563,19 @@ var _OkDataTable = class _OkDataTable2 extends i3 {
   /** Traduce un valor de `filterValues` (la forma que emite `filterChange`) a la forma interna que
    *  usan los `render*Filter`. `undefined` = ese filtro no está puesto. */
   serverFilterState(key) {
-    const raw = this.serverFilters[key];
-    if (raw === void 0 || raw === null || raw === "") return void 0;
-    if (Array.isArray(raw)) {
-      const values = raw.filter((v3) => v3 !== null && v3 !== void 0 && v3 !== "").map((v3) => String(v3));
+    const raw2 = this.serverFilters[key];
+    if (raw2 === void 0 || raw2 === null || raw2 === "") return void 0;
+    if (Array.isArray(raw2)) {
+      const values = raw2.filter((v3) => v3 !== null && v3 !== void 0 && v3 !== "").map((v3) => String(v3));
       return values.length ? { values: new Set(values) } : void 0;
     }
-    if (typeof raw === "object") {
-      const range = raw;
+    if (typeof raw2 === "object") {
+      const range = raw2;
       const from = range.from === null || range.from === void 0 || range.from === "" ? void 0 : String(range.from);
       const to = range.to === null || range.to === void 0 || range.to === "" ? void 0 : String(range.to);
       return from !== void 0 || to !== void 0 ? { from, to } : void 0;
     }
-    return { values: /* @__PURE__ */ new Set([String(raw)]) };
+    return { values: /* @__PURE__ */ new Set([String(raw2)]) };
   }
   /** Estado de filtro efectivo de una columna: servidor → `filterValues`/espejo; cliente → memoria. */
   filterStateOf(key) {
@@ -5604,8 +5632,8 @@ var _OkDataTable = class _OkDataTable2 extends i3 {
             return f3.values.has(String(this.rawValue(col, row) ?? ""));
           }
           if (f3.from || f3.to) {
-            const raw = this.rawValue(col, row);
-            const t5 = raw == null ? NaN : new Date(raw).getTime();
+            const raw2 = this.rawValue(col, row);
+            const t5 = raw2 == null ? NaN : new Date(raw2).getTime();
             const from = f3.from ? new Date(f3.from).getTime() : -Infinity;
             const to = f3.to ? new Date(f3.to).getTime() + 864e5 - 1 : Infinity;
             return !Number.isNaN(t5) && t5 >= from && t5 <= to;
@@ -5662,8 +5690,8 @@ var _OkDataTable = class _OkDataTable2 extends i3 {
     this.emit("filterChange", { col: col.key, value });
   }
   onRangeInput(col, edge, ev) {
-    const raw = ev.target.value ?? "";
-    const v3 = raw === "" ? "" : Number(raw);
+    const raw2 = ev.target.value ?? "";
+    const v3 = raw2 === "" ? "" : Number(raw2);
     this.setServerRangeEdge(col.key, edge, v3);
     this.emit("filterChange", { col: col.key, value: { [edge]: v3 } });
   }
@@ -6578,6 +6606,12 @@ __decorateClass5([
 var OkDataTable = _OkDataTable;
 define("ok-data-table", OkDataTable);
 
+// @erplora/module-sdk/src/quantity.ts
+var QUANTITY_SCALE = 1e6;
+function toMicro(quantity) {
+  return Math.round(quantity * QUANTITY_SCALE);
+}
+
 // @erplora/module-sdk/src/index.ts
 function isEmpty(v3) {
   return v3 === null || v3 === void 0 || v3 === "";
@@ -6603,6 +6637,29 @@ var ListController = class {
       filters: { ...opts.filters ?? {} },
       context: { ...opts.context ?? {} }
     };
+    this.moneyFilters = new Set(opts.moneyFilters ?? []);
+    this.quantityFilters = new Set(opts.quantityFilters ?? []);
+    if (this.moneyFilters.size > 0 && typeof client.currencyDecimals !== "number") {
+      throw new ErploraError(
+        "list_money_filters_need_currency_decimals",
+        "moneyFilters needs a list client that exposes currencyDecimals"
+      );
+    }
+  }
+  /**
+   * The filters as the runtime compares them: money and quantity columns scaled from what the
+   * person typed to the stored integer. `state.filters` stays as typed, so a table that echoes it
+   * back keeps showing «12», not «1200».
+   */
+  wireFilters() {
+    if (this.moneyFilters.size === 0 && this.quantityFilters.size === 0) return this.state.filters;
+    const decimals = this.client.currencyDecimals ?? 0;
+    const out = {};
+    for (const [col, value] of Object.entries(this.state.filters)) {
+      const scale = this.moneyFilters.has(col) ? (n6) => majorToMinor(n6, decimals) : this.quantityFilters.has(col) ? toMicro : null;
+      out[col] = scale ? scaleFilterValue(value, scale) : value;
+    }
+    return out;
   }
   /** Nº de páginas según el total del servidor (mínimo 1). */
   get pageCount() {
@@ -6622,7 +6679,7 @@ var ListController = class {
         search: s5.search,
         sort: s5.sort,
         dir: s5.dir,
-        filters: s5.filters,
+        filters: this.wireFilters(),
         params: s5.context
       });
       if (mySeq !== this.seq) return;
@@ -6691,10 +6748,33 @@ var ListController = class {
     void this.load();
   }
 };
+function scaleFilterEdge(edge, scale) {
+  const text = typeof edge === "string" ? edge.trim().replace(",", ".") : edge;
+  if (text === "" || text === null || text === void 0) return "";
+  const n6 = Number(text);
+  return Number.isFinite(n6) ? scale(n6) : "";
+}
+function scaleFilterValue(value, scale) {
+  if (value !== null && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value).map(([edge, v3]) => [edge, scaleFilterEdge(v3, scale)])
+    );
+  }
+  return scaleFilterEdge(value, scale);
+}
 function createListController(client, queryName, onChange = () => {
 }, opts = {}) {
   return new ListController(client, queryName, onChange, opts);
 }
+var ErploraError = class extends Error {
+  constructor(code, message, permission, fields) {
+    super(message);
+    this.code = code;
+    this.permission = permission;
+    this.fields = fields;
+    this.name = "ErploraError";
+  }
+};
 function majorToMinor(amount, decimals) {
   const n6 = Number(amount);
   return Number.isFinite(n6) ? Math.round(n6 * 10 ** decimals) : 0;
@@ -6861,13 +6941,13 @@ function catalogKeyFor(messageKey) {
   const suffix = messageKey.slice(EVENT_MESSAGE_PREFIX.length);
   return SAFE_SUFFIX.test(suffix) ? `${EVENT_CATALOG_PREFIX}${suffix}` : null;
 }
-function parseDetails(raw) {
-  if (raw && typeof raw === "object" && !Array.isArray(raw)) {
-    return raw;
+function parseDetails(raw2) {
+  if (raw2 && typeof raw2 === "object" && !Array.isArray(raw2)) {
+    return raw2;
   }
-  if (typeof raw !== "string" || raw.trim() === "") return {};
+  if (typeof raw2 !== "string" || raw2.trim() === "") return {};
   try {
-    const parsed = JSON.parse(raw);
+    const parsed = JSON.parse(raw2);
     return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
   } catch {
     return {};
@@ -6897,9 +6977,9 @@ function localizedParams(catalog, locale, t5, details) {
   }
   return params;
 }
-function reasonSentence(catalog, locale, t5, raw) {
-  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return void 0;
-  const reason = raw;
+function reasonSentence(catalog, locale, t5, raw2) {
+  if (!raw2 || typeof raw2 !== "object" || Array.isArray(raw2)) return void 0;
+  const reason = raw2;
   const code = reason.code;
   if (typeof code !== "string" || !SAFE_SUFFIX.test(code)) return void 0;
   const key = `${EVENT_REASON_PREFIX}${code}`;
@@ -6921,6 +7001,43 @@ function eventMessage(catalog, locale, t5, row) {
   return t5(catalog, key, params);
 }
 
+// ui/lib/event-labels.ts
+var ENGINE_EVENT_TYPES = [
+  "record_created",
+  "invoice_type_downgraded",
+  "transmission_deferred",
+  "transmission_success",
+  "transmission_warning",
+  "transmission_failure",
+  "contingency_processed",
+  "chain_validated",
+  "chain_error",
+  "aeat_queried",
+  "chain_recovered",
+  "diagnostic"
+];
+var EVENT_TYPE_CATALOG_PREFIX = "ui.evtType.";
+var SEVERITY_LABEL_KEYS = {
+  debug: "ui.sevDebug",
+  info: "ui.sevInfo",
+  warning: "ui.sevWarning",
+  error: "ui.sevError",
+  critical: "ui.sevCritical"
+};
+var EVENT_SEVERITIES = Object.keys(SEVERITY_LABEL_KEYS);
+function raw(code) {
+  return code === null || code === void 0 ? "" : String(code);
+}
+function eventTypeLabel(catalog, locale, t5, code) {
+  if (typeof code !== "string") return raw(code);
+  const key = `${EVENT_TYPE_CATALOG_PREFIX}${code}`;
+  return catalogHas(catalog, locale, key) ? t5(catalog, key) : code;
+}
+function severityLabel(catalog, _locale, t5, code) {
+  if (typeof code !== "string" || !Object.hasOwn(SEVERITY_LABEL_KEYS, code)) return raw(code);
+  return t5(catalog, SEVERITY_LABEL_KEYS[code]);
+}
+
 // ui/components/erp-verifactu-events/erp-verifactu-events.ts
 var CATALOG4 = { es: es_default, en: en_default };
 function erplora4() {
@@ -6932,9 +7049,12 @@ var ErpVerifactuEvents = class extends i3 {
   constructor() {
     super(...arguments);
     this.tick = 0;
-    // TODO-LIT: componentWillLoad → connectedCallback. Recuerda: connectedCallback se dispara
-    // en CADA reconexión al DOM (no solo en el primer montaje). Si la init debe correr una
-    // sola vez tras el primer render, considera firstUpdated() en su lugar.
+    /** The mobile card is titled by the event's type, in words — the Message says the rest. */
+    this.cardTitle = (row) => {
+      const client = erplora4();
+      const translate = (catalog, key, params) => client.t(catalog, key, params);
+      return row.event_type ? eventTypeLabel(CATALOG4, client.locale, translate, row.event_type) : String(row.message ?? "");
+    };
     this.onLocaleChange = () => this.requestUpdate();
   }
   static {
@@ -6957,15 +7077,22 @@ var ErpVerifactuEvents = class extends i3 {
         sortable: true,
         filterable: true,
         filterType: "select",
-        options: [
-          { value: "debug", label: t5("ui.sevDebug") },
-          { value: "info", label: t5("ui.sevInfo") },
-          { value: "warning", label: t5("ui.sevWarning") },
-          { value: "error", label: t5("ui.sevError") },
-          { value: "critical", label: t5("ui.sevCritical") }
-        ]
+        options: EVENT_SEVERITIES.map((code) => ({ value: code, label: severityLabel(CATALOG4, client.locale, translate, code) })),
+        // verifactu#134: the CELL says the word; the stored code, the sort and the `eq` filter stay
+        // on the code. `format` and not `render`, for the same reason as the Message column below.
+        format: (r6) => severityLabel(CATALOG4, client.locale, translate, r6.severity)
       },
-      { key: "event_type", header: t5("ui.colType"), sortable: true, filterable: true, filterType: "text" },
+      {
+        key: "event_type",
+        header: t5("ui.colType"),
+        sortable: true,
+        filterable: true,
+        // A select and not a text box: the list compares `event_type` with `eq`, so a typed word only
+        // ever matched when the owner knew the internal code.
+        filterType: "select",
+        options: ENGINE_EVENT_TYPES.map((code) => ({ value: code, label: eventTypeLabel(CATALOG4, client.locale, translate, code) })),
+        format: (r6) => eventTypeLabel(CATALOG4, client.locale, translate, r6.event_type)
+      },
       {
         key: "message",
         header: t5("ui.colMessage"),
@@ -7007,7 +7134,7 @@ var ErpVerifactuEvents = class extends i3 {
           <h2>${t5("ui.eventsTitle")}</h2>
         </header>
         ${this.ctrl?.error ? b2`<p class="err">${this.ctrl.error}</p>` : A}
-        <ok-data-table .serverSide=${true} .views=${true} .cardTitle=${(row) => String(row.event_type ?? row.message ?? "")} .columns=${this.columns} .rows=${this.ctrl?.rows ?? []} .total=${this.ctrl?.total ?? 0} .page=${this.ctrl?.state.page ?? 0} .pageSize=${this.ctrl?.state.pageSize ?? 50} .sort=${this.ctrl?.state.sort} .sortDir=${this.ctrl?.state.dir ?? "asc"} .searchable=${true} .searchPlaceholder=${t5("ui.eventsSearchPlaceholder")} .emptyMessage=${this.ctrl?.loading ? t5("ui.loading") : t5("ui.eventsEmpty")} @pageChange=${(e6) => this.ctrl.setPage(e6.detail)} @sortChange=${(e6) => this.ctrl.setSort(e6.detail.sort, e6.detail.dir)} @searchChange=${(e6) => this.ctrl.setSearch(e6.detail)} @filterChange=${(e6) => this.ctrl.setFilter(e6.detail.col, e6.detail.value)}></ok-data-table>
+        <ok-data-table .serverSide=${true} .views=${true} .cardTitle=${this.cardTitle} .columns=${this.columns} .rows=${this.ctrl?.rows ?? []} .total=${this.ctrl?.total ?? 0} .page=${this.ctrl?.state.page ?? 0} .pageSize=${this.ctrl?.state.pageSize ?? 50} .sort=${this.ctrl?.state.sort} .sortDir=${this.ctrl?.state.dir ?? "asc"} .searchable=${true} .searchPlaceholder=${t5("ui.eventsSearchPlaceholder")} .emptyMessage=${this.ctrl?.loading ? t5("ui.loading") : t5("ui.eventsEmpty")} @pageChange=${(e6) => this.ctrl.setPage(e6.detail)} @sortChange=${(e6) => this.ctrl.setSort(e6.detail.sort, e6.detail.dir)} @searchChange=${(e6) => this.ctrl.setSearch(e6.detail)} @filterChange=${(e6) => this.ctrl.setFilter(e6.detail.col, e6.detail.value)}></ok-data-table>
       </div>`;
   }
 };
