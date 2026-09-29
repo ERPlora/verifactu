@@ -74,6 +74,9 @@ forbid. The fix for a problem record is to retry or to correct it, never to disc
 The append-only audit log of everything that happened (`verifactu.events.list`, 50 rows per page).
 Requires `verifactu.view_verifactu`.
 
+- **Search** by the words the screen shows for an event, in English or Spanish, whichever language
+  the app is in: its type (*Submission postponed*) or its message (*sealed*, *fingerprint chain*,
+  including the reason given inside it). The newest event comes first.
 - **Filter** by record, event type, severity, message, details or timestamp. Type and severity are
   picked from a list of names; the filter still matches the stored code exactly.
 - **Type** and **Severity** show a translated name (for example *Submission postponed*, *Warning*),

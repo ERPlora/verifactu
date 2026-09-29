@@ -303,7 +303,8 @@
         "search": [
           "message",
           "event_type",
-          "type_label"
+          "type_label",
+          "message_words"
         ],
         "sort": [
           "id",
