@@ -543,10 +543,12 @@ export class ErpVerifactuSettings extends LitElement {
       { text: t('ui.recCancel'), role: 'cancel' },
       { text: t(live ? 'ui.goLiveAction' : 'ui.standDownAction'), role: 'confirm', cssClass: 'alert-button-warning' },
     ];
+    // Ionic moves the teleported overlay back to its original parent right AFTER emitting
+    // ionAlertDidDismiss: remove it on the next task or a hidden alert is left on every answer (verifactu#130).
     alert.addEventListener(
       'ionAlertDidDismiss',
       (ev) => {
-        alert.remove();
+        setTimeout(() => alert.remove(), 0);
         if ((ev as CustomEvent<{ role?: string }>).detail?.role === 'confirm') void this.switchEnvironment(live);
       },
       { once: true },

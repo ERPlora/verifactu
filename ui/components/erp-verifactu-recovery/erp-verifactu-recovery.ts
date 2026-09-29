@@ -207,10 +207,12 @@ export class ErpVerifactuRecovery extends LitElement {
       { text: t('ui.recCancel'), role: 'cancel' },
       { text: t('ui.recConfirmAction'), role: 'confirm', cssClass: 'alert-button-warning' },
     ];
+    // Ionic moves the teleported overlay back to its original parent right AFTER emitting
+    // ionAlertDidDismiss: remove it on the next task or a hidden alert is left on every answer (verifactu#130).
     alert.addEventListener(
       'ionAlertDidDismiss',
       (ev) => {
-        alert.remove();
+        setTimeout(() => alert.remove(), 0);
         void this.onRecoveryDismiss(kind, ev as CustomEvent<{ role?: string }>);
       },
       { once: true },
