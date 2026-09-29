@@ -15,6 +15,8 @@
 // for a key the catalogue does not know — a hub on an older module version, an event written before
 // hub#1178 — the sentence that came with the row says more than anything we could invent for it.
 
+import { eurosToCents } from '@erplora/module-sdk';
+
 /** Namespace every key the engine emits lives in. A `message_key` outside it is not ours. */
 export const EVENT_MESSAGE_PREFIX = 'verifactu.';
 
@@ -204,6 +206,35 @@ const SAFE_SUFFIX = /^[a-z][a-z0-9_]*$/;
  */
 const REASON_FACT_SUFFIX = '_reason';
 
+/**
+ * The facts of a reason that are MONEY, by reason code (hub#2269). Each one fills its `{<x>}` with
+ * the hub's own formatter — `erplora().formatMoney(minor)`: currency, scale and locale of the hub —
+ * so the amount reads «4.840,00 €» in Spanish and «€4,840.00» in English like every other amount
+ * of the module, never the engine's «4840.00» with a fixed «€» after it.
+ *
+ * The engine files each amount twice: `<x>_cents`, the integer in the minor unit (ADR-0123), and
+ * `<x>`, the decimal string a hub older than hub#2269 is still the only one to send. The integer
+ * wins; the string crosses the named frontier `eurosToCents` — EUR by contract here, it is the
+ * AEAT's own ceiling — so both deployment orders read the same.
+ */
+const MONEY_FACTS: Record<string, readonly string[]> = {
+  schema_simplified_over_ceiling: ['total', 'ceiling', 'tolerance'],
+};
+
+/** A decimal amount as the engine formats it (`{:.2}`): anything else is not converted. */
+const DECIMAL_AMOUNT = /^-?\d+(\.\d{1,2})?$/;
+
+/** Formats an integer in the minor unit of the hub currency — `erplora().formatMoney`. */
+export type FormatMoney = (minor: number) => string;
+
+/** The minor units of money fact `name`, preferring the integer over the legacy string. */
+function moneyFact(facts: Record<string, unknown>, name: string): number | undefined {
+  const cents = facts[`${name}_cents`];
+  if (typeof cents === 'number' && Number.isInteger(cents)) return cents;
+  const legacy = facts[name];
+  return typeof legacy === 'string' && DECIMAL_AMOUNT.test(legacy) ? eurosToCents(legacy) : undefined;
+}
+
 export type Translate = (
   catalog: Record<string, unknown>,
   key: string,
@@ -278,6 +309,7 @@ function localizedParams(
   locale: string,
   t: Translate,
   details: Record<string, unknown>,
+  money?: FormatMoney,
 ): Record<string, unknown> {
   const params: Record<string, unknown> = {};
   for (const [param, value] of Object.entries(details)) {
@@ -287,8 +319,14 @@ function localizedParams(
   }
   for (const [param, value] of Object.entries(details)) {
     if (!param.endsWith(REASON_FACT_SUFFIX)) continue;
-    const nested = reasonSentence(catalog, locale, t, value);
+    const nested = reasonSentence(catalog, locale, t, value, money);
     if (nested !== undefined) params[param.slice(0, -REASON_FACT_SUFFIX.length)] = nested;
+  }
+  if (money) {
+    for (const name of MONEY_FACTS[String(details.code)] ?? []) {
+      const minor = moneyFact(details, name);
+      if (minor !== undefined) params[name] = money(minor);
+    }
   }
   return params;
 }
@@ -312,6 +350,7 @@ export function reasonSentence(
   locale: string,
   t: Translate,
   raw: unknown,
+  money?: FormatMoney,
 ): string | undefined {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined;
   const reason = raw as Record<string, unknown>;
@@ -319,7 +358,7 @@ export function reasonSentence(
   if (typeof code !== 'string' || !SAFE_SUFFIX.test(code)) return undefined;
   const key = `${EVENT_REASON_PREFIX}${code}`;
   if (!catalogHas(catalog, locale, key)) return undefined;
-  return t(catalog, key, localizedParams(catalog, locale, t, reason));
+  return t(catalog, key, localizedParams(catalog, locale, t, reason, money));
 }
 
 /**
@@ -335,8 +374,9 @@ export function certReasonSentence(
   locale: string,
   t: Translate,
   details: Record<string, unknown>,
+  money?: FormatMoney,
 ): string | undefined {
-  return reasonSentence(catalog, locale, t, details.cert_reason);
+  return reasonSentence(catalog, locale, t, details.cert_reason, money);
 }
 
 /**
@@ -348,6 +388,7 @@ export function eventMessage(
   locale: string,
   t: Translate,
   row: EventRow,
+  money?: FormatMoney,
 ): string {
   const details = parseDetails(row.details);
   const messageKey = details.message_key;
@@ -356,8 +397,8 @@ export function eventMessage(
   if (!key || !catalogHas(catalog, locale, key)) return row.message;
   // `cert_reason` never reaches `t()` as an object — `localizedParams` drops it, along with any
   // other nested source — and comes back as a sentence instead.
-  const params = localizedParams(catalog, locale, t, details);
-  const reason = certReasonSentence(catalog, locale, t, details);
+  const params = localizedParams(catalog, locale, t, details, money);
+  const reason = certReasonSentence(catalog, locale, t, details, money);
   if (reason !== undefined) params.cert_message = reason;
   return t(catalog, key, params);
 }

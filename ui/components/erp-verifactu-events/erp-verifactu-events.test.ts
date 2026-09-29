@@ -43,6 +43,8 @@ beforeEach(() => {
       return locale;
     },
     timezone: 'Europe/Madrid',
+    // hub#2269: names the minor units it was handed, so a test can say WHICH amount reached it.
+    formatMoney: (minor: number) => `MONEY(${minor})`,
     // The real `t`, so this test exercises the catalogue the module actually ships.
     t: (catalog: Record<string, unknown>, key: string, params?: Record<string, unknown>) => {
       const dict = (catalog[locale] ?? catalog.en ?? {}) as Record<string, unknown>;
@@ -190,5 +192,39 @@ describe('«When» reads as a date and time, not as ISO-8601 (verifactu#141)', (
     expect(column.filterable).toBe(true);
     expect(column.filterType).toBe('daterange');
     expect(column.render).toBeUndefined();
+  });
+});
+
+/** A transmission the schema refused: an F2 over the AEAT ceiling (hub#2269). */
+const OVER_CEILING_ROW = {
+  ...ROW,
+  id: 'e-3',
+  event_type: 'xsd_invalid',
+  severity: 'error',
+  message: 'XML no conforme al esquema de la AEAT; no se ha transmitido: … y suma 4840.00 €',
+  details: JSON.stringify({
+    message_key: 'verifactu.xsd_invalid',
+    validation_error: 'una factura simplificada F2 no puede pasar de 3.000,00 € … y suma 4840.00 €',
+    validation_error_reason: {
+      code: 'schema_simplified_over_ceiling',
+      total: '4840.00',
+      ceiling: '3000.00',
+      tolerance: '10.00',
+      total_cents: 484000,
+      ceiling_cents: 300000,
+      tolerance_cents: 1000,
+    },
+  }),
+};
+
+describe('the F2 ceiling refusal paints its amounts with the hub formatter (hub#2269)', () => {
+  it('hands erplora().formatMoney the three amounts instead of printing «4840.00 €»', async () => {
+    locale = 'es';
+    const cell = await messageCell(OVER_CEILING_ROW);
+    expect(cell).toContain('MONEY(484000)');
+    expect(cell).toContain('MONEY(300000)');
+    expect(cell).toContain('MONEY(1000)');
+    expect(cell).not.toContain('4840.00');
+    expect(cell).not.toMatch(/\{[a-z_]+\}/);
   });
 });
