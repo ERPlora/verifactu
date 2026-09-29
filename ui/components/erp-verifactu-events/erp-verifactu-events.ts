@@ -21,6 +21,8 @@ interface ErploraClientLike extends ListClient {
   /** Hub IANA zone the shell publishes; `formatEventTime` degrades a missing one to UTC. */
   timezone?: string;
   t(catalog: Record<string, unknown>, key: string, params?: Record<string, unknown>): string;
+  /** Money (ADR-0123): takes the INTEGER in the minor unit; currency and scale of the hub. */
+  formatMoney(minor: number): string;
 }
 
 interface VerifactuEvent {
@@ -106,7 +108,7 @@ export class ErpVerifactuEvents extends LitElement {
       format: (r) => eventMessage(CATALOG, client.locale, translate, {
         message: String(r.message ?? ''),
         details: r.details,
-      }),
+      }, (minor) => client.formatMoney(minor)),
     },
     ];
   }

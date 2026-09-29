@@ -2421,7 +2421,7 @@ var es_default = {
         schema_breakdown_reverse_charge_missing: "l\xEDnea {line} del desglose: con inversi\xF3n del sujeto pasivo (S2) {element} es obligatorio y va a 0 \u2014 no se omite",
         schema_breakdown_vat_rate_not_allowed: "l\xEDnea {line} del desglose: TipoImpositivo {value} no es un tipo de IVA; la AEAT solo admite 0, 2, 4, 5, 7,5, 10 y 21",
         schema_breakdown_surcharge_rate_not_allowed: "l\xEDnea {line} del desglose: TipoRecargoEquivalencia {value} no es un tipo de recargo de equivalencia; la AEAT admite 0, 0,26, 0,5, 0,62, 1, 1,4, 1,75 y 5,2",
-        schema_simplified_over_ceiling: "una factura simplificada F2 no puede pasar de {ceiling} \u20AC (m\xE1s {tolerance} \u20AC de tolerancia) sumando base y cuota de todas las l\xEDneas, y esta suma {total} \u20AC; con este importe hay que emitir factura completa identificando al destinatario",
+        schema_simplified_over_ceiling: "una factura simplificada F2 no puede pasar de {ceiling} (m\xE1s {tolerance} de tolerancia) sumando base y cuota de todas las l\xEDneas, y esta suma {total}; con este importe hay que emitir factura completa identificando al destinatario",
         earlier_records_pending: "antes tiene que salir un registro anterior de la misma cadena, porque a la AEAT se env\xEDan en orden"
       },
       transmission_deferred: "A\xFAn no se ha enviado a la AEAT: {why}"
@@ -2955,7 +2955,7 @@ var en_default = {
         schema_breakdown_reverse_charge_missing: "breakdown line {line}: under reverse charge (S2) {element} is required and goes to 0 \u2014 it is not left out",
         schema_breakdown_vat_rate_not_allowed: "breakdown line {line}: TipoImpositivo {value} is not a VAT rate; the AEAT only admits 0, 2, 4, 5, 7.5, 10 and 21",
         schema_breakdown_surcharge_rate_not_allowed: "breakdown line {line}: TipoRecargoEquivalencia {value} is not an equivalence surcharge rate; the AEAT admits 0, 0.26, 0.5, 0.62, 1, 1.4, 1.75 and 5.2",
-        schema_simplified_over_ceiling: "a simplified F2 invoice cannot go over {ceiling} \u20AC (plus {tolerance} \u20AC of tolerance) adding base and tax of every line, and this one adds {total} \u20AC; at this amount a full invoice identifying the customer is required",
+        schema_simplified_over_ceiling: "a simplified F2 invoice cannot go over {ceiling} (plus {tolerance} of tolerance) adding base and tax of every line, and this one adds {total}; at this amount a full invoice identifying the customer is required",
         earlier_records_pending: "an earlier record of the same chain has to go first, because records reach the AEAT in order"
       },
       transmission_deferred: "Not sent to the AEAT yet: {why}"
@@ -6789,6 +6789,9 @@ function majorToMinor(amount, decimals) {
   const n6 = Number(amount);
   return Number.isFinite(n6) ? Math.round(n6 * 10 ** decimals) : 0;
 }
+function eurosToCents(euros) {
+  return majorToMinor(euros, 2);
+}
 
 // ui/components/erp-verifactu-contingency/erp-verifactu-contingency.ts
 var CATALOG3 = { es: es_default, en: en_default };
@@ -6946,6 +6949,16 @@ var PARAM_LABEL_KEYS = {
 };
 var SAFE_SUFFIX = /^[a-z][a-z0-9_]*$/;
 var REASON_FACT_SUFFIX = "_reason";
+var MONEY_FACTS = {
+  schema_simplified_over_ceiling: ["total", "ceiling", "tolerance"]
+};
+var DECIMAL_AMOUNT = /^-?\d+(\.\d{1,2})?$/;
+function moneyFact(facts, name) {
+  const cents = facts[`${name}_cents`];
+  if (typeof cents === "number" && Number.isInteger(cents)) return cents;
+  const legacy = facts[name];
+  return typeof legacy === "string" && DECIMAL_AMOUNT.test(legacy) ? eurosToCents(legacy) : void 0;
+}
 function catalogKeyFor(messageKey) {
   if (!messageKey.startsWith(EVENT_MESSAGE_PREFIX)) return null;
   const suffix = messageKey.slice(EVENT_MESSAGE_PREFIX.length);
@@ -6973,7 +6986,7 @@ function catalogHas(catalog, locale, key) {
   }
   return false;
 }
-function localizedParams(catalog, locale, t5, details) {
+function localizedParams(catalog, locale, t5, details, money) {
   const params = {};
   for (const [param, value] of Object.entries(details)) {
     if (value === null || value === void 0 || typeof value === "object") continue;
@@ -6982,31 +6995,37 @@ function localizedParams(catalog, locale, t5, details) {
   }
   for (const [param, value] of Object.entries(details)) {
     if (!param.endsWith(REASON_FACT_SUFFIX)) continue;
-    const nested = reasonSentence(catalog, locale, t5, value);
+    const nested = reasonSentence(catalog, locale, t5, value, money);
     if (nested !== void 0) params[param.slice(0, -REASON_FACT_SUFFIX.length)] = nested;
+  }
+  if (money) {
+    for (const name of MONEY_FACTS[String(details.code)] ?? []) {
+      const minor = moneyFact(details, name);
+      if (minor !== void 0) params[name] = money(minor);
+    }
   }
   return params;
 }
-function reasonSentence(catalog, locale, t5, raw2) {
+function reasonSentence(catalog, locale, t5, raw2, money) {
   if (!raw2 || typeof raw2 !== "object" || Array.isArray(raw2)) return void 0;
   const reason = raw2;
   const code = reason.code;
   if (typeof code !== "string" || !SAFE_SUFFIX.test(code)) return void 0;
   const key = `${EVENT_REASON_PREFIX}${code}`;
   if (!catalogHas(catalog, locale, key)) return void 0;
-  return t5(catalog, key, localizedParams(catalog, locale, t5, reason));
+  return t5(catalog, key, localizedParams(catalog, locale, t5, reason, money));
 }
-function certReasonSentence(catalog, locale, t5, details) {
-  return reasonSentence(catalog, locale, t5, details.cert_reason);
+function certReasonSentence(catalog, locale, t5, details, money) {
+  return reasonSentence(catalog, locale, t5, details.cert_reason, money);
 }
-function eventMessage(catalog, locale, t5, row) {
+function eventMessage(catalog, locale, t5, row, money) {
   const details = parseDetails(row.details);
   const messageKey = details.message_key;
   if (typeof messageKey !== "string") return row.message;
   const key = catalogKeyFor(messageKey);
   if (!key || !catalogHas(catalog, locale, key)) return row.message;
-  const params = localizedParams(catalog, locale, t5, details);
-  const reason = certReasonSentence(catalog, locale, t5, details);
+  const params = localizedParams(catalog, locale, t5, details, money);
+  const reason = certReasonSentence(catalog, locale, t5, details, money);
   if (reason !== void 0) params.cert_message = reason;
   return t5(catalog, key, params);
 }
@@ -7159,7 +7178,7 @@ var ErpVerifactuEvents = class extends i3 {
         format: (r6) => eventMessage(CATALOG4, client.locale, translate, {
           message: String(r6.message ?? ""),
           details: r6.details
-        })
+        }, (minor) => client.formatMoney(minor))
       }
     ];
   }
@@ -7596,7 +7615,13 @@ var ErpVerifactuEventsWidget = class extends i3 {
     return rows.map((r6) => ({
       id: String(r6.id),
       title: eventTypeLabel(CATALOG5, client.locale, translate, r6.event_type),
-      description: eventMessage(CATALOG5, client.locale, translate, { message: String(r6.message ?? ""), details: r6.details }),
+      description: eventMessage(
+        CATALOG5,
+        client.locale,
+        translate,
+        { message: String(r6.message ?? ""), details: r6.details },
+        (minor) => client.formatMoney(minor)
+      ),
       time: formatEventTime(r6.timestamp, { locale: client.locale, timezone: client.timezone ?? "" }),
       color: SEVERITY_COLOR[r6.severity]
     }));
@@ -8908,7 +8933,7 @@ var ErpVerifactuSettings = class extends i3 {
       return b2`<ok-inline-feedback tone="neutral" icon="information-circle-outline">${t5(filedByErplora ? "ui.testAeatNotSentDelegated" : "ui.testAeatNotSent")}</ok-inline-feedback>`;
     }
     if (a3.error) {
-      const why = reasonSentence(CATALOG8, erplora7().locale, (catalog, key, params) => erplora7().t(catalog, key, params), a3.reason);
+      const why = reasonSentence(CATALOG8, erplora7().locale, (catalog, key, params) => erplora7().t(catalog, key, params), a3.reason, (minor) => erplora7().formatMoney(minor));
       return b2`<ok-inline-feedback tone="danger" heading=${t5("ui.testAeatError")} icon="alert-circle-outline">${why ?? a3.error}${a3.detail ? b2`<p class="hint">${a3.detail}</p>` : A}</ok-inline-feedback>`;
     }
     if (a3.ok) {
@@ -9019,7 +9044,7 @@ var ErpVerifactuSettings = class extends i3 {
                    (hub#1575). The same composer the events list uses, so the two surfaces cannot
                    describe one run differently; the engine prose stays as the fallback for a run
                    this catalogue cannot name. -->
-              <ok-inline-feedback tone=${d3.cert_ok ? "success" : "danger"} heading=${t5("ui.testCert")} icon="ribbon-outline">${certReasonSentence(CATALOG8, erplora7().locale, (catalog, key, params) => erplora7().t(catalog, key, params), d3) ?? d3.cert_message ?? ""}</ok-inline-feedback>
+              <ok-inline-feedback tone=${d3.cert_ok ? "success" : "danger"} heading=${t5("ui.testCert")} icon="ribbon-outline">${certReasonSentence(CATALOG8, erplora7().locale, (catalog, key, params) => erplora7().t(catalog, key, params), d3, (minor) => erplora7().formatMoney(minor)) ?? d3.cert_message ?? ""}</ok-inline-feedback>
               ${this.renderTestGateway(t5)}
               <!-- WHICH road answered (hub#1485). Read off the RUN and not off the current state:
                    a diagnostic from before an enrolment describes the road it actually took, and

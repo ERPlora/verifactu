@@ -28,6 +28,8 @@ interface ErploraClientLike {
   on(event: string, cb: (payload: unknown) => void): () => void;
   locale: string;
   t(catalog: Record<string, unknown>, key: string, params?: Record<string, unknown>): string;
+  /** Money (ADR-0123): takes the INTEGER in the minor unit; currency and scale of the hub. */
+  formatMoney(minor: number): string;
 }
 
 interface VerifactuConfig {
@@ -937,7 +939,7 @@ export class ErpVerifactuSettings extends LitElement {
       // here, so this was the last box left reading Spanish inside an English screen, and it is the
       // one that says what to fix. Same resolver as the box above, so one run cannot be described
       // two ways; the engine prose stays as the fallback for a code this catalogue cannot name.
-      const why = reasonSentence(CATALOG, erplora().locale, (catalog, key, params) => erplora().t(catalog, key, params), a.reason);
+      const why = reasonSentence(CATALOG, erplora().locale, (catalog, key, params) => erplora().t(catalog, key, params), a.reason, (minor) => erplora().formatMoney(minor));
       // …and the raw transport chain BESIDE it when the run carries one (hub#1580). Composing the
       // sentence used to drop `error`, which on this arm was the only copy of that chain: the
       // reader gained a sentence and the support desk lost the one string that separates an
@@ -1069,7 +1071,7 @@ export class ErpVerifactuSettings extends LitElement {
                    (hub#1575). The same composer the events list uses, so the two surfaces cannot
                    describe one run differently; the engine prose stays as the fallback for a run
                    this catalogue cannot name. -->
-              <ok-inline-feedback tone=${d.cert_ok ? 'success' : 'danger'} heading=${t('ui.testCert')} icon="ribbon-outline">${certReasonSentence(CATALOG, erplora().locale, (catalog, key, params) => erplora().t(catalog, key, params), d as Record<string, unknown>) ?? d.cert_message ?? ''}</ok-inline-feedback>
+              <ok-inline-feedback tone=${d.cert_ok ? 'success' : 'danger'} heading=${t('ui.testCert')} icon="ribbon-outline">${certReasonSentence(CATALOG, erplora().locale, (catalog, key, params) => erplora().t(catalog, key, params), d as Record<string, unknown>, (minor) => erplora().formatMoney(minor)) ?? d.cert_message ?? ''}</ok-inline-feedback>
               ${this.renderTestGateway(t)}
               <!-- WHICH road answered (hub#1485). Read off the RUN and not off the current state:
                    a diagnostic from before an enrolment describes the road it actually took, and
