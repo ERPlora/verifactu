@@ -3,7 +3,7 @@ import { state } from 'lit/decorators.js';
 import { define } from '@erplora/outfitkit/define';
 import '@erplora/outfitkit/ok-data-table';
 import type { DataTableColumn } from '@erplora/outfitkit';
-import { createListController } from '@erplora/module-sdk';
+import { createListController, dataTableShowsLoadError } from '@erplora/module-sdk';
 import type { ListController, ListClient, ListParams, ListPage } from '@erplora/module-sdk';
 import esLocale from '../../../locales/es.json';
 import enLocale from '../../../locales/en.json';
@@ -167,8 +167,8 @@ export class ErpVerifactuContingency extends LitElement {
           <ion-button size="small" ?disabled=${this.busy} @click=${() => this.processQueue()}>${this.busy ? t('ui.processing') : t('ui.processQueue')}</ion-button>
         </header>
         ${this.error ? html`<p class="err">${this.error}</p>` : nothing}
-        ${this.ctrl?.error ? html`<p class="err">${this.ctrl.error}</p>` : nothing}
-        <ok-data-table .serverSide=${true} .views=${true} .cardTitle=${(row: Record<string, unknown>) => String(row.record_id ?? row.id ?? '')} .columns=${this.columns} .rows=${this.ctrl?.rows ?? []} .total=${this.ctrl?.total ?? 0} .page=${this.ctrl?.state.page ?? 0} .pageSize=${this.ctrl?.state.pageSize ?? 50} .sort=${this.ctrl?.state.sort} .sortDir=${this.ctrl?.state.dir ?? 'asc'} .searchable=${true} .searchPlaceholder=${t('ui.contingencySearchPlaceholder')} .emptyMessage=${this.ctrl?.loading ? t('ui.loading') : t('ui.contingencyEmpty')} .actions=${[
+        ${this.ctrl?.error && !dataTableShowsLoadError() ? html`<p class="err" data-testid="verifactu-contingency-load-error">${this.ctrl.error}</p>` : nothing}
+        <ok-data-table testid="verifactu-contingency-table" .error=${this.ctrl?.error ?? ''} @retry=${() => this.ctrl?.load()} .serverSide=${true} .views=${true} .cardTitle=${(row: Record<string, unknown>) => String(row.record_id ?? row.id ?? '')} .columns=${this.columns} .rows=${this.ctrl?.rows ?? []} .total=${this.ctrl?.total ?? 0} .page=${this.ctrl?.state.page ?? 0} .pageSize=${this.ctrl?.state.pageSize ?? 50} .sort=${this.ctrl?.state.sort} .sortDir=${this.ctrl?.state.dir ?? 'asc'} .searchable=${true} .searchPlaceholder=${t('ui.contingencySearchPlaceholder')} .emptyMessage=${this.ctrl?.loading ? t('ui.loading') : t('ui.contingencyEmpty')} .actions=${[
             { id: 'retry', label: t('ui.actionRetry'), icon: 'refresh-outline' },
             { id: 'cancel', label: t('ui.actionCancel'), icon: 'close-circle-outline', color: 'danger' },
           ]} @rowAction=${(e: CustomEvent<{ actionId: string; row: Record<string, unknown> }>) => {

@@ -4,7 +4,7 @@ import { define } from '@erplora/outfitkit/define';
 import '@erplora/outfitkit/ok-data-table';
 import '@erplora/outfitkit/ok-inline-feedback';
 import type { DataTableColumn } from '@erplora/outfitkit';
-import { createListController } from '@erplora/module-sdk';
+import { createListController, dataTableShowsLoadError } from '@erplora/module-sdk';
 import type { ListController, ListClient, ListParams, ListPage } from '@erplora/module-sdk';
 import esLocale from '../../../locales/es.json';
 import enLocale from '../../../locales/en.json';
@@ -121,6 +121,8 @@ export class ErpVerifactuRecovery extends LitElement {
 
   /** NIF por defecto (config) + último estado de validación de la cadena. */
   private async loadMeta() {
+    // A reload that works takes down the error of the one that did not (Retry, pm#533).
+    this.error = '';
     try {
       // config.get es una query plana → ARRAY de filas; desempaquetamos la 1ª.
       type Cfg = { issuer_nif?: string; software_nif?: string };
@@ -273,7 +275,11 @@ export class ErpVerifactuRecovery extends LitElement {
       </div>
 
       <h3>${t('ui.recAeatTitle')}</h3>
+      ${this.ctrl?.error && !dataTableShowsLoadError() ? html`<ok-inline-feedback data-testid="verifactu-recovery-load-error" tone="danger" icon="alert-circle-outline">${this.ctrl.error}</ok-inline-feedback>` : nothing}
       <ok-data-table
+        testid="verifactu-recovery-table"
+        .error=${this.ctrl?.error ?? ''}
+        @retry=${() => Promise.all([this.ctrl?.load(), this.loadMeta()])}
         .serverSide=${true}
         .views=${true}
         .cardTitle=${(row: Record<string, unknown>) => String(row.invoice_number ?? row.record_hash ?? '')}
