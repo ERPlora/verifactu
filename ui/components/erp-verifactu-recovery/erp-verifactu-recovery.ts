@@ -75,6 +75,9 @@ export class ErpVerifactuRecovery extends LitElement {
 
   @state() error = '';
 
+  /** Why the config or the chain status could not be read (not what an action was refused with). */
+  @state() metaError = '';
+
   @state() done = '';
 
 
@@ -121,8 +124,9 @@ export class ErpVerifactuRecovery extends LitElement {
 
   /** NIF por defecto (config) + último estado de validación de la cadena. */
   private async loadMeta() {
-    // A reload that works takes down the error of the one that did not (Retry, pm#533).
-    this.error = '';
+    // Its own notice, apart from what an ACTION was refused with: a reload that works takes this
+    // one down (Retry, pm#533) and leaves the other where it was.
+    this.metaError = '';
     try {
       // config.get es una query plana → ARRAY de filas; desempaquetamos la 1ª.
       type Cfg = { issuer_nif?: string; software_nif?: string };
@@ -133,7 +137,7 @@ export class ErpVerifactuRecovery extends LitElement {
       const st = await erplora().query<ChainStatus[] | ChainStatus | null>('verifactu.chain.status');
       this.status = Array.isArray(st) ? (st[0] ?? null) : (st ?? null);
     } catch (e) {
-      this.error = e instanceof Error ? e.message : '';
+      this.metaError = e instanceof Error ? e.message : '';
     }
   }
 
@@ -249,9 +253,13 @@ export class ErpVerifactuRecovery extends LitElement {
   render() {
     const t = (k: string): string => erplora().t(CATALOG, k);
     const blocked = this.busy !== '' || !this.nif;
+    // pm#533: when the list failed too, its place (table or banner) already says why and its Retry
+    // reads the config and the chain status again, so they do not repeat the reason.
+    const metaError = this.ctrl?.error ? '' : this.metaError;
     return html`
       <h2>${t('ui.recoveryTitle')}</h2>
       ${this.error ? html`<ok-inline-feedback tone="danger" icon="alert-circle-outline">${this.error}</ok-inline-feedback>` : nothing}
+      ${metaError ? html`<ok-inline-feedback data-testid="verifactu-recovery-meta-error" tone="danger" icon="alert-circle-outline">${metaError}</ok-inline-feedback>` : nothing}
       ${this.done ? html`<ok-inline-feedback tone="success" icon="checkmark-circle-outline">${this.done}</ok-inline-feedback>` : nothing}
 
       <div class="card">

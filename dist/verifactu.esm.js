@@ -8167,6 +8167,7 @@ var ErpVerifactuRecovery = class extends i3 {
     this.manualDate = "";
     this.busy = "";
     this.error = "";
+    this.metaError = "";
     this.done = "";
     this.onLocaleChange = () => this.requestUpdate();
   }
@@ -8221,7 +8222,7 @@ var ErpVerifactuRecovery = class extends i3 {
   }
   /** NIF por defecto (config) + último estado de validación de la cadena. */
   async loadMeta() {
-    this.error = "";
+    this.metaError = "";
     try {
       const cfgRows = await erplora6().query("verifactu.config.get");
       const cfg = Array.isArray(cfgRows) ? cfgRows[0] : cfgRows;
@@ -8230,7 +8231,7 @@ var ErpVerifactuRecovery = class extends i3 {
       const st = await erplora6().query("verifactu.chain.status");
       this.status = Array.isArray(st) ? st[0] ?? null : st ?? null;
     } catch (e6) {
-      this.error = e6 instanceof Error ? e6.message : "";
+      this.metaError = e6 instanceof Error ? e6.message : "";
     }
   }
   async run(action, fn, errKey) {
@@ -8325,9 +8326,11 @@ var ErpVerifactuRecovery = class extends i3 {
   render() {
     const t5 = (k2) => erplora6().t(CATALOG7, k2);
     const blocked = this.busy !== "" || !this.nif;
+    const metaError = this.ctrl?.error ? "" : this.metaError;
     return b2`
       <h2>${t5("ui.recoveryTitle")}</h2>
       ${this.error ? b2`<ok-inline-feedback tone="danger" icon="alert-circle-outline">${this.error}</ok-inline-feedback>` : A}
+      ${metaError ? b2`<ok-inline-feedback data-testid="verifactu-recovery-meta-error" tone="danger" icon="alert-circle-outline">${metaError}</ok-inline-feedback>` : A}
       ${this.done ? b2`<ok-inline-feedback tone="success" icon="checkmark-circle-outline">${this.done}</ok-inline-feedback>` : A}
 
       <div class="card">
@@ -8424,6 +8427,9 @@ __decorateClass([
 __decorateClass([
   r5()
 ], ErpVerifactuRecovery.prototype, "error", 2);
+__decorateClass([
+  r5()
+], ErpVerifactuRecovery.prototype, "metaError", 2);
 __decorateClass([
   r5()
 ], ErpVerifactuRecovery.prototype, "done", 2);

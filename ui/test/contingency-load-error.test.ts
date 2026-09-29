@@ -34,6 +34,7 @@ const TABLES = [
 let hubAnswers = false;
 let pageCalls = 0;
 let queryCalls: string[] = [];
+let commandCalls: string[] = [];
 
 beforeAll(async () => {
   customElements.define('ok-data-table', ShellTable);
@@ -45,6 +46,7 @@ beforeEach(() => {
   hubAnswers = false;
   pageCalls = 0;
   queryCalls = [];
+  commandCalls = [];
   const answer = async (name: string) => {
     queryCalls.push(name);
     if (!hubAnswers) throw new Error('The hub is not responding.');
@@ -59,7 +61,10 @@ beforeEach(() => {
       return { rows: [{ id: 'r1', name: 'rec-1' }], total: 1 };
     },
     queryAll: async () => [],
-    command: async () => ({}),
+    command: async (name: string) => {
+      commandCalls.push(name);
+      return {};
+    },
     hasPermission: () => true,
     on: () => () => {},
     locale: 'es',
@@ -108,6 +113,7 @@ describe.each(TABLES)(`${TAG} $table — a list that could not load (pm#533)`, (
       if ((table as unknown as { error: string }).error !== '') throw new Error('the error is still on the table');
     });
     expect((table as unknown as { rows: unknown[] }).rows).toEqual([{ id: 'r1', name: 'rec-1' }]);
+    expect(commandCalls, 'Retry only reads: the queue is processed by its own button, never by a reload').toEqual([]);
   });
 
   it('on a shell whose table cannot paint the error, keeps its own banner with the reason', async () => {
