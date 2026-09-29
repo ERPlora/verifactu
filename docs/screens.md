@@ -74,7 +74,13 @@ forbid. The fix for a problem record is to retry or to correct it, never to disc
 The append-only audit log of everything that happened (`verifactu.events.list`, 50 rows per page).
 Requires `verifactu.view_verifactu`.
 
-- **Filter** by record, event type, severity, message, details or timestamp.
+- **Search** by the words the screen shows for an event, in English or Spanish, whichever language
+  the app is in: its type (*Submission postponed*) or its message (*sealed*, *fingerprint chain*,
+  including the reason given inside it). The newest event comes first.
+- **Filter** by record, event type, severity, message, details or timestamp. Type and severity are
+  picked from a list of names; the filter still matches the stored code exactly.
+- **Type** and **Severity** show a translated name (for example *Submission postponed*, *Warning*),
+  never the internal code. A type this module version does not know yet shows its code.
 
 Severities: `debug`, `info`, `warning`, `error`, `critical`.
 
@@ -257,9 +263,11 @@ that did not land is the same defect in a different coat.
 
 ## First-run setup
 
-VeriFactu contributes a **required** setup step: *Activa VeriFactu y sube el certificado del negocio
-en Ajustes para enviar facturas a la AEAT.* It is done once the module is enabled **and** a
-certificate is available, and it needs `verifactu.configure_verifactu`.
+VeriFactu contributes a **required** setup step: *Set up VeriFactu — Turn on VeriFactu and upload
+your business certificate to send your invoices to the AEAT.* The manifest carries the English source
+and `locales/<lang>.json#setup` its translations, so the item reads in the language of whoever looks
+at the dashboard (verifactu#143, hub#2356). It opens the Configuration tab, is done once the module
+is enabled **and** a certificate is available, and it needs `verifactu.configure_verifactu`.
 
 ## Dashboard widgets
 

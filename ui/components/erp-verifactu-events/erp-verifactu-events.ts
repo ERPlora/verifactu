@@ -8,6 +8,8 @@ import type { ListController, ListClient, ListParams, ListPage } from '@erplora/
 import esLocale from '../../../locales/es.json';
 import enLocale from '../../../locales/en.json';
 import { eventMessage, type Translate } from '../../lib/event-message';
+import { ENGINE_EVENT_TYPES, EVENT_SEVERITIES, eventTypeLabel, severityLabel } from '../../lib/event-labels';
+import { formatEventTime } from '../../lib/event-time';
 const CATALOG: Record<string, unknown> = { es: esLocale, en: enLocale };
 
 interface ErploraClientLike extends ListClient {
@@ -16,7 +18,11 @@ interface ErploraClientLike extends ListClient {
   command<T = unknown>(name: string, payload?: Record<string, unknown>): Promise<T>;
   on(event: string, cb: (payload: unknown) => void): () => void;
   locale: string;
+  /** Hub IANA zone the shell publishes; `formatEventTime` degrades a missing one to UTC. */
+  timezone?: string;
   t(catalog: Record<string, unknown>, key: string, params?: Record<string, unknown>): string;
+  /** Money (ADR-0123): takes the INTEGER in the minor unit; currency and scale of the hub. */
+  formatMoney(minor: number): string;
 }
 
 interface VerifactuEvent {
@@ -54,22 +60,38 @@ export class ErpVerifactuEvents extends LitElement {
     const t = (k: string): string => client.t(CATALOG, k);
     const translate: Translate = (catalog, key, params) => client.t(catalog, key, params);
     return [
-    { key: 'timestamp', header: t('ui.colWhen'), sortable: true, filterable: true, filterType: 'daterange' },
+    {
+      key: 'timestamp',
+      header: t('ui.colWhen'),
+      sortable: true,
+      filterable: true,
+      filterType: 'daterange',
+      // verifactu#141: the CELL reads as a date and time on the hub clock; sorting and the date
+      // range still travel to the query over the stored ISO text.
+      format: (r) => formatEventTime(r.timestamp, { locale: client.locale, timezone: client.timezone ?? '' }),
+    },
     {
       key: 'severity',
       header: t('ui.colSeverity'),
       sortable: true,
       filterable: true,
       filterType: 'select',
-      options: [
-        { value: 'debug', label: t('ui.sevDebug') },
-        { value: 'info', label: t('ui.sevInfo') },
-        { value: 'warning', label: t('ui.sevWarning') },
-        { value: 'error', label: t('ui.sevError') },
-        { value: 'critical', label: t('ui.sevCritical') },
-      ],
+      options: EVENT_SEVERITIES.map((code) => ({ value: code, label: severityLabel(CATALOG, client.locale, translate, code) })),
+      // verifactu#134: the CELL says the word; the stored code, the sort and the `eq` filter stay
+      // on the code. `format` and not `render`, for the same reason as the Message column below.
+      format: (r) => severityLabel(CATALOG, client.locale, translate, r.severity),
     },
-    { key: 'event_type', header: t('ui.colType'), sortable: true, filterable: true, filterType: 'text' },
+    {
+      key: 'event_type',
+      header: t('ui.colType'),
+      sortable: true,
+      filterable: true,
+      // A select and not a text box: the list compares `event_type` with `eq`, so a typed word only
+      // ever matched when the owner knew the internal code.
+      filterType: 'select',
+      options: ENGINE_EVENT_TYPES.map((code) => ({ value: code, label: eventTypeLabel(CATALOG, client.locale, translate, code) })),
+      format: (r) => eventTypeLabel(CATALOG, client.locale, translate, r.event_type),
+    },
     {
       key: 'message',
       header: t('ui.colMessage'),
@@ -86,14 +108,20 @@ export class ErpVerifactuEvents extends LitElement {
       format: (r) => eventMessage(CATALOG, client.locale, translate, {
         message: String(r.message ?? ''),
         details: r.details,
-      }),
+      }, (minor) => client.formatMoney(minor)),
     },
     ];
   }
 
-  // TODO-LIT: componentWillLoad → connectedCallback. Recuerda: connectedCallback se dispara
-  // en CADA reconexión al DOM (no solo en el primer montaje). Si la init debe correr una
-  // sola vez tras el primer render, considera firstUpdated() en su lugar.
+  /** The mobile card is titled by the event's type, in words — the Message says the rest. */
+  private readonly cardTitle = (row: Record<string, unknown>): string => {
+    const client = erplora();
+    const translate: Translate = (catalog, key, params) => client.t(catalog, key, params);
+    return row.event_type
+      ? eventTypeLabel(CATALOG, client.locale, translate, row.event_type)
+      : String(row.message ?? '');
+  };
+
   private readonly onLocaleChange = (): void => this.requestUpdate();
 
   async connectedCallback() {
@@ -101,8 +129,9 @@ export class ErpVerifactuEvents extends LitElement {
     window.addEventListener('erplora:locale-changed', this.onLocaleChange);
     this.ctrl = createListController<VerifactuEvent>(erplora(), 'verifactu.events.list', () => this.requestUpdate(), {
       pageSize: 50,
-      sort: 'id',
-      dir: 'asc',
+      // verifactu#144: an activity log opens on what just happened — the manifest's default too.
+      sort: 'timestamp',
+      dir: 'desc',
     });
     await this.ctrl.load();
   }
@@ -119,7 +148,7 @@ export class ErpVerifactuEvents extends LitElement {
           <h2>${t('ui.eventsTitle')}</h2>
         </header>
         ${this.ctrl?.error ? html`<p class="err">${this.ctrl.error}</p>` : nothing}
-        <ok-data-table .serverSide=${true} .views=${true} .cardTitle=${(row: Record<string, unknown>) => String(row.event_type ?? row.message ?? '')} .columns=${this.columns} .rows=${this.ctrl?.rows ?? []} .total=${this.ctrl?.total ?? 0} .page=${this.ctrl?.state.page ?? 0} .pageSize=${this.ctrl?.state.pageSize ?? 50} .sort=${this.ctrl?.state.sort} .sortDir=${this.ctrl?.state.dir ?? 'asc'} .searchable=${true} .searchPlaceholder=${t('ui.eventsSearchPlaceholder')} .emptyMessage=${this.ctrl?.loading ? t('ui.loading') : t('ui.eventsEmpty')} @pageChange=${(e: CustomEvent<number>) => this.ctrl.setPage(e.detail)} @sortChange=${(e: CustomEvent<{ sort: string; dir: 'asc' | 'desc' }>) => this.ctrl.setSort(e.detail.sort, e.detail.dir)} @searchChange=${(e: CustomEvent<string>) => this.ctrl.setSearch(e.detail)} @filterChange=${(e: CustomEvent<{ col: string; value: unknown }>) => this.ctrl.setFilter(e.detail.col, e.detail.value)}></ok-data-table>
+        <ok-data-table .serverSide=${true} .views=${true} .cardTitle=${this.cardTitle} .columns=${this.columns} .rows=${this.ctrl?.rows ?? []} .total=${this.ctrl?.total ?? 0} .page=${this.ctrl?.state.page ?? 0} .pageSize=${this.ctrl?.state.pageSize ?? 50} .sort=${this.ctrl?.state.sort} .sortDir=${this.ctrl?.state.dir ?? 'asc'} .searchable=${true} .searchPlaceholder=${t('ui.eventsSearchPlaceholder')} .emptyMessage=${this.ctrl?.loading ? t('ui.loading') : t('ui.eventsEmpty')} @pageChange=${(e: CustomEvent<number>) => this.ctrl.setPage(e.detail)} @sortChange=${(e: CustomEvent<{ sort: string; dir: 'asc' | 'desc' }>) => this.ctrl.setSort(e.detail.sort, e.detail.dir)} @searchChange=${(e: CustomEvent<string>) => this.ctrl.setSearch(e.detail)} @filterChange=${(e: CustomEvent<{ col: string; value: unknown }>) => this.ctrl.setFilter(e.detail.col, e.detail.value)}></ok-data-table>
       </div>`;
   }
 }

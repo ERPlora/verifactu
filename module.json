@@ -1,7 +1,7 @@
 {
   "id": "verifactu",
   "name": "VeriFactu",
-  "version": "1.5.50",
+  "version": "1.5.55",
   "fiscal_regime": {
     "country": "ES",
     "regime": "verifactu",
@@ -106,8 +106,8 @@
         "truthy": true
       }
     ],
-    "title": "Configura VeriFactu",
-    "description": "Activa VeriFactu y sube el certificado del negocio en Ajustes para enviar facturas a la AEAT.",
+    "title": "Set up VeriFactu",
+    "description": "Turn on VeriFactu and upload your business certificate to send your invoices to the AEAT.",
     "icon": "shield-checkmark-outline",
     "route": "/m/verifactu/config",
     "permission": "verifactu.configure_verifactu"
@@ -300,6 +300,12 @@
       "permission": "verifactu.view_verifactu",
       "sql": "queries/events_list.sql",
       "list": {
+        "search": [
+          "message",
+          "event_type",
+          "type_label",
+          "message_words"
+        ],
         "sort": [
           "id",
           "record_id",
@@ -309,8 +315,8 @@
           "details",
           "timestamp"
         ],
-        "default_sort": "id",
-        "default_dir": "asc",
+        "default_sort": "timestamp",
+        "default_dir": "desc",
         "filters": {
           "record_id": {
             "op": "eq"
@@ -775,23 +781,7 @@
         "general"
       ],
       "default": false,
-      "kind": "timeline",
-      "query": "verifactu.stats.events_recent",
-      "refresh_on": [
-        "verifactu.record.created",
-        "verifactu.record.transmitted",
-        "verifactu.contingency.processed"
-      ],
-      "map": {
-        "id": "id",
-        "title": "title",
-        "description": "description",
-        "time": "timestamp",
-        "status": "status"
-      },
-      "options": {
-        "align": "left"
-      }
+      "component": "erp-verifactu-events-widget"
     }
   },
   "scheduled_tasks": [

@@ -12,7 +12,8 @@
       "verifactu.diagnostics.last",
       "verifactu.events.list",
       "verifactu.records.get",
-      "verifactu.records.list"
+      "verifactu.records.list",
+      "verifactu.stats.events_recent"
     ],
     "optional_queries": [],
     "commands": [

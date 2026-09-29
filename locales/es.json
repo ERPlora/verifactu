@@ -27,14 +27,29 @@
     "colSeverity": "Severidad",
     "colType": "Tipo",
     "colMessage": "Mensaje",
-    "sevDebug": "Debug",
-    "sevInfo": "Info",
+    "sevDebug": "Depuración",
+    "sevInfo": "Información",
     "sevWarning": "Aviso",
     "sevError": "Error",
     "sevCritical": "Crítico",
+    "evtType": {
+      "record_created": "Registro creado",
+      "invoice_type_downgraded": "Tipo de factura cambiado",
+      "transmission_deferred": "Envío aplazado",
+      "transmission_success": "Envío aceptado",
+      "transmission_warning": "Aceptado con avisos",
+      "transmission_failure": "Envío fallido",
+      "contingency_processed": "Cola de contingencia procesada",
+      "chain_validated": "Cadena verificada",
+      "chain_error": "Cadena rota",
+      "aeat_queried": "Consulta a la AEAT",
+      "chain_recovered": "Cadena recuperada",
+      "diagnostic": "Prueba de conexión"
+    },
     "eventsTitle": "Eventos de auditoría",
     "eventsSearchPlaceholder": "Buscar tipo o mensaje…",
     "eventsEmpty": "Sin eventos.",
+    "eventsWidgetError": "No se han podido cargar los últimos eventos de la AEAT.",
     "evt": {
       "record_created": "Registro {record_type} #{sequence_number} de la factura {invoice_number} sellado",
       "invoice_type_downgraded": "La factura {invoice_number} se declaró {declared} y se ha registrado como {effective}: sin NIF de destinatario la AEAT rechaza el tipo declarado (error 1189)",
@@ -103,7 +118,7 @@
         "schema_breakdown_reverse_charge_missing": "línea {line} del desglose: con inversión del sujeto pasivo (S2) {element} es obligatorio y va a 0 — no se omite",
         "schema_breakdown_vat_rate_not_allowed": "línea {line} del desglose: TipoImpositivo {value} no es un tipo de IVA; la AEAT solo admite 0, 2, 4, 5, 7,5, 10 y 21",
         "schema_breakdown_surcharge_rate_not_allowed": "línea {line} del desglose: TipoRecargoEquivalencia {value} no es un tipo de recargo de equivalencia; la AEAT admite 0, 0,26, 0,5, 0,62, 1, 1,4, 1,75 y 5,2",
-        "schema_simplified_over_ceiling": "una factura simplificada F2 no puede pasar de {ceiling} € (más {tolerance} € de tolerancia) sumando base y cuota de todas las líneas, y esta suma {total} €; con este importe hay que emitir factura completa identificando al destinatario",
+        "schema_simplified_over_ceiling": "una factura simplificada F2 no puede pasar de {ceiling} (más {tolerance} de tolerancia) sumando base y cuota de todas las líneas, y esta suma {total}; con este importe hay que emitir factura completa identificando al destinatario",
         "earlier_records_pending": "antes tiene que salir un registro anterior de la misma cadena, porque a la AEAT se envían en orden"
       },
       "transmission_deferred": "Aún no se ha enviado a la AEAT: {why}"
@@ -436,6 +451,10 @@
     "verifactu.events": {
       "title": "Eventos AEAT recientes"
     }
+  },
+  "setup": {
+    "title": "Configura VeriFactu",
+    "description": "Activa VeriFactu y sube el certificado del negocio para enviar tus facturas a la AEAT."
   },
   "grant": {
     "intro": "ERPlora remite tus registros de facturación a la Agencia Tributaria EN TU NOMBRE. La ley exige tu consentimiento firmado: el modelo oficial del acuerdo de colaboración social. Lo descargas, lo firmas fuera de esta pantalla y lo vuelves a subir.",

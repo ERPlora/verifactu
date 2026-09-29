@@ -31,9 +31,24 @@
     "sevWarning": "Warning",
     "sevError": "Error",
     "sevCritical": "Critical",
+    "evtType": {
+      "record_created": "Record created",
+      "invoice_type_downgraded": "Invoice type changed",
+      "transmission_deferred": "Submission postponed",
+      "transmission_success": "Submission accepted",
+      "transmission_warning": "Accepted with warnings",
+      "transmission_failure": "Submission failed",
+      "contingency_processed": "Contingency queue processed",
+      "chain_validated": "Chain verified",
+      "chain_error": "Chain broken",
+      "aeat_queried": "AEAT query",
+      "chain_recovered": "Chain recovered",
+      "diagnostic": "Connection test"
+    },
     "eventsTitle": "Audit events",
     "eventsSearchPlaceholder": "Search type or message…",
     "eventsEmpty": "No events.",
+    "eventsWidgetError": "Couldn't load the latest AEAT events.",
     "evt": {
       "record_created": "{record_type} record #{sequence_number} sealed for invoice {invoice_number}",
       "invoice_type_downgraded": "Invoice {invoice_number} was declared {declared} and registered as {effective}: without a recipient tax ID the AEAT rejects the declared type (error 1189)",
@@ -102,7 +117,7 @@
         "schema_breakdown_reverse_charge_missing": "breakdown line {line}: under reverse charge (S2) {element} is required and goes to 0 — it is not left out",
         "schema_breakdown_vat_rate_not_allowed": "breakdown line {line}: TipoImpositivo {value} is not a VAT rate; the AEAT only admits 0, 2, 4, 5, 7.5, 10 and 21",
         "schema_breakdown_surcharge_rate_not_allowed": "breakdown line {line}: TipoRecargoEquivalencia {value} is not an equivalence surcharge rate; the AEAT admits 0, 0.26, 0.5, 0.62, 1, 1.4, 1.75 and 5.2",
-        "schema_simplified_over_ceiling": "a simplified F2 invoice cannot go over {ceiling} € (plus {tolerance} € of tolerance) adding base and tax of every line, and this one adds {total} €; at this amount a full invoice identifying the customer is required",
+        "schema_simplified_over_ceiling": "a simplified F2 invoice cannot go over {ceiling} (plus {tolerance} of tolerance) adding base and tax of every line, and this one adds {total}; at this amount a full invoice identifying the customer is required",
         "earlier_records_pending": "an earlier record of the same chain has to go first, because records reach the AEAT in order"
       },
       "transmission_deferred": "Not sent to the AEAT yet: {why}"
@@ -419,6 +434,10 @@
     "dropErrorSize": "“{name}” is larger than {size}.",
     "dropRemove": "Remove {name}",
     "cfgP12Choose": "Business certificate (.p12 or .pfx)"
+  },
+  "setup": {
+    "title": "Set up VeriFactu",
+    "description": "Turn on VeriFactu and upload your business certificate to send your invoices to the AEAT."
   },
   "grant": {
     "intro": "ERPlora files your invoicing records with the tax authority ON YOUR BEHALF. Spanish law needs your signed consent for that: the official form of the colaboración social agreement. You download it, sign it away from this screen, and upload it back.",

@@ -768,3 +768,162 @@ describe('wait parity — why a record did not leave with its sale (verifactu#11
     expect(sentence).not.toContain('{why}');
   });
 });
+
+// ── The F2 ceiling refusal says its amounts in the hub's money format (hub#2269) ─────────────
+//
+// It was the one refusal of the Events screen that painted money by hand: the hub sent
+// `total: "4840.00"` and the sentence put a fixed «€» after it, so a Spanish reader got
+// «…y esta suma 4840.00 €» (point decimal, no thousands separator) while every other amount of
+// the module reads «4.840,00 €». The hub now sends the three amounts as integer cents too
+// (ADR-0123) and the module paints them through `erplora().formatMoney` — the one formatter
+// the shell owns, with the hub's currency, scale and locale.
+
+/** The refusal as a hub with hub#2269 files it: the cents beside the legacy decimal strings. */
+const OVER_CEILING = {
+  code: 'schema_simplified_over_ceiling',
+  total: '4840.00',
+  ceiling: '3000.00',
+  tolerance: '10.00',
+  total_cents: 484000,
+  ceiling_cents: 300000,
+  tolerance_cents: 1000,
+};
+
+/** The same refusal from a hub older than hub#2269: only the decimal strings. */
+const OVER_CEILING_OLDER_HUB = {
+  code: 'schema_simplified_over_ceiling',
+  total: '4840.00',
+  ceiling: '3000.00',
+  tolerance: '10.00',
+};
+
+/** A formatter that names what it was handed, so a test can say WHICH minor units reached it. */
+const moneyEcho = (minor: number): string => `MONEY(${minor})`;
+
+/** The shell's `formatMoney` for a EUR hub (`apps/web/src/lib/money.ts`), grouping forced (hub#1090). */
+function eurosIn(locale: 'es' | 'en') {
+  const tag = locale === 'es' ? 'es-ES' : 'en-US';
+  return (minor: number): string =>
+    new Intl.NumberFormat(tag, { style: 'currency', currency: 'EUR', useGrouping: true }).format(minor / 100);
+}
+
+describe('the F2 ceiling refusal paints its amounts with the hub money formatter (hub#2269)', () => {
+  it('hands formatMoney the cents the hub sends, for all three amounts', () => {
+    const sentence = reasonSentence(CATALOG, 'es', interpolatingIn('es'), OVER_CEILING, moneyEcho);
+
+    expect(sentence).toContain('MONEY(484000)');
+    expect(sentence).toContain('MONEY(300000)');
+    expect(sentence).toContain('MONEY(1000)');
+    expect(sentence, 'the hand-formatted decimal string still reaches the screen').not.toContain('4840.00');
+  });
+
+  // Both deployment orders: a hub older than hub#2269 sends only the strings, and the amount has
+  // to read the same. The string is EUR by contract (the AEAT ceiling), so it crosses the named
+  // frontier `eurosToCents` and then the same formatter.
+  it('converts the decimal string of an older hub at the named frontier, then formats it', () => {
+    const sentence = reasonSentence(CATALOG, 'es', interpolatingIn('es'), OVER_CEILING_OLDER_HUB, moneyEcho);
+
+    expect(sentence).toContain('MONEY(484000)');
+    expect(sentence).toContain('MONEY(300000)');
+    expect(sentence).toContain('MONEY(1000)');
+  });
+
+  it('prefers the integer cents over the string when both arrive', () => {
+    const sentence = reasonSentence(
+      CATALOG,
+      'en',
+      interpolatingIn('en'),
+      { ...OVER_CEILING, total: '1.00' },
+      moneyEcho,
+    );
+
+    expect(sentence).toContain('MONEY(484000)');
+    expect(sentence).not.toContain('MONEY(100)');
+  });
+
+  // The formatter already puts the currency: a «€» left in the sentence would read «4.840,00 € €».
+  it('leaves the currency symbol to the formatter, in both languages', () => {
+    type Evt = Record<string, Record<string, Record<string, Record<string, string>>>>;
+    for (const lang of ['en', 'es'] as const) {
+      const sentence = (CATALOG[lang] as Evt).ui.evt.reason.schema_simplified_over_ceiling;
+      expect(sentence, `${lang} hard-codes a currency symbol`).not.toContain('€');
+    }
+  });
+
+  // The whole way through, from the audit row a refused transmission writes: this is the cell the
+  // Events screen paints.
+  it('reads «4.840,00 €» in Spanish and «€4,840.00» in English on the audit line', () => {
+    const auditRow = {
+      message: 'XML no conforme al esquema de la AEAT; no se ha transmitido: …',
+      details: JSON.stringify({
+        message_key: 'verifactu.xsd_invalid',
+        validation_error: 'una factura simplificada F2 no puede pasar de 3.000,00 € … y suma 4840.00 €',
+        validation_error_reason: OVER_CEILING,
+      }),
+    };
+
+    const es = eventMessage(CATALOG, 'es', interpolatingIn('es'), auditRow, eurosIn('es'));
+    const en = eventMessage(CATALOG, 'en', interpolatingIn('en'), auditRow, eurosIn('en'));
+
+    expect(es).toContain('4.840,00 €');
+    expect(es).toContain('3.000,00 €');
+    expect(es).toContain('10,00 €');
+    expect(en).toContain('€4,840.00');
+    expect(en).toContain('€3,000.00');
+    for (const line of [es, en]) {
+      expect(line).not.toContain('4840.00');
+      expect(line).not.toMatch(/€\s*€/);
+      expect(line).not.toMatch(/\{[a-z_]+\}/);
+    }
+  });
+
+  // The settings card composes the same refusal on its own (the diagnostic's `detail_reason`).
+  it('formats the amounts when the refusal is nested in a diagnostic reason too', () => {
+    const sentence = certReasonSentence(
+      CATALOG,
+      'es',
+      interpolatingIn('es'),
+      {
+        cert_reason: {
+          code: 'sample_record_schema_invalid',
+          detail: 'una factura simplificada F2 no puede pasar de 3.000,00 €',
+          detail_reason: OVER_CEILING,
+        },
+      },
+      moneyEcho,
+    );
+
+    expect(sentence).toContain('MONEY(484000)');
+  });
+
+  // Only a decimal amount crosses into money: anything else turned into cents would be `NaN → 0`
+  // and the reader would see a confident «0,00 €» where the hub sent something it could not parse.
+  it('leaves a legacy value that is not a decimal amount as the hub sent it', () => {
+    const sentence = reasonSentence(
+      CATALOG,
+      'es',
+      interpolatingIn('es'),
+      { ...OVER_CEILING_OLDER_HUB, total: 'n/a' },
+      moneyEcho,
+    );
+
+    expect(sentence).toContain('n/a');
+    expect(sentence).not.toContain('MONEY(0)');
+    expect(sentence).toContain('MONEY(300000)');
+  });
+
+  // The minor unit is an integer by contract (ADR-0123): a fractional one is not cents, so the
+  // decimal string beside it wins.
+  it('falls back to the decimal string when the cents are not an integer', () => {
+    const sentence = reasonSentence(
+      CATALOG,
+      'es',
+      interpolatingIn('es'),
+      { ...OVER_CEILING, total_cents: 4840.5 },
+      moneyEcho,
+    );
+
+    expect(sentence).toContain('MONEY(484000)');
+    expect(sentence).not.toContain('MONEY(4840.5)');
+  });
+});

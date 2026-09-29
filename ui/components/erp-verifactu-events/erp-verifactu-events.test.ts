@@ -42,6 +42,9 @@ beforeEach(() => {
     get locale() {
       return locale;
     },
+    timezone: 'Europe/Madrid',
+    // hub#2269: names the minor units it was handed, so a test can say WHICH amount reached it.
+    formatMoney: (minor: number) => `MONEY(${minor})`,
     // The real `t`, so this test exercises the catalogue the module actually ships.
     t: (catalog: Record<string, unknown>, key: string, params?: Record<string, unknown>) => {
       const dict = (catalog[locale] ?? catalog.en ?? {}) as Record<string, unknown>;
@@ -160,6 +163,68 @@ describe('the missing-NIF verdict of the cell road stands on its own (hub#1531)'
     expect(cell).toBe(expected);
     expect(cell).not.toContain(ENGINE_CERT_MESSAGE);
     expect(cell).not.toBe(NIF_MISSING_ROW.message);
+    expect(cell).not.toMatch(/\{[a-z_]+\}/);
+  });
+});
+
+describe('«When» reads as a date and time, not as ISO-8601 (verifactu#141)', () => {
+  async function whenColumn(): Promise<Record<string, unknown>> {
+    const el = await mount();
+    const column = el.columns.find((c) => c.key === 'timestamp');
+    expect(column, 'the When column disappeared from the table').toBeDefined();
+    return column!;
+  }
+
+  it('paints the stored timestamp in the hub language and zone', async () => {
+    locale = 'es';
+    const column = await whenColumn();
+    const format = column.format as ((r: Record<string, unknown>) => string) | undefined;
+    expect(format, 'the When column carries no formatter: the screen still prints the ISO text')
+      .toBeInstanceOf(Function);
+    expect(format!(ROW)).toBe('29/08/2026, 10:00:00');
+    locale = 'en';
+    expect(format!(ROW)).toBe('08/29/2026, 10:00:00');
+  });
+
+  it('only changes the CELL: sorting and the date-range filter stay on the stored column', async () => {
+    const column = await whenColumn();
+    expect(column.sortable).toBe(true);
+    expect(column.filterable).toBe(true);
+    expect(column.filterType).toBe('daterange');
+    expect(column.render).toBeUndefined();
+  });
+});
+
+/** A transmission the schema refused: an F2 over the AEAT ceiling (hub#2269). */
+const OVER_CEILING_ROW = {
+  ...ROW,
+  id: 'e-3',
+  event_type: 'xsd_invalid',
+  severity: 'error',
+  message: 'XML no conforme al esquema de la AEAT; no se ha transmitido: … y suma 4840.00 €',
+  details: JSON.stringify({
+    message_key: 'verifactu.xsd_invalid',
+    validation_error: 'una factura simplificada F2 no puede pasar de 3.000,00 € … y suma 4840.00 €',
+    validation_error_reason: {
+      code: 'schema_simplified_over_ceiling',
+      total: '4840.00',
+      ceiling: '3000.00',
+      tolerance: '10.00',
+      total_cents: 484000,
+      ceiling_cents: 300000,
+      tolerance_cents: 1000,
+    },
+  }),
+};
+
+describe('the F2 ceiling refusal paints its amounts with the hub formatter (hub#2269)', () => {
+  it('hands erplora().formatMoney the three amounts instead of printing «4840.00 €»', async () => {
+    locale = 'es';
+    const cell = await messageCell(OVER_CEILING_ROW);
+    expect(cell).toContain('MONEY(484000)');
+    expect(cell).toContain('MONEY(300000)');
+    expect(cell).toContain('MONEY(1000)');
+    expect(cell).not.toContain('4840.00');
     expect(cell).not.toMatch(/\{[a-z_]+\}/);
   });
 });
