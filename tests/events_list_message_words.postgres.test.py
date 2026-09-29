@@ -219,6 +219,27 @@ def seed() -> None:
             },
         },
     )
+    # The F2 ceiling refusal as a hub with hub#2269 files it: the amounts go through the hub's
+    # money formatter, so the catalogue sentence no longer carries a fixed «€» (verifactu#149).
+    insert_event(
+        HUB_A,
+        "a-over-ceiling",
+        "xsd_invalid",
+        "XML no conforme al esquema de la AEAT; no se ha transmitido: supera el techo de F2",
+        {
+            "message_key": "verifactu.xsd_invalid",
+            "validation_error": "una factura simplificada F2 no puede pasar de 3.000,00 €",
+            "validation_error_reason": {
+                "code": "schema_simplified_over_ceiling",
+                "total": "4840.00",
+                "ceiling": "3000.00",
+                "tolerance": "10.00",
+                "total_cents": 484000,
+                "ceiling_cents": 300000,
+                "tolerance_cents": 1000,
+            },
+        },
+    )
     # A row edited by hand: `details` is not JSON at all.
     insert_event(
         HUB_A, "a-not-json", "diagnostic", "Evento escrito a mano", "not json {"
@@ -284,6 +305,36 @@ def test_placeholders_are_not_words():
     check("«{» matches nothing", [], search("{"))
 
 
+def test_a_reworded_sentence_is_searched_as_it_reads_now():
+    print(
+        "\n== 5. a reason reworded in `locales/*.json` is searched by its CURRENT sentence (verifactu#153) =="
+    )
+    words = words_of("a-over-ceiling")
+    for locale in ("es", "en"):
+        catalogue = json.loads((MODULE_DIR / "locales" / f"{locale}.json").read_text())
+        sentence = catalogue["ui"]["evt"]["reason"]["schema_simplified_over_ceiling"]
+        # The column leaves the `{placeholders}` out, exactly like the query does.
+        painted = re.sub(r"\{[a-z_]+\}", "", sentence)
+        check(
+            f"the {locale} sentence of schema_simplified_over_ceiling is carried as it reads today",
+            True,
+            painted in words,
+        )
+    # Every sentence is joined with « · »; the money sign lives in the formatted amount now, never
+    # in the catalogue, so a stale copy of the old wording is caught here as well.
+    check("no fixed «€» is left over from the old wording", False, "€" in words)
+    check(
+        "«simplified F2 invoice cannot go over» (en) finds the refusal",
+        ["a-over-ceiling"],
+        search("simplified F2 invoice cannot go over"),
+    )
+    check(
+        "«hay que emitir factura completa» (es) finds it too",
+        ["a-over-ceiling"],
+        search("hay que emitir factura completa"),
+    )
+
+
 def test_rows_the_catalogue_cannot_read_stay_listed():
     print(
         "\n== 4. a row the catalogue cannot read keeps the list alive and is found by its prose =="
@@ -322,6 +373,7 @@ def main() -> int:
         test_a_nested_reason_is_searchable()
         test_placeholders_are_not_words()
         test_rows_the_catalogue_cannot_read_stay_listed()
+        test_a_reworded_sentence_is_searched_as_it_reads_now()
     finally:
         psql(["-c", f"DROP DATABASE IF EXISTS {DB} WITH (FORCE)"])
 
