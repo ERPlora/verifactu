@@ -1,7 +1,7 @@
 {
   "id": "verifactu",
   "name": "VeriFactu",
-  "version": "1.5.54",
+  "version": "1.5.55",
   "fiscal_regime": {
     "country": "ES",
     "regime": "verifactu",
