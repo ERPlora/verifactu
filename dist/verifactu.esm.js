@@ -8184,7 +8184,7 @@ var ErpVerifactuRecovery = class extends i3 {
     alert.addEventListener(
       "ionAlertDidDismiss",
       (ev) => {
-        alert.remove();
+        setTimeout(() => alert.remove(), 0);
         void this.onRecoveryDismiss(kind, ev);
       },
       { once: true }
@@ -8582,7 +8582,7 @@ var ErpVerifactuSettings = class extends i3 {
     alert.addEventListener(
       "ionAlertDidDismiss",
       (ev) => {
-        alert.remove();
+        setTimeout(() => alert.remove(), 0);
         if (ev.detail?.role === "confirm") void this.switchEnvironment(live);
       },
       { once: true }
