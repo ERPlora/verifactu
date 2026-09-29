@@ -1,7 +1,7 @@
 {
   "id": "verifactu",
   "name": "VeriFactu",
-  "version": "1.5.54",
+  "version": "1.5.56",
   "fiscal_regime": {
     "country": "ES",
     "regime": "verifactu",
@@ -303,7 +303,8 @@
         "search": [
           "message",
           "event_type",
-          "type_label"
+          "type_label",
+          "message_words"
         ],
         "sort": [
           "id",
