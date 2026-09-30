@@ -10,6 +10,9 @@
 // shell does at boot; the screen's own `define()` then loses, like in the hub). Its `error`
 // property is added or removed per test, which is exactly what `dataTableShowsLoadError()` reads.
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
 
 class ShellTable extends HTMLElement {}
 const errors = new WeakMap<HTMLElement, unknown>();
@@ -352,11 +355,95 @@ describe('erp-verifactu-recovery — Retry on the notice when only the NIF or th
     await el.updateComplete;
     refusal = null;
     metaAnswers = null;
-    metaRetry(el)?.click();
+    const reads = metaReads();
+    metaRetry(el)!.click();
+    await vi.waitFor(() => {
+      if (metaReads() - reads < 2) throw new Error('Retry has not read yet');
+    });
     await settle(el);
     expect(noticesWith(el, 'The chain has a broken link at record 12.')).toHaveLength(1);
     expect(commandCalls).toEqual(['verifactu.chain.validate']);
   });
+
+  it('Retry does not take down the confirmation of an action that went through', async () => {
+    const el = await mountMetaFailed();
+    (el as unknown as { nif: string }).nif = 'B12345678';
+    // The hub accepts the validation and the read that follows it fails again: both are on screen.
+    await (el as unknown as { validate(): Promise<void> }).validate();
+    await el.updateComplete;
+    expect(noticesWith(el, 'ui.recDone')).toHaveLength(1);
+    metaAnswers = null;
+    metaRetry(el)!.click();
+    await vi.waitFor(async () => {
+      await el.updateComplete;
+      if (metaNotice(el)) throw new Error('the notice is still there');
+    });
+    expect(noticesWith(el, 'ui.recDone')).toHaveLength(1);
+    expect(commandCalls).toEqual(['verifactu.chain.validate']);
+  });
+
+  it('with the screen armed (NIF typed, recovery hash filled in) Retry sends nothing and asks for no confirmation', async () => {
+    // Every action of the page could fire from this state. Retry is none of them: it reads.
+    const el = await mountMetaFailed();
+    const armed = el as unknown as { nif: string; manualHash: string; manualInvoice: string; manualDate: string };
+    armed.nif = 'B12345678';
+    armed.manualHash = 'a'.repeat(64);
+    armed.manualInvoice = '2026/001';
+    armed.manualDate = '2026-09-30';
+    await el.updateComplete;
+    const reads = metaReads();
+    // Once while the reads still fail, once when they answer: neither path does anything else.
+    metaRetry(el)!.click();
+    await vi.waitFor(() => {
+      if (metaReads() - reads < 2) throw new Error('Retry has not read yet');
+    });
+    await settle(el);
+    metaAnswers = null;
+    metaRetry(el)!.click();
+    await vi.waitFor(async () => {
+      await el.updateComplete;
+      if (metaNotice(el)) throw new Error('the notice is still there');
+    });
+    await settle(el);
+    expect(commandCalls).toEqual([]);
+    expect(document.querySelector('ion-alert'), 'no recovery is put up for confirmation').toBeNull();
+    expect(queryCalls.filter((n) => !META.includes(n) && n !== 'verifactu.aeat.records.list')).toEqual([]);
+  });
+
+  it('a NIF typed by hand is not replaced by the one Retry reads', async () => {
+    const el = await mountMetaFailed();
+    (el as unknown as { nif: string }).nif = 'A11111111';
+    metaAnswers = null;
+    only = { 'verifactu.config.get': { returns: [{ issuer_nif: 'B12345678' }] } };
+    metaRetry(el)!.click();
+    await vi.waitFor(async () => {
+      await el.updateComplete;
+      if (metaNotice(el)) throw new Error('the notice is still there');
+    });
+    const nif = el.shadowRoot.querySelector('ion-input') as HTMLElement & { value?: string };
+    expect(nif.value).toBe('A11111111');
+  });
+});
+
+// The component tests stand `t()` in for «returns the key», which leaves them blind to a sentence
+// missing from a catalog: the key would come out the same in the test and raw on the screen.
+describe('erp-verifactu-recovery — what the notice and the chain box say exists in both languages (verifactu#157)', () => {
+  const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
+  const ui = (locale: string): Record<string, unknown> =>
+    (JSON.parse(readFileSync(join(root, 'locales', `${locale}.json`), 'utf8')) as { ui: Record<string, unknown> }).ui;
+  const screen = readFileSync(join(root, 'ui/components/erp-verifactu-recovery/erp-verifactu-recovery.ts'), 'utf8');
+
+  it.each(['recChainUnchecked', 'recErrLoadMeta', 'recRetryMeta', 'recRetryingMeta'])(
+    'ui.%s: asked for by the screen, written in en and translated in es',
+    (key) => {
+      expect(screen, 'a key nobody paints proves nothing').toContain(`'ui.${key}'`);
+      const en = ui('en')[key];
+      const es = ui('es')[key];
+      expect(typeof en === 'string' && en.trim() !== '', 'en').toBe(true);
+      expect(typeof es === 'string' && es.trim() !== '', 'es').toBe(true);
+      expect(es, 'es left in English').not.toBe(en);
+    },
+  );
 });
 
 describe('erp-verifactu-recovery — the chain box says it could not be checked (verifactu#157)', () => {
