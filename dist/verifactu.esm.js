@@ -2746,17 +2746,21 @@ var es_default = {
   widgets: {
     "verifactu.pending": {
       title: "Pendientes VeriFactu",
-      label: "Registros pendientes de env\xEDo a la AEAT"
+      label: "Registros pendientes de env\xEDo a la AEAT",
+      category: "Cumplimiento"
     },
     "verifactu.contingency": {
       title: "Cola de contingencia",
-      label: "En cola de contingencia"
+      label: "En cola de contingencia",
+      category: "Cumplimiento"
     },
     "verifactu.by_status": {
-      title: "Registros por estado"
+      title: "Registros por estado",
+      category: "Cumplimiento"
     },
     "verifactu.events": {
-      title: "Eventos AEAT recientes"
+      title: "Eventos AEAT recientes",
+      category: "Cumplimiento"
     }
   },
   setup: {

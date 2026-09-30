@@ -684,7 +684,7 @@
     "verifactu.pending": {
       "title": "VeriFactu pending",
       "icon": "shield-checkmark-outline",
-      "category": "Cumplimiento",
+      "category": "Compliance",
       "size": "sm",
       "permission": "verifactu.view_verifactu",
       "sectors": [
@@ -713,7 +713,7 @@
     "verifactu.contingency": {
       "title": "Contingency queue",
       "icon": "warning-outline",
-      "category": "Cumplimiento",
+      "category": "Compliance",
       "size": "sm",
       "permission": "verifactu.view_verifactu",
       "sectors": [
@@ -743,7 +743,7 @@
     "verifactu.by_status": {
       "title": "Records by status",
       "icon": "stats-chart-outline",
-      "category": "Cumplimiento",
+      "category": "Compliance",
       "size": "md",
       "permission": "verifactu.view_verifactu",
       "sectors": [
@@ -771,7 +771,7 @@
     "verifactu.events": {
       "title": "Recent AEAT events",
       "icon": "time-outline",
-      "category": "Cumplimiento",
+      "category": "Compliance",
       "size": "md",
       "permission": "verifactu.view_verifactu",
       "sectors": [
