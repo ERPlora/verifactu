@@ -90,6 +90,12 @@ This is **our** traceability, not the regulatory event registry — see [concept
 
 The screen for the rare, serious situations.
 
+When it opens it reads the issuer NIF (from the configuration) and the last chain validation. If
+either cannot be read, a red notice says why and offers **Retry**, which reads those two again and
+nothing else — it validates, queries, recovers and sends nothing. Meanwhile the chain box says
+**Could not be checked** rather than «Not validated yet». Without the NIF the actions stay disabled
+until it arrives or is typed in.
+
 ### Validate the chain
 
 Checks the integrity of the hash chain end to end and writes the result as an event. Requires
