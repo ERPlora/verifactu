@@ -6,6 +6,8 @@
 // top-level import is paid once while the file is collected, outside any test timeout.
 import { beforeEach, describe, expect, it } from 'vitest';
 import { ErpVerifactuRecovery } from './erp-verifactu-recovery';
+import enLocale from '../../../locales/en.json';
+import esLocale from '../../../locales/es.json';
 
 /** The component renders one NIF input plus the three manual-recovery ones. */
 const EXPECTED_INPUTS = 4;
@@ -138,5 +140,87 @@ describe('VeriFactu recovery safety', () => {
     expect(openAlert(), 'no confirmation for a hash that cannot be used').toBeNull();
     expect(el.shadowRoot.querySelector('ion-alert')).toBeNull();
     expect(commands).toEqual([]);
+  });
+});
+
+// verifactu#160 — while the NIF and the chain status were still being read, the box already said
+// «Not validated yet» and the list «No AEAT data», as if both had been looked at and were empty:
+// the list was not even requested until those two reads were over. What is not read yet says so.
+describe('VeriFactu recovery first read', () => {
+  type Held = { resolve: (v: unknown) => void; reject: (e: unknown) => void };
+  const held: Record<string, Held> = {};
+  let pageCalls = 0;
+
+  beforeEach(() => {
+    for (const k of Object.keys(held)) delete held[k];
+    pageCalls = 0;
+    const base = (globalThis as Record<string, unknown>).erplora as Record<string, unknown>;
+    (globalThis as Record<string, unknown>).erplora = {
+      ...base,
+      // Slow hub: the config and the chain status answer only when the test says so.
+      query: (name: string) => new Promise((resolve, reject) => { held[name] = { resolve, reject }; }),
+      queryPage: () => {
+        pageCalls++;
+        return new Promise(() => {});
+      },
+    };
+  });
+
+  const chainBox = (el: HTMLElement & { shadowRoot: ShadowRoot }) =>
+    el.shadowRoot.querySelector('[data-testid="verifactu-recovery-chain-status"]')!;
+  const table = (el: HTMLElement & { shadowRoot: ShadowRoot }) =>
+    el.shadowRoot.querySelector('ok-data-table') as HTMLElement & { emptyMessage?: string };
+  const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+  it('says the chain is being checked, not «not validated yet», until its status is read', async () => {
+    const el = await mount();
+    expect(chainBox(el).getAttribute('heading')).toBe('ui.recChainChecking');
+    expect(chainBox(el).getAttribute('tone')).toBe('neutral');
+
+    held['verifactu.config.get'].resolve([{ issuer_nif: 'B12345678' }]);
+    await settle();
+    expect(chainBox(el).getAttribute('heading'), 'the status itself is still unread').toBe('ui.recChainChecking');
+
+    held['verifactu.chain.status'].resolve([]);
+    await settle();
+    await (el as unknown as { updateComplete: Promise<unknown> }).updateComplete;
+    expect(chainBox(el).getAttribute('heading'), 'read, and nothing validated yet').toBe('ui.recChainUnknown');
+  });
+
+  it('the «checking» label exists in English and is translated into Spanish', () => {
+    const en = (enLocale as { ui: Record<string, string> }).ui.recChainChecking;
+    const es = (esLocale as { ui: Record<string, string> }).ui.recChainChecking;
+    expect(en).toBeTruthy();
+    expect(es).toBeTruthy();
+    expect(es).not.toBe(en);
+  });
+
+  it('a chain status that fails to read ends the wait with «could not be checked»', async () => {
+    const el = await mount();
+    held['verifactu.config.get'].resolve([{ issuer_nif: 'B12345678' }]);
+    await settle();
+    held['verifactu.chain.status'].reject(new Error('The hub is not responding.'));
+    await settle();
+    await (el as unknown as { updateComplete: Promise<unknown> }).updateComplete;
+    expect(chainBox(el).getAttribute('heading')).toBe('ui.recChainUnchecked');
+    expect(chainBox(el).getAttribute('tone')).toBe('warning');
+  });
+
+  it('requests the AEAT list at the same time as the NIF and the chain status, so it says «Loading…»', async () => {
+    const el = await mount();
+    expect(held['verifactu.config.get'], 'the config is being read').toBeTruthy();
+    expect(pageCalls, 'the list is not waiting behind the other two reads').toBe(1);
+    expect(table(el).emptyMessage).toBe('ui.loading');
+  });
+});
+
+// verifactu#158 — «Recover chain from the AEAT» came out bigger than its two neighbours in the row.
+describe('VeriFactu recovery chain toolbar', () => {
+  it('draws the three chain actions at the same size', async () => {
+    const el = await mount();
+    const buttons = [...el.shadowRoot.querySelectorAll('.toolbar ion-button')];
+    expect(buttons).toHaveLength(3);
+    expect(buttons.map((b) => b.getAttribute('size'))).toEqual(['small', 'small', 'small']);
+    expect(buttons[2].getAttribute('color'), 'the risky one keeps its warning colour').toBe('warning');
   });
 });

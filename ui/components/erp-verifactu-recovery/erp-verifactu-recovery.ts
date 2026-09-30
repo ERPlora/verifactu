@@ -81,6 +81,9 @@ export class ErpVerifactuRecovery extends LitElement {
   /** The chain status could not be read: the box says so instead of «not validated yet» (verifactu#157). */
   @state() statusUnread = false;
 
+  /** The chain status has not been read yet: the box says it is being checked, no verdict (verifactu#160). */
+  @state() statusLoading = true;
+
   /** A Retry of the NIF and the chain status is in flight. */
   @state() metaLoading = false;
 
@@ -119,8 +122,9 @@ export class ErpVerifactuRecovery extends LitElement {
       sort: 'query_timestamp',
       dir: 'desc',
     });
-    await this.loadMeta();
-    await this.ctrl.load();
+    // The list does not wait behind the NIF and the chain status (verifactu#160): its own «Loading…»
+    // covers the gap instead of «No AEAT data» painted before anything was asked.
+    await Promise.all([this.loadMeta(), this.ctrl.load()]);
   }
 
   disconnectedCallback() {
@@ -157,6 +161,8 @@ export class ErpVerifactuRecovery extends LitElement {
       this.status = null;
       this.statusUnread = true;
       reasons.push(reason(e));
+    } finally {
+      this.statusLoading = false;
     }
     // Both down for the same reason (the hub is not answering): said once.
     this.metaError = [...new Set(reasons)].join(' ');
@@ -279,6 +285,7 @@ export class ErpVerifactuRecovery extends LitElement {
   }
 
   private statusLabel(t: (k: string) => string): string {
+    if (this.statusLoading) return t('ui.recChainChecking');
     if (this.statusUnread) return t('ui.recChainUnchecked');
     if (!this.status?.event_type) return t('ui.recChainUnknown');
     return this.status.event_type === 'chain_validated' ? t('ui.recChainValid') : t('ui.recChainBroken');
@@ -323,7 +330,7 @@ export class ErpVerifactuRecovery extends LitElement {
       <div class="toolbar">
         <ion-button size="small" ?disabled=${blocked} @click=${() => this.validate()}>${this.busy === 'validate' ? t('ui.recValidating') : t('ui.recValidate')}</ion-button>
         <ion-button size="small" fill="outline" ?disabled=${blocked} @click=${() => this.consult()}>${this.busy === 'consult' ? t('ui.recConsulting') : t('ui.recConsultAeat')}</ion-button>
-        <ion-button fill="outline" color="warning" ?disabled=${blocked} @click=${() => this.requestRecovery('aeat')}>${this.busy === 'recoverAeat' ? t('ui.recRecovering') : t('ui.recRecoverFromAeat')}</ion-button>
+        <ion-button size="small" fill="outline" color="warning" ?disabled=${blocked} @click=${() => this.requestRecovery('aeat')}>${this.busy === 'recoverAeat' ? t('ui.recRecovering') : t('ui.recRecoverFromAeat')}</ion-button>
       </div>
 
       <h3>${t('ui.recAeatTitle')}</h3>

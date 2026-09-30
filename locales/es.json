@@ -312,6 +312,7 @@
     "recChainBroken": "Cadena de huellas ROTA ✗",
     "recChainUnknown": "Sin validar todavía",
     "recChainUnchecked": "No se ha podido comprobar",
+    "recChainChecking": "Comprobando la cadena…",
     "recErrLoadMeta": "No se pudo leer el NIF del emisor o el estado de la cadena",
     "recRetryMeta": "Reintentar",
     "recRetryingMeta": "Reintentando…",
