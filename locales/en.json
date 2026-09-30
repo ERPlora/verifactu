@@ -311,6 +311,7 @@
     "recChainBroken": "Fingerprint chain BROKEN ✗",
     "recChainUnknown": "Not validated yet",
     "recChainUnchecked": "Could not be checked",
+    "recChainChecking": "Checking the chain…",
     "recErrLoadMeta": "Could not read the issuer NIF or the chain status",
     "recRetryMeta": "Retry",
     "recRetryingMeta": "Retrying…",
