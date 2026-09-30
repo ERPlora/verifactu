@@ -2615,6 +2615,7 @@ var es_default = {
     recChainBroken: "Cadena de huellas ROTA \u2717",
     recChainUnknown: "Sin validar todav\xEDa",
     recChainUnchecked: "No se ha podido comprobar",
+    recChainChecking: "Comprobando la cadena\u2026",
     recErrLoadMeta: "No se pudo leer el NIF del emisor o el estado de la cadena",
     recRetryMeta: "Reintentar",
     recRetryingMeta: "Reintentando\u2026",
@@ -3157,6 +3158,7 @@ var en_default = {
     recChainBroken: "Fingerprint chain BROKEN \u2717",
     recChainUnknown: "Not validated yet",
     recChainUnchecked: "Could not be checked",
+    recChainChecking: "Checking the chain\u2026",
     recErrLoadMeta: "Could not read the issuer NIF or the chain status",
     recRetryMeta: "Retry",
     recRetryingMeta: "Retrying\u2026",
@@ -8181,6 +8183,7 @@ var ErpVerifactuRecovery = class extends i3 {
     this.error = "";
     this.metaError = "";
     this.statusUnread = false;
+    this.statusLoading = true;
     this.metaLoading = false;
     this.done = "";
     this.onLocaleChange = () => this.requestUpdate();
@@ -8227,8 +8230,7 @@ var ErpVerifactuRecovery = class extends i3 {
       sort: "query_timestamp",
       dir: "desc"
     });
-    await this.loadMeta();
-    await this.ctrl.load();
+    await Promise.all([this.loadMeta(), this.ctrl.load()]);
   }
   disconnectedCallback() {
     window.removeEventListener("erplora:locale-changed", this.onLocaleChange);
@@ -8257,6 +8259,8 @@ var ErpVerifactuRecovery = class extends i3 {
       this.status = null;
       this.statusUnread = true;
       reasons.push(reason(e6));
+    } finally {
+      this.statusLoading = false;
     }
     this.metaError = [...new Set(reasons)].join(" ");
   }
@@ -8357,6 +8361,7 @@ var ErpVerifactuRecovery = class extends i3 {
     return this.status.event_type === "chain_validated" ? "success" : "danger";
   }
   statusLabel(t5) {
+    if (this.statusLoading) return t5("ui.recChainChecking");
     if (this.statusUnread) return t5("ui.recChainUnchecked");
     if (!this.status?.event_type) return t5("ui.recChainUnknown");
     return this.status.event_type === "chain_validated" ? t5("ui.recChainValid") : t5("ui.recChainBroken");
@@ -8398,7 +8403,7 @@ var ErpVerifactuRecovery = class extends i3 {
       <div class="toolbar">
         <ion-button size="small" ?disabled=${blocked} @click=${() => this.validate()}>${this.busy === "validate" ? t5("ui.recValidating") : t5("ui.recValidate")}</ion-button>
         <ion-button size="small" fill="outline" ?disabled=${blocked} @click=${() => this.consult()}>${this.busy === "consult" ? t5("ui.recConsulting") : t5("ui.recConsultAeat")}</ion-button>
-        <ion-button fill="outline" color="warning" ?disabled=${blocked} @click=${() => this.requestRecovery("aeat")}>${this.busy === "recoverAeat" ? t5("ui.recRecovering") : t5("ui.recRecoverFromAeat")}</ion-button>
+        <ion-button size="small" fill="outline" color="warning" ?disabled=${blocked} @click=${() => this.requestRecovery("aeat")}>${this.busy === "recoverAeat" ? t5("ui.recRecovering") : t5("ui.recRecoverFromAeat")}</ion-button>
       </div>
 
       <h3>${t5("ui.recAeatTitle")}</h3>
@@ -8479,6 +8484,9 @@ __decorateClass([
 __decorateClass([
   r5()
 ], ErpVerifactuRecovery.prototype, "statusUnread", 2);
+__decorateClass([
+  r5()
+], ErpVerifactuRecovery.prototype, "statusLoading", 2);
 __decorateClass([
   r5()
 ], ErpVerifactuRecovery.prototype, "metaLoading", 2);
