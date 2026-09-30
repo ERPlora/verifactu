@@ -54,7 +54,7 @@ export class ErpVerifactuRecovery extends LitElement {
     .card { background: var(--ion-card-background, #fff); border:1px solid var(--ion-border-color, #e6e2d8); border-radius: var(--ok-radius, 12px); overflow:hidden; max-width:40rem; }
     .toolbar { display:flex; gap:.5rem; align-items:center; flex-wrap:wrap; margin:.5rem 0; }
     .actions { display:flex; justify-content:flex-end; margin:.85rem 0; max-width:40rem; }
-    .toolbar ion-button, .actions ion-button { min-height:44px; margin:.15rem 0; }
+    .toolbar ion-button, .actions ion-button, ion-button.meta-retry { min-height:44px; margin:.15rem 0; }
     ion-item { --min-height:52px; }
     ion-input { min-height:44px; }
     ok-inline-feedback { display:block; margin-bottom:.5rem; max-width:40rem; }
@@ -77,6 +77,12 @@ export class ErpVerifactuRecovery extends LitElement {
 
   /** Why the config or the chain status could not be read (not what an action was refused with). */
   @state() metaError = '';
+
+  /** The chain status could not be read: the box says so instead of «not validated yet» (verifactu#157). */
+  @state() statusUnread = false;
+
+  /** A Retry of the NIF and the chain status is in flight. */
+  @state() metaLoading = false;
 
   @state() done = '';
 
@@ -122,22 +128,48 @@ export class ErpVerifactuRecovery extends LitElement {
     super.disconnectedCallback();
   }
 
-  /** NIF por defecto (config) + último estado de validación de la cadena. */
+  /**
+   * Default NIF (config) + last validation of the chain. Only READS: it validates, consults,
+   * recovers and sends nothing. Each is read on its own, so one failing does not hide the other.
+   */
   private async loadMeta() {
     // Its own notice, apart from what an ACTION was refused with: a reload that works takes this
-    // one down (Retry, pm#533) and leaves the other where it was.
-    this.metaError = '';
+    // one down (Retry, pm#533) and leaves the other where it was. It stays up while the reload is
+    // in flight, so its Retry does not vanish under the finger.
+    const reasons: string[] = [];
+    const reason = (e: unknown): string =>
+      e instanceof Error && e.message ? e.message : erplora().t(CATALOG, 'ui.recErrLoadMeta');
     try {
-      // config.get es una query plana → ARRAY de filas; desempaquetamos la 1ª.
+      // config.get is a flat query → an ARRAY of rows; take the first.
       type Cfg = { issuer_nif?: string; software_nif?: string };
       const cfgRows = await erplora().query<Cfg[] | Cfg | null>('verifactu.config.get');
       const cfg = Array.isArray(cfgRows) ? cfgRows[0] : cfgRows;
       const nif = cfg?.issuer_nif || cfg?.software_nif;
       if (nif && !this.nif) this.nif = nif;
+    } catch (e) {
+      reasons.push(reason(e));
+    }
+    try {
       const st = await erplora().query<ChainStatus[] | ChainStatus | null>('verifactu.chain.status');
       this.status = Array.isArray(st) ? (st[0] ?? null) : (st ?? null);
+      this.statusUnread = false;
     } catch (e) {
-      this.metaError = e instanceof Error ? e.message : '';
+      this.status = null;
+      this.statusUnread = true;
+      reasons.push(reason(e));
+    }
+    // Both down for the same reason (the hub is not answering): said once.
+    this.metaError = [...new Set(reasons)].join(' ');
+  }
+
+  /** Retry on the page notice (verifactu#157): reads the NIF and the chain status again, nothing else. */
+  private async retryMeta() {
+    if (this.metaLoading) return;
+    this.metaLoading = true;
+    try {
+      await this.loadMeta();
+    } finally {
+      this.metaLoading = false;
     }
   }
 
@@ -241,11 +273,13 @@ export class ErpVerifactuRecovery extends LitElement {
   }
 
   private statusTone(): string {
+    if (this.statusUnread) return 'warning';
     if (!this.status?.event_type) return 'neutral';
     return this.status.event_type === 'chain_validated' ? 'success' : 'danger';
   }
 
   private statusLabel(t: (k: string) => string): string {
+    if (this.statusUnread) return t('ui.recChainUnchecked');
     if (!this.status?.event_type) return t('ui.recChainUnknown');
     return this.status.event_type === 'chain_validated' ? t('ui.recChainValid') : t('ui.recChainBroken');
   }
@@ -259,7 +293,17 @@ export class ErpVerifactuRecovery extends LitElement {
     return html`
       <h2>${t('ui.recoveryTitle')}</h2>
       ${this.error ? html`<ok-inline-feedback tone="danger" icon="alert-circle-outline">${this.error}</ok-inline-feedback>` : nothing}
-      ${metaError ? html`<ok-inline-feedback data-testid="verifactu-recovery-meta-error" tone="danger" icon="alert-circle-outline">${metaError}</ok-inline-feedback>` : nothing}
+      ${metaError
+        ? html`<ok-inline-feedback data-testid="verifactu-recovery-meta-error" tone="danger" icon="alert-circle-outline">${metaError}<ion-button
+            slot="actions"
+            class="meta-retry"
+            data-testid="verifactu-recovery-meta-retry"
+            size="small"
+            fill="outline"
+            ?disabled=${this.metaLoading}
+            @click=${() => this.retryMeta()}
+          >${this.metaLoading ? t('ui.recRetryingMeta') : t('ui.recRetryMeta')}</ion-button></ok-inline-feedback>`
+        : nothing}
       ${this.done ? html`<ok-inline-feedback tone="success" icon="checkmark-circle-outline">${this.done}</ok-inline-feedback>` : nothing}
 
       <div class="card">
@@ -271,7 +315,7 @@ export class ErpVerifactuRecovery extends LitElement {
       </div>
 
       <h3>${t('ui.recChainStatus')}</h3>
-      <ok-inline-feedback tone=${this.statusTone()} heading=${this.statusLabel(t)} icon="shield-checkmark-outline">${this.status?.message ?? ''}</ok-inline-feedback>
+      <ok-inline-feedback data-testid="verifactu-recovery-chain-status" tone=${this.statusTone()} heading=${this.statusLabel(t)} icon="shield-checkmark-outline">${this.status?.message ?? ''}</ok-inline-feedback>
       <!-- verifactu#53: the verdict is about the HASH CHAIN, not about the amounts. A QA report
            quoted «Cadena íntegra: 27 registro(s) verificados» as proof that records declaring an
            impossible quota were fine. The check has to say what it covers. -->

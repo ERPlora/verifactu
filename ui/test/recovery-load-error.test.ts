@@ -39,6 +39,8 @@ let refusal: string | null = null;
 let pageCalls = 0;
 let queryCalls: string[] = [];
 let commandCalls: string[] = [];
+/** Per-query answers that win over the flags above: what each read throws, or returns. */
+let only: Record<string, { throws?: unknown; returns?: unknown }> = {};
 
 beforeAll(async () => {
   customElements.define('ok-data-table', ShellTable);
@@ -53,8 +55,12 @@ beforeEach(() => {
   pageCalls = 0;
   queryCalls = [];
   commandCalls = [];
+  only = {};
   const answer = async (name: string) => {
     queryCalls.push(name);
+    const o = only[name];
+    if (o && 'throws' in o) throw o.throws;
+    if (o && 'returns' in o) return o.returns;
     if (!(metaAnswers ?? hubAnswers)) throw new Error('The hub is not responding.');
     return [];
   };
@@ -220,5 +226,222 @@ describe('erp-verifactu-recovery — the config and the chain status load with t
     await retry(el, table);
     expect(noticesWith(el, 'The chain has a broken link at record 12.')).toHaveLength(1);
     expect(commandCalls, 'Retry validated nothing by itself').toEqual(['verifactu.chain.validate']);
+  });
+});
+
+// verifactu#157 — when ONLY the NIF or the chain status cannot be read, the list is fine and has no
+// Retry to offer: the page notice carries its own. It only READS: nothing is validated, consulted,
+// recovered or sent to the AEAT by it.
+const META = ['verifactu.config.get', 'verifactu.chain.status'];
+const metaReads = (): number => queryCalls.filter((n) => META.includes(n)).length;
+
+function metaNotice(el: Screen): HTMLElement | null {
+  return el.shadowRoot.querySelector<HTMLElement>('[data-testid="verifactu-recovery-meta-error"]');
+}
+function metaRetry(el: Screen): HTMLElement | null {
+  return el.shadowRoot.querySelector<HTMLElement>('[data-testid="verifactu-recovery-meta-retry"]');
+}
+function chainBox(el: Screen): HTMLElement {
+  const box = el.shadowRoot.querySelector<HTMLElement>('[data-testid="verifactu-recovery-chain-status"]');
+  expect(box, 'the chain status box is painted').toBeTruthy();
+  return box!;
+}
+async function mountMetaFailed(): Promise<Screen> {
+  shellTableKnowsErrors(true);
+  hubAnswers = true;
+  metaAnswers = false;
+  const { el } = await mountFailed('verifactu-recovery-table');
+  return el;
+}
+async function settle(el: Screen): Promise<void> {
+  await new Promise((r) => setTimeout(r, 0));
+  await el.updateComplete;
+}
+
+describe('erp-verifactu-recovery — Retry on the notice when only the NIF or the chain status fail (verifactu#157)', () => {
+  it('the notice offers Retry, inside the notice', async () => {
+    const el = await mountMetaFailed();
+    const button = metaRetry(el);
+    expect(button, 'nothing lets the person try again but reloading the page').toBeTruthy();
+    expect(button!.closest('[data-testid="verifactu-recovery-meta-error"]')).toBe(metaNotice(el));
+    expect(button!.getAttribute('slot')).toBe('actions');
+    expect(button!.textContent).toContain('ui.recRetryMeta');
+  });
+
+  it('Retry reads the NIF and the chain status again; once they answer the notice goes and the NIF is filled', async () => {
+    const el = await mountMetaFailed();
+    const reads = metaReads();
+    const pages = pageCalls;
+    metaAnswers = null;
+    only = {
+      'verifactu.config.get': { returns: [{ issuer_nif: 'B12345678' }] },
+      'verifactu.chain.status': { returns: [{ event_type: 'chain_validated', message: '27 records' }] },
+    };
+    metaRetry(el)!.click();
+    await vi.waitFor(async () => {
+      await el.updateComplete;
+      if (metaNotice(el)) throw new Error('the notice is still there');
+    });
+    expect(metaReads() - reads).toBe(2);
+    expect(pageCalls, 'the list loaded fine: it is not asked again').toBe(pages);
+    expect(noticesWith(el, REASON)).toEqual([]);
+    expect(chainBox(el).getAttribute('heading')).toBe('ui.recChainValid');
+    const nif = el.shadowRoot.querySelector('ion-input') as HTMLElement & { value?: string };
+    expect(nif.value).toBe('B12345678');
+  });
+
+  it('Retry only reads: nothing is validated, consulted, recovered or sent to the AEAT', async () => {
+    const el = await mountMetaFailed();
+    metaRetry(el)!.click();
+    await settle(el);
+    metaAnswers = null;
+    metaRetry(el)!.click();
+    await settle(el);
+    expect(commandCalls).toEqual([]);
+    expect(queryCalls.filter((n) => !META.includes(n) && n !== 'verifactu.aeat.records.list')).toEqual([]);
+  });
+
+  it('a Retry that fails again leaves the reason once, with Retry still there', async () => {
+    const el = await mountMetaFailed();
+    const reads = metaReads();
+    metaRetry(el)!.click();
+    await vi.waitFor(() => {
+      if (metaReads() === reads) throw new Error('Retry did not read again');
+    });
+    await settle(el);
+    expect(noticesWith(el, REASON)).toEqual(['verifactu-recovery-meta-error']);
+    expect(metaRetry(el)).toBeTruthy();
+    expect(metaRetry(el)!.hasAttribute('disabled'), 'it can be tried again').toBe(false);
+    expect(metaRetry(el)!.textContent).toContain('ui.recRetryMeta');
+  });
+
+  it('the button is a full touch target, like the toolbar buttons of the screen', async () => {
+    const el = await mountMetaFailed();
+    expect(getComputedStyle(metaRetry(el)!).minHeight).toBe('44px');
+  });
+
+  it('both failing for the same reason say it once inside the notice', async () => {
+    const el = await mountMetaFailed();
+    expect(metaNotice(el)!.textContent!.split(REASON)).toHaveLength(2);
+  });
+
+  it('while it reads again the button is disabled and says so, and a second tap does not read twice', async () => {
+    const el = await mountMetaFailed();
+    let release!: () => void;
+    const gate = new Promise<void>((r) => { release = r; });
+    only = { 'verifactu.config.get': { returns: gate.then(() => [{ issuer_nif: 'B1' }]) } };
+    const reads = metaReads();
+    metaRetry(el)!.click();
+    await el.updateComplete;
+    const button = metaRetry(el)!;
+    expect(button.hasAttribute('disabled')).toBe(true);
+    expect(button.textContent).toContain('ui.recRetryingMeta');
+    button.click();
+    release();
+    await settle(el);
+    await settle(el);
+    expect(metaReads() - reads, 'one Retry, one pair of reads').toBe(2);
+  });
+
+  it('Retry does not take down what an action was refused with', async () => {
+    const el = await mountMetaFailed();
+    // The NIF is typed by hand so the actions are enabled with the config unreadable.
+    (el as unknown as { nif: string }).nif = 'B12345678';
+    refusal = 'The chain has a broken link at record 12.';
+    await (el as unknown as { validate(): Promise<void> }).validate();
+    await el.updateComplete;
+    refusal = null;
+    metaAnswers = null;
+    metaRetry(el)?.click();
+    await settle(el);
+    expect(noticesWith(el, 'The chain has a broken link at record 12.')).toHaveLength(1);
+    expect(commandCalls).toEqual(['verifactu.chain.validate']);
+  });
+});
+
+describe('erp-verifactu-recovery — the chain box says it could not be checked (verifactu#157)', () => {
+  it('when the chain status cannot be read, it does not say «not validated yet»', async () => {
+    const el = await mountMetaFailed();
+    expect(chainBox(el).getAttribute('heading')).toBe('ui.recChainUnchecked');
+    expect(chainBox(el).getAttribute('tone')).toBe('warning');
+  });
+
+  it('when it was read and nobody has validated the chain, it says «not validated yet»', async () => {
+    shellTableKnowsErrors(true);
+    hubAnswers = true;
+    const { el } = await mountFailed('verifactu-recovery-table');
+    expect(chainBox(el).getAttribute('heading')).toBe('ui.recChainUnknown');
+    expect(chainBox(el).getAttribute('tone')).toBe('neutral');
+  });
+
+  it('the NIF failing does not hide the chain status: each is read on its own', async () => {
+    shellTableKnowsErrors(true);
+    hubAnswers = true;
+    only = {
+      'verifactu.config.get': { throws: new Error(REASON) },
+      'verifactu.chain.status': { returns: [{ event_type: 'chain_broken', message: 'record 12' }] },
+    };
+    const { el } = await mountFailed('verifactu-recovery-table');
+    expect(chainBox(el).getAttribute('heading')).toBe('ui.recChainBroken');
+    expect(noticesWith(el, REASON)).toEqual(['verifactu-recovery-meta-error']);
+  });
+
+  it('the chain status failing does not lose the NIF', async () => {
+    shellTableKnowsErrors(true);
+    hubAnswers = true;
+    only = {
+      'verifactu.config.get': { returns: [{ issuer_nif: 'B12345678' }] },
+      'verifactu.chain.status': { throws: new Error(REASON) },
+    };
+    const { el } = await mountFailed('verifactu-recovery-table');
+    const nif = el.shadowRoot.querySelector('ion-input') as HTMLElement & { value?: string };
+    expect(nif.value).toBe('B12345678');
+    expect(chainBox(el).getAttribute('heading')).toBe('ui.recChainUnchecked');
+    expect(noticesWith(el, REASON)).toEqual(['verifactu-recovery-meta-error']);
+  });
+
+  it('a chain status that stops answering on Retry does not keep the last message under «could not be checked»', async () => {
+    shellTableKnowsErrors(true);
+    hubAnswers = true;
+    only = {
+      'verifactu.config.get': { throws: new Error(REASON) },
+      'verifactu.chain.status': { returns: [{ event_type: 'chain_validated', message: '27 records verified' }] },
+    };
+    const { el } = await mountFailed('verifactu-recovery-table');
+    expect(chainBox(el).textContent).toContain('27 records verified');
+    only = { 'verifactu.chain.status': { throws: new Error(REASON) } };
+    metaAnswers = false;
+    metaRetry(el)!.click();
+    await vi.waitFor(async () => {
+      await el.updateComplete;
+      if (chainBox(el).getAttribute('heading') !== 'ui.recChainUnchecked') throw new Error('still the old verdict');
+    });
+    expect(chainBox(el).textContent).not.toContain('27 records verified');
+  });
+
+  it('a Retry that brings the chain status back clears «could not be checked»', async () => {
+    const el = await mountMetaFailed();
+    metaAnswers = null;
+    hubAnswers = true;
+    metaRetry(el)!.click();
+    await vi.waitFor(async () => {
+      await el.updateComplete;
+      if (metaNotice(el)) throw new Error('the notice is still there');
+    });
+    expect(chainBox(el).getAttribute('heading')).toBe('ui.recChainUnknown');
+  });
+});
+
+describe('erp-verifactu-recovery — a failure that is not an Error still says why (verifactu#157)', () => {
+  it.each([
+    ['a bare string', 'nope'],
+    ['an Error without a message', new Error('')],
+    ['nothing at all', undefined],
+  ])('%s: the notice carries the generic reason, not an empty red box', async (_label, thrown) => {
+    shellTableKnowsErrors(true);
+    hubAnswers = true;
+    only = { 'verifactu.config.get': { throws: thrown } };
+    const { el } = await mountFailed('verifactu-recovery-table');
+    expect(metaNotice(el)?.textContent).toContain('ui.recErrLoadMeta');
   });
 });

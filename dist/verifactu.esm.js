@@ -2614,6 +2614,10 @@ var es_default = {
     recChainValid: "Cadena de huellas \xEDntegra \u2713",
     recChainBroken: "Cadena de huellas ROTA \u2717",
     recChainUnknown: "Sin validar todav\xEDa",
+    recChainUnchecked: "No se ha podido comprobar",
+    recErrLoadMeta: "No se pudo leer el NIF del emisor o el estado de la cadena",
+    recRetryMeta: "Reintentar",
+    recRetryingMeta: "Reintentando\u2026",
     recChainScope: "Recalcula las huellas SHA-256 y verifica el encadenado. No vuelve a auditar los importes: la base, la cuota y el total se comprueban antes de sellar el registro, y una vez encadenado son inmutables.",
     recAeatTitle: "\xDAltimos registros en la AEAT",
     recConsultAeat: "Consultar AEAT",
@@ -3148,6 +3152,10 @@ var en_default = {
     recChainValid: "Fingerprint chain intact \u2713",
     recChainBroken: "Fingerprint chain BROKEN \u2717",
     recChainUnknown: "Not validated yet",
+    recChainUnchecked: "Could not be checked",
+    recErrLoadMeta: "Could not read the issuer NIF or the chain status",
+    recRetryMeta: "Retry",
+    recRetryingMeta: "Retrying\u2026",
     recChainScope: "This recomputes the SHA-256 fingerprints and verifies the chaining. It does not re-audit the amounts: the base, quota and total are checked before a record is sealed, and once chained they are immutable.",
     recAeatTitle: "Latest records at the AEAT",
     recConsultAeat: "Query AEAT",
@@ -8168,6 +8176,8 @@ var ErpVerifactuRecovery = class extends i3 {
     this.busy = "";
     this.error = "";
     this.metaError = "";
+    this.statusUnread = false;
+    this.metaLoading = false;
     this.done = "";
     this.onLocaleChange = () => this.requestUpdate();
   }
@@ -8179,7 +8189,7 @@ var ErpVerifactuRecovery = class extends i3 {
     .card { background: var(--ion-card-background, #fff); border:1px solid var(--ion-border-color, #e6e2d8); border-radius: var(--ok-radius, 12px); overflow:hidden; max-width:40rem; }
     .toolbar { display:flex; gap:.5rem; align-items:center; flex-wrap:wrap; margin:.5rem 0; }
     .actions { display:flex; justify-content:flex-end; margin:.85rem 0; max-width:40rem; }
-    .toolbar ion-button, .actions ion-button { min-height:44px; margin:.15rem 0; }
+    .toolbar ion-button, .actions ion-button, ion-button.meta-retry { min-height:44px; margin:.15rem 0; }
     ion-item { --min-height:52px; }
     ion-input { min-height:44px; }
     ok-inline-feedback { display:block; margin-bottom:.5rem; max-width:40rem; }
@@ -8220,18 +8230,40 @@ var ErpVerifactuRecovery = class extends i3 {
     window.removeEventListener("erplora:locale-changed", this.onLocaleChange);
     super.disconnectedCallback();
   }
-  /** NIF por defecto (config) + último estado de validación de la cadena. */
+  /**
+   * Default NIF (config) + last validation of the chain. Only READS: it validates, consults,
+   * recovers and sends nothing. Each is read on its own, so one failing does not hide the other.
+   */
   async loadMeta() {
-    this.metaError = "";
+    const reasons = [];
+    const reason = (e6) => e6 instanceof Error && e6.message ? e6.message : erplora6().t(CATALOG7, "ui.recErrLoadMeta");
     try {
       const cfgRows = await erplora6().query("verifactu.config.get");
       const cfg = Array.isArray(cfgRows) ? cfgRows[0] : cfgRows;
       const nif = cfg?.issuer_nif || cfg?.software_nif;
       if (nif && !this.nif) this.nif = nif;
+    } catch (e6) {
+      reasons.push(reason(e6));
+    }
+    try {
       const st = await erplora6().query("verifactu.chain.status");
       this.status = Array.isArray(st) ? st[0] ?? null : st ?? null;
+      this.statusUnread = false;
     } catch (e6) {
-      this.metaError = e6 instanceof Error ? e6.message : "";
+      this.status = null;
+      this.statusUnread = true;
+      reasons.push(reason(e6));
+    }
+    this.metaError = [...new Set(reasons)].join(" ");
+  }
+  /** Retry on the page notice (verifactu#157): reads the NIF and the chain status again, nothing else. */
+  async retryMeta() {
+    if (this.metaLoading) return;
+    this.metaLoading = true;
+    try {
+      await this.loadMeta();
+    } finally {
+      this.metaLoading = false;
     }
   }
   async run(action, fn, errKey) {
@@ -8316,10 +8348,12 @@ var ErpVerifactuRecovery = class extends i3 {
     else await this.recoverManual();
   }
   statusTone() {
+    if (this.statusUnread) return "warning";
     if (!this.status?.event_type) return "neutral";
     return this.status.event_type === "chain_validated" ? "success" : "danger";
   }
   statusLabel(t5) {
+    if (this.statusUnread) return t5("ui.recChainUnchecked");
     if (!this.status?.event_type) return t5("ui.recChainUnknown");
     return this.status.event_type === "chain_validated" ? t5("ui.recChainValid") : t5("ui.recChainBroken");
   }
@@ -8330,7 +8364,15 @@ var ErpVerifactuRecovery = class extends i3 {
     return b2`
       <h2>${t5("ui.recoveryTitle")}</h2>
       ${this.error ? b2`<ok-inline-feedback tone="danger" icon="alert-circle-outline">${this.error}</ok-inline-feedback>` : A}
-      ${metaError ? b2`<ok-inline-feedback data-testid="verifactu-recovery-meta-error" tone="danger" icon="alert-circle-outline">${metaError}</ok-inline-feedback>` : A}
+      ${metaError ? b2`<ok-inline-feedback data-testid="verifactu-recovery-meta-error" tone="danger" icon="alert-circle-outline">${metaError}<ion-button
+            slot="actions"
+            class="meta-retry"
+            data-testid="verifactu-recovery-meta-retry"
+            size="small"
+            fill="outline"
+            ?disabled=${this.metaLoading}
+            @click=${() => this.retryMeta()}
+          >${this.metaLoading ? t5("ui.recRetryingMeta") : t5("ui.recRetryMeta")}</ion-button></ok-inline-feedback>` : A}
       ${this.done ? b2`<ok-inline-feedback tone="success" icon="checkmark-circle-outline">${this.done}</ok-inline-feedback>` : A}
 
       <div class="card">
@@ -8344,7 +8386,7 @@ var ErpVerifactuRecovery = class extends i3 {
       </div>
 
       <h3>${t5("ui.recChainStatus")}</h3>
-      <ok-inline-feedback tone=${this.statusTone()} heading=${this.statusLabel(t5)} icon="shield-checkmark-outline">${this.status?.message ?? ""}</ok-inline-feedback>
+      <ok-inline-feedback data-testid="verifactu-recovery-chain-status" tone=${this.statusTone()} heading=${this.statusLabel(t5)} icon="shield-checkmark-outline">${this.status?.message ?? ""}</ok-inline-feedback>
       <!-- verifactu#53: the verdict is about the HASH CHAIN, not about the amounts. A QA report
            quoted «Cadena íntegra: 27 registro(s) verificados» as proof that records declaring an
            impossible quota were fine. The check has to say what it covers. -->
@@ -8430,6 +8472,12 @@ __decorateClass([
 __decorateClass([
   r5()
 ], ErpVerifactuRecovery.prototype, "metaError", 2);
+__decorateClass([
+  r5()
+], ErpVerifactuRecovery.prototype, "statusUnread", 2);
+__decorateClass([
+  r5()
+], ErpVerifactuRecovery.prototype, "metaLoading", 2);
 __decorateClass([
   r5()
 ], ErpVerifactuRecovery.prototype, "done", 2);
