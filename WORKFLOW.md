@@ -418,7 +418,9 @@ discrepancia; manda el código.
 - **Enviar un registro**: `docs/screens.md` (apartado `Transmit a record`) describe una acción de pantalla; no hay botón, solo asistente o API (F25).
 - **Anulación**: `architecture/modules/verifactu.md` la sitúa en la pantalla de recuperación; esa
   pantalla no la tiene (F30). L-04 y `qa-hub.md` §7 esperan un registro de anulación al anular una
-  factura; la ingesta solo crea altas y anular una venta o factura es una rectificativa (F14, F30).
+  factura; la ingesta solo crea altas: una devolución o una corrección es una rectificativa (F14), y
+  anular una venta en Venta no produce nada fiscal (Facturación no escucha la anulación: INVOICE-F07)
+  (F30).
 - **Prueba en vivo**: el texto «Verifica el certificado y hace un envío de PRUEBA a la AEAT. No afecta a
   la cadena real ni a tus facturas.», `docs/screens.md` y la descripción para el asistente del
   `module.json` (`without touching the real chain`); con certificado propio la muestra es un alta real

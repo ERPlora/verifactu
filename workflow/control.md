@@ -67,7 +67,6 @@ Pasos:
 Entra: el certificado nuevo y su contraseña.
 Sale: el certificado sustituido en el núcleo del hub.
 Si falla: como VERIFACTU-F02. Con el certificado caducado y el hub en producción, el cobro se niega con el motivo de certificado caducado, y «Pasar a producción» con «Tu certificado propio ha caducado y la AEAT no lo acepta…».
-Implicados: pendiente
+Implicados: REC_FISCAL-F01
 Pendiente de enlazar: hub — sustituir el certificado del negocio sin romper la cadena
-Pendiente de enlazar: sales — negar el cobro en producción cuando la vía no existe o el certificado caducó
 QA: qa-hub-restaurant §7.11

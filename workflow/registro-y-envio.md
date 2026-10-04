@@ -12,16 +12,14 @@ Pantalla: ninguna
 Pasos:
 1. Facturación emite una factura o un tique (al cobrar en el TPV, a mano o la factura de prueba) y lo avisa.
 2. VeriFactu lee esa factura: número oficial, fecha, emisor, cliente, importes y su desglose por tipo de IVA, y la simplificada que sustituye si es una F3.
-3. Decide el tipo: el de la factura (F1, F2, F3). Una factura completa sin NIF de cliente se registra como tique simplificado F2 (la AEAT la rechazaría) y queda el evento «Tipo de factura cambiado»; si esa F2 degradada pasa de 3.010 €, se niega sin gastar número. Una F2 que ya llega como F2 por encima de ese techo se sella (gasta número) y después queda «Rechazado» sin salir del hub (sin confirmar si Facturación la frena antes).
+3. Decide el tipo: el de la factura (F1, F2, F3). Una factura completa sin NIF de cliente se registra como tique simplificado F2 (la AEAT la rechazaría) y queda el evento «Tipo de factura cambiado»; si esa F2 degradada pasa de 3.010 €, se niega sin gastar número. Una F2 que ya llega como F2 por encima de ese techo se sella (gasta número) y después queda «Rechazado» sin salir del hub: Facturación no la frena (INVOICE-F01) y solo la pantalla de Venta impide cobrar un tique por encima del límite (SALES-F04); por el asistente o la API llega aquí (REC_FISCAL-F03).
 4. Sella el registro de alta: le da el siguiente número de su cadena (por hub, NIF del emisor y entorno), calcula su huella con la del anterior y fija el enlace del QR al entorno en que nace (sede de pruebas o sede real). Queda el evento «Registro creado».
 5. En el mismo instante intenta enviarlo a la AEAT (VERIFACTU-F15). El registro aparece en **Registros**.
 Entra: la factura emitida, de Facturación (invoice.created); el entorno, la vía y los datos del productor, del núcleo del hub.
 Sale: el registro de alta sellado (avisa: verifactu.record.created) y su envío.
 Si falla: no deja nada a medias: si la cuota de una línea no cuadra con su tipo, si una factura ordinaria suma en negativo o si falta el NIF del emisor, no se escribe ningún registro ni se gasta número, y el aviso de Facturación se reintenta hasta acabar en la cola de fallos de Automatizaciones. Sin el permiso «Certificado del negocio (firma fiscal)» no se registra ninguna factura: los avisos acaban en esa cola y se reprocesan solos al conceder el permiso; mientras tanto, en producción, la venta no se bloquea. Una factura que ya tiene registro no se duplica: la segunda entrega choca con el registro existente y también acaba en esa cola (es lo que describe verifactu#110). Si la factura no existe, no hace nada.
-Implicados: pendiente
-Pendiente de enlazar: invoice — emitir una factura o tique y avisar de su emisión
+Implicados: INVOICE-F01, INVOICE-F02, INVOICE-F03, INVOICE-F04, INVOICE-F05, INVOICE-F11, REC_FISCAL-F03, REC_FISCAL-F04, REC_FISCAL-F10
 Pendiente de enlazar: hub — motor fiscal: secuencia, huella, QR y XML del registro de alta
-Pendiente de enlazar: REC_FISCAL — de la venta al registro aceptado por la AEAT
 QA: L-04, BD-09, R-09, B-06, qa-hub §7
 
 ### VERIFACTU-F14 Registrar una factura rectificativa
@@ -37,9 +35,7 @@ Pasos:
 Entra: la rectificativa emitida, de Facturación (invoice.rectified), y la factura que rectifica.
 Sale: el registro de alta de la rectificativa (avisa: verifactu.record.created) y su envío.
 Si falla: como VERIFACTU-F13.
-Implicados: pendiente
-Pendiente de enlazar: invoice — rectificar una factura (devolución o corrección) y avisar
-Pendiente de enlazar: sales — devolver una venta, que genera la rectificativa
+Implicados: INVOICE-F07, INVOICE-F08, INVOICE-F09, INVOICE-F10, REC_FISCAL-F11, REC_FISCAL-F12, REC_FISCAL-F13
 QA: L-03, R-11, B-08, BD-09
 
 ### VERIFACTU-F15 Enviar el registro a la AEAT y recoger su respuesta
@@ -60,10 +56,9 @@ Pasos:
 Entra: el registro sellado; la vía, el certificado o la conexión segura, del núcleo del hub.
 Sale: el estado y la respuesta de la AEAT en el registro, y el XML guardado en el archivo de ficheros del módulo. Avisa: verifactu.record.rejected cuando no ha llegado (rechazo de la AEAT, fallo de red, esquema inválido, entorno desconocido o sobre imposible de construir) y verifactu.record.accepted_with_errors cuando se aceptó con errores; los dos llevan solo el id del registro, el número de factura, el estado, el motivo, el código y el mensaje, y el entorno, nunca el NIF ni los importes. Una aceptación limpia no avisa a nadie.
 Si falla: lo que falla por la red o por la vía queda en la cola con su motivo en Eventos y en el detalle (VERIFACTU-F17); lo que nace sin vía queda Pendiente y lo recoge la pasada. Dos casos no se recuperan solos: el «Error» de una respuesta no reconocida, que no tiene entrada en la cola; y un registro que venía de la cola y no pasa el esquema, que conserva su entrada y se vuelve a comprobar, sin éxito, en cada pasada. Un registro que no sabe su entorno no se envía a ninguno.
-Implicados: pendiente
+Implicados: REC_FISCAL-F05
 Pendiente de enlazar: hub — motor fiscal: envío, clasificación de la respuesta y reenganche de la cadena
 Pendiente de enlazar: verifactu-gateway — presentar el registro en nombre del negocio y devolver la respuesta de la AEAT
-Pendiente de enlazar: REC_FISCAL — de la venta al registro aceptado por la AEAT
 QA: L-04, R-09, B-06, BD-09, qa-hub §7, qa-hub-restaurant §7.11
 
 ### VERIFACTU-F16 Consultar los registros y su estado
@@ -80,8 +75,7 @@ Pasos:
 Entra: los registros del módulo; el número de facturas emitidas, de Facturación (solo para comparar).
 Sale: nada; es consulta.
 Si falla: el mensaje de error con reintento; sin permiso para ver Facturación, el aviso «No hay registros y no se ha podido leer cuántas facturas se han emitido, así que no se puede saber si la cadena está sellando. Pídele a un administrador que lo compruebe.».
-Implicados: pendiente
-Pendiente de enlazar: invoice — contar las facturas emitidas para detectar una cadena que no sella
+Implicados: INVOICE-F16
 QA: L-14, qa-hub §7
 
 ### VERIFACTU-F17 Ver el detalle de un registro y por qué espera
@@ -97,7 +91,7 @@ Pasos:
 Entra: el registro, sus eventos y su entrada en la cola.
 Sale: nada; es consulta.
 Si falla: «Registro no encontrado» o el error encima de la lista; si no se pudo leer el motivo, «No se ha podido cargar el motivo.»; sin motivo guardado, «No salió al crearse.».
-Implicados: ninguno
+Implicados: REC_FISCAL-F06
 QA: qa-hub §7
 
 ### VERIFACTU-F18 Cotejar el QR en la sede de la AEAT
@@ -113,8 +107,7 @@ Pasos:
 Entra: el enlace del QR guardado en el registro al sellarlo.
 Sale: nada en el hub; la comprobación ocurre en la sede de la AEAT.
 Si falla: un registro que aún no ha llegado (Pendiente, Error) se ve en la AEAT como no encontrado hasta que salga (VERIFACTU-F20). Uno rechazado no se encontrará nunca.
-Implicados: pendiente
-Pendiente de enlazar: REC_FISCAL — el cliente coteja su tique en la sede de la AEAT
+Implicados: REC_FISCAL-F08
 QA: L-04, qa-hub §7, qa-hub-restaurant §7.11
 
 ### VERIFACTU-F19 Dar el QR y el estado fiscal al tique y a la factura
@@ -129,8 +122,5 @@ Pasos:
 Entra: el id de la factura, de Venta o de Facturación.
 Sale: el registro de esa factura (QR, CSV, estado), por la consulta pública de VeriFactu.
 Si falla: sin registro o sin permiso de consulta, Venta y Facturación lo tratan como una factura sin QR.
-Implicados: pendiente
-Pendiente de enlazar: sales — pintar el documento de la venta con el QR de VeriFactu
-Pendiente de enlazar: invoice — enseñar el QR y el estado fiscal de una factura
-Pendiente de enlazar: printing — imprimir el tique con su QR o avisar de reimprimirlo
+Implicados: INVOICE-F17, PRINTING-F07, SALES-F29, REC_FISCAL-F07, REC_FISCAL-F08
 QA: L-04, L-05, R-09, B-06

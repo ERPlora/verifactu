@@ -78,13 +78,13 @@ Vertical: comun
 Actor: responsable, administrador, asistente
 Pantalla: asistente
 Pasos:
-1. Solo para un registro que se envió a la AEAT **por error** (una factura que nunca debió declararse). Una devolución o una corrección no se anula: es una rectificativa (VERIFACTU-F14).
+1. Solo para un registro que se envió a la AEAT **por error** (una factura que nunca debió declararse). Una devolución o una corrección no se anula: es una rectificativa (VERIFACTU-F14). Anular una venta en Venta no crea ningún registro de anulación: Facturación no escucha la anulación y el tique sigue declarado (INVOICE-F07, REC_FISCAL-F13).
 2. Pide al asistente un registro de anulación de esa factura, con el emisor, el número, la fecha y el tipo.
 3. El sistema sella un registro de anulación encadenado (su propia huella) y lo envía como cualquier otro (VERIFACTU-F15).
 4. Aparece en **Registros** con tipo «Anulación».
 Entra: los datos de la factura que se anula, que da la persona.
 Sale: el registro de anulación sellado y enviado (avisa: verifactu.record.created). La factura sigue existiendo en Facturación: anular el registro no la borra.
 Si falla: como VERIFACTU-F15.
-Implicados: pendiente
+Implicados: INVOICE-F07, REC_FISCAL-F13
 Pendiente de enlazar: hub — motor fiscal: registro de anulación y su huella
 QA: L-04 (discrepa), qa-hub §7 (discrepa)

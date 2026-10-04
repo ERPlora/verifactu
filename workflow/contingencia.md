@@ -19,11 +19,10 @@ Pasos:
 Entra: los registros pendientes y la cola; la vía del núcleo del hub.
 Sale: los registros enviados y su respuesta, como en VERIFACTU-F15 (avisa: verifactu.contingency.processed).
 Si falla: sin vía, la pasada no envía nada y los registros siguen esperando con su motivo en el detalle (VERIFACTU-F17). Sin el permiso «Certificado del negocio (firma fiscal)» la pasada no llega a ejecutarse. Un registro que no sabe su entorno o cuyo sobre no se puede construir se queda en la cola con su motivo en Eventos. No recoge un «Error» sin entrada en la cola (VERIFACTU-F15).
-Implicados: pendiente
+Implicados: REC_FISCAL-F06
 Pendiente de enlazar: hub — tarea programada que drena la cola y regla de no cobrar sin vía en producción
 Pendiente de enlazar: verifactu-gateway — presentar los envíos tardíos marcados como incidencia y servir el carril de pruebas
 Pendiente de enlazar: saas — conceder el permiso de envío a la celda, también sin autorización para el carril de pruebas
-Pendiente de enlazar: REC_FISCAL — cobrar sin conexión y que el registro llegue después a la AEAT
 QA: L-04, BD-09, qa-hub §7, qa-hub-restaurant §7.11
 
 ### VERIFACTU-F21 Procesar la cola a mano
@@ -39,7 +38,7 @@ Pasos:
 Entra: la cola y los registros pendientes.
 Sale: los mismos envíos que la pasada automática (avisa: verifactu.contingency.processed).
 Si falla: «No se pudo procesar la cola» o el mensaje del servidor encima de la tabla. Sin vía no se envía nada. Un empleado recibe la petición del PIN de un responsable y, con él, la pasada se hace.
-Implicados: pendiente
+Implicados: REC_FISCAL-F06
 Pendiente de enlazar: hub — drenar la cola a petición con los permisos de quien la pide
 QA: qa-hub §7
 
@@ -88,8 +87,7 @@ Pasos:
 Entra: el registro rechazado y la respuesta de la AEAT.
 Sale: según lo que haga la persona: un reenvío del mismo registro o, si emite una rectificativa, un registro nuevo.
 Si falla: un registro rechazado no se puede descartar ni borrar, e impide desactivar o desinstalar VeriFactu (VERIFACTU-F32).
-Implicados: pendiente
-Pendiente de enlazar: invoice — rectificar una factura para corregir lo que la AEAT rechazó
+Implicados: INVOICE-F08, REC_FISCAL-F06, REC_FISCAL-F12
 QA: L-03, L-04, qa-hub §7
 
 ### VERIFACTU-F25 Reenviar un registro concreto

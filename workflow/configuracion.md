@@ -51,7 +51,7 @@ Pasos:
 Entra: nada más que la orden.
 Sale: el certificado borrado del núcleo; los registros siguientes salen por la vía de ERPlora. En producción sin autorización aprobada o sin conexión segura el hub se queda sin vía, y desde ese momento el núcleo niega las ventas (regla En producción, sin vía no se cobra, del índice). Apagar el interruptor de VERIFACTU-F04 en ese mismo caso se niega; quitar el certificado, no.
 Si falla: «No se ha podido guardar el certificado. Revisa el fichero y la contraseña.» (el mismo texto que la subida) y el certificado sigue ahí.
-Implicados: pendiente
+Implicados: REC_FISCAL-F01
 Pendiente de enlazar: hub — borrar el certificado del negocio y pasar a la vía delegada
 QA: qa-hub §7
 
@@ -140,9 +140,8 @@ Pasos:
 Entra: el perfil fiscal del hub (núcleo): identidad, vía, autorización, caducidad del certificado propio.
 Sale: el hub remite en producción a partir de ese momento; el NIF del negocio queda congelado. Los registros nuevos nacen en la cadena de producción, con el QR de la sede real; los que nacieron en pruebas siguen yendo a pruebas.
 Si falla: el núcleo dice qué falta: «Para pasar a producción, ERPlora necesita tu autorización firmada para remitir en tu nombre, aprobada por nuestro equipo. Fírmala en Configuración.» (vía de ERPlora sin autorización aprobada), «Tu hub aún no está listo para producción: faltan tus datos fiscales o una vía para remitir (tu propio certificado o el de ERPlora). Revisa Configuración.», «Tu certificado propio ha caducado y la AEAT no lo acepta. Sube uno renovado, o deja que remita ERPlora, y vuelve a intentarlo.», «Este hub cesó su actividad y ya no emite facturas.», «Este es un hub de demostración y no puede pasar a producción. Crea tu propio hub para facturar de verdad.», o «No se ha podido pasar a producción. Inténtalo de nuevo en un momento.». En un hub de demostración el botón no aparece: sale «Este es un hub de demostración: siempre remite al entorno de pruebas de la AEAT. Crea tu propio hub para pasar a producción.».
-Implicados: pendiente
+Implicados: REC_FISCAL-F14
 Pendiente de enlazar: hub — paso a producción del perfil fiscal y sus comprobaciones
-Pendiente de enlazar: REC_FISCAL — de pruebas a producción sin perder ningún tique
 QA: L-04, qa-hub §7
 
 ### VERIFACTU-F09 Volver a pruebas
@@ -158,7 +157,7 @@ Pasos:
 Entra: si ya se emitió alguna venta o factura en producción, del núcleo (lo anota al confirmar esa venta, no al llegar a la AEAT).
 Sale: el hub vuelve a remitir en pruebas.
 Si falla: con algo ya emitido en producción, el núcleo lo niega y sale «No se puede volver al modo de pruebas: este hub ya envió a la AEAT un registro aceptado en producción. Para hacer pruebas, usa otro hub (uno gratuito o la demo).». Un rechazo que la pantalla no reconoce sale como «No se ha podido pasar a producción. Inténtalo de nuevo en un momento.», aunque se estuviera volviendo a pruebas. La configuración del módulo tiene además su propia guarda: guardarla en pruebas con un registro aceptado en producción deshace la operación entera.
-Implicados: pendiente
+Implicados: REC_FISCAL-F14
 Pendiente de enlazar: hub — volver a pruebas mientras no se haya emitido nada en producción
 QA: L-04
 
@@ -175,7 +174,7 @@ Pasos:
 Entra: el tipo de prueba; la vía y el entorno del hub.
 Sale: en el hub, el resultado guardado como evento «Prueba de conexión» (avisa: verifactu.diagnostic.run), sin crear ningún registro ni tocar la cadena local. Con certificado propio, además, un registro de alta en la AEAT que el hub no tiene: en producción queda en la AEAT real a nombre del negocio, y una recuperación posterior desde la AEAT (VERIFACTU-F28), que ancla en el último registro del mes, podría anclar la cadena sobre esa muestra.
 Si falla: sin configuración guardada ni certificado propio, el servidor lo niega (VeriFactu sin configurar). Sin permiso del módulo, el aviso «Permiso: Certificado del negocio (firma fiscal)» con «Ir a Permisos». Sin NIF del negocio, el recuadro del certificado dice «configura el NIF del obligado tributario (emisor) en Ajustes → Negocio antes de probar la conexión». Un empleado recibe la petición del PIN de un responsable y, con él, la prueba sigue. Otro fallo: «No se pudo ejecutar la prueba» o el mensaje del servidor.
-Implicados: pendiente
+Implicados: REC_FISCAL-F14
 Pendiente de enlazar: hub — prueba de conexión del motor fiscal por la vía real del hub
 Pendiente de enlazar: verifactu-gateway — responder si la celda puede remitir ahora (readyz)
 QA: qa-hub §7
@@ -188,12 +187,11 @@ Pantalla: Ajustes
 Pasos:
 1. En **VeriFactu → Ajustes**, tarjeta «Prueba en vivo», con el hub en pruebas y el NIF del negocio configurado, pulsa «Crear factura de prueba» («Creando…»). Fuera de pruebas el botón está apagado y sale «Solo disponible en el entorno de pruebas y con el NIF del emisor configurado.»; en pruebas pero sin NIF, se apaga sin decir por qué.
 2. Sale «Factura de prueba creada — verla en Facturación.».
-3. La pantalla le pide a Facturación un tique simplificado F2 de una línea de 1,00 € al 21 % de IVA, con la serie `TICKET`; lo que Facturación hace con esa petición es de Facturación. Cuando lo emite, VeriFactu lo registra y lo envía como cualquier otra factura (VERIFACTU-F13, VERIFACTU-F15) y aparece en **Registros**; el aviso verde solo dice que Facturación aceptó la petición.
+3. La pantalla le pide a Facturación un tique simplificado F2 de una línea de 1,00 € al 21 % de IVA, con la serie `TICKET`, por la misma puerta que el alta manual de facturas (INVOICE-F03): sale en **Facturación → Facturas** con «Origen» «Otro» y gasta un número de la serie TICKET del año. Cuando lo emite, VeriFactu lo registra y lo envía como cualquier otra factura (VERIFACTU-F13, VERIFACTU-F15), a la cadena de pruebas, y aparece en **Registros**; el aviso verde solo dice que Facturación aceptó la petición.
 Entra: nada que escribir: la línea de prueba es fija.
 Sale: una factura real de Facturación en el entorno de pruebas y su registro.
 Si falla: el mensaje de Facturación o «No se pudo crear la factura de prueba». Un usuario sin permiso para emitir facturas recibe la negativa de Facturación.
-Implicados: pendiente
-Pendiente de enlazar: invoice — emitir una factura (tique F2) a petición de otro módulo
+Implicados: INVOICE-F03, REC_FISCAL-F14
 QA: BD-09
 
 ### VERIFACTU-F12 Consultar la declaración responsable
