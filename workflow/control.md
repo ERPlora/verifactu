@@ -5,15 +5,15 @@ Prefijo: VERIFACTU
 ## Flujos
 
 ### VERIFACTU-F31 Vigilar los envíos desde el panel y los eventos
-Estado: parcial — «Pendientes VeriFactu» y «Registros por estado» cuentan también los envíos de prueba cuando el negocio ya factura de verdad (verifactu#105); la pantalla Eventos no se refresca sola
+Estado: parcial — «Pendientes VeriFactu» y «Registros por estado» cuentan también los envíos de prueba cuando el negocio ya factura de verdad (verifactu#105); «Pendientes VeriFactu» no se refresca cuando la cola envía registros; la pantalla Eventos no se refresca sola
 Vertical: comun
 Actor: empleado, responsable, administrador
 Pantalla: Eventos
 Pasos:
-1. En el panel de inicio, «Pendientes VeriFactu» enseña cuántos registros no están aceptados (pendientes, con error, en reintento o rechazados); «Cola de contingencia», cuántos esperan en la cola; «Registros por estado», el reparto por estado; «Eventos AEAT recientes», lo último que pasó. Las tarjetas se refrescan cuando nace o se envía un registro o se mueve la cola. Solo «Pendientes VeriFactu» sale de fábrica; las otras se añaden al panel.
+1. En el panel de inicio, «Pendientes VeriFactu» enseña cuántos registros no están aceptados (pendientes, con error, en reintento o rechazados); «Cola de contingencia», cuántos esperan en la cola; «Registros por estado», el reparto por estado; «Eventos AEAT recientes», lo último que pasó. «Pendientes VeriFactu» se refresca al nacer un registro o al enviarlo a mano, no cuando la cola se procesa; «Registros por estado», también tras cada pasada de la cola; «Cola de contingencia», al reintentar, descartar o procesar la cola; «Eventos AEAT recientes», al nacer o enviarse a mano un registro y tras cada pasada. Solo «Pendientes VeriFactu» sale de fábrica; las otras se añaden al panel.
 2. Para el detalle, abre **VeriFactu → Eventos**: lo más reciente primero, con su severidad, su tipo y su mensaje en el idioma de quien mira.
 3. Busca por palabras («aplazado», «sellado», el número de una factura) o filtra por tipo, severidad o fecha.
-4. Desde el mensaje de un evento se sabe qué hacer: por ejemplo «Aún no se ha enviado a la AEAT: este hub todavía no tiene por dónde presentar…» lleva a Configuración (VERIFACTU-F04, F05, F07).
+4. El mensaje de un evento dice qué pasó: por ejemplo «Aún no se ha enviado a la AEAT: {why}» con el motivo «este hub todavía no tiene por dónde presentar: no tiene certificado propio ni conexión con la pasarela fiscal de ERPlora», que se arregla en Configuración (VERIFACTU-F02, F05, F07). El evento no lleva enlace.
 Entra: los registros, la cola y los eventos del módulo.
 Sale: nada; es consulta.
 Si falla: en la pantalla, el error con reintento; en la tarjeta de eventos, «No se han podido cargar los últimos eventos de la AEAT.».
@@ -22,17 +22,18 @@ Pendiente de enlazar: hub — panel de inicio que pinta las tarjetas de los mód
 QA: qa-hub §7
 
 ### VERIFACTU-F32 Impedir apagar o desinstalar con registros sin enviar
-Estado: hecho
+Estado: parcial — la negativa sale en inglés en la pantalla española
 Vertical: comun
 Actor: sistema
 Pantalla: Hub: Apps
 Pasos:
-1. Alguien intenta desactivar o desinstalar VeriFactu (también cuando lo arrastra la desinstalación de otro módulo, o una desinstalación forzada).
-2. El hub pregunta antes a VeriFactu cuántos registros no están aceptados (pendientes, con error, en reintento o rechazados).
-3. Si queda alguno, lo niega diciendo cuántos (`verifactu.unsent_records`); si no, sigue.
+1. Alguien intenta desactivar VeriFactu, o desactivar otro módulo que lo arrastra (por ejemplo, apagar Facturación apaga también VeriFactu), o desinstalar VeriFactu, también de forma forzada. Desinstalar Facturación no arrastra a VeriFactu: se niega porque VeriFactu depende de ella, y la forzada solo quita Facturación.
+2. Si el hub ya está en producción, el núcleo niega antes que se quede sin ningún módulo que cumpla su régimen fiscal, aunque la cola esté vacía.
+3. Después, el hub pregunta a VeriFactu cuántos registros no están aceptados (pendientes, con error, en reintento o rechazados).
+4. Si queda alguno, lo niega diciendo cuántos; si no, sigue.
 Entra: la petición de desactivar o desinstalar, del hub.
-Sale: nada si se niega; el módulo sigue activo y enviando.
-Si falla: la negativa sale en la pantalla del hub que lo pidió (texto exacto sin confirmar). Ojo: un registro rechazado cuenta como no enviado y no se puede descartar, así que mientras exista impide desinstalar.
+Sale: nada si se niega: no se desactiva ni se desinstala ninguno del conjunto, y VeriFactu sigue activo y enviando.
+Si falla: la pantalla del hub enseña la frase del motor tal cual, en inglés: {n} VeriFactu record(s) have not reached the AEAT yet: send them before disabling or removing the module. Ojo: un registro rechazado cuenta como no enviado y no se puede descartar, así que mientras exista impide desactivar y desinstalar.
 Implicados: pendiente
 Pendiente de enlazar: hub — desactivar y desinstalar módulos, preguntando antes al módulo si puede irse
 QA: L-14, qa-hub §7
