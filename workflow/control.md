@@ -17,7 +17,7 @@ Pasos:
 Entra: los registros, la cola y los eventos del módulo.
 Sale: nada; es consulta.
 Si falla: en la pantalla, el error con reintento; en la tarjeta de eventos, «No se han podido cargar los últimos eventos de la AEAT.».
-Implicados: HUB-F34, HUB_SHELL-F33, HUB_SHELL-F35
+Implicados: HUB-F34, HUB_SHELL-F33, HUB_SHELL-F35, REC_ALTA-F19
 QA: qa-hub §7
 
 ### VERIFACTU-F32 Impedir apagar o desinstalar con registros sin enviar
@@ -48,7 +48,7 @@ Pasos:
 Entra: nada.
 Sale: nada.
 Si falla: no aplica.
-Implicados: HUB-F309
+Implicados: HUB-F309, REC_ALTA-F24
 QA: ninguno
 
 ### VERIFACTU-F34 Renovar el certificado propio
@@ -64,5 +64,5 @@ Pasos:
 Entra: el certificado nuevo y su contraseña.
 Sale: el certificado sustituido en el núcleo del hub.
 Si falla: como VERIFACTU-F02. Con el certificado caducado y el hub en producción, el cobro se niega con el motivo de certificado caducado, y «Pasar a producción» con «Tu certificado propio ha caducado y la AEAT no lo acepta…».
-Implicados: REC_FISCAL-F01, HUB-F302, HUB-F313
+Implicados: REC_FISCAL-F01, HUB-F302, HUB-F313, REC_ALTA-F12
 QA: qa-hub-restaurant §7.11
