@@ -70,8 +70,9 @@ Configuración inicial, paso a paso:
 3. Con el hub aún en pruebas, pulsa «Enviar prueba» (VERIFACTU-F10) y, si quieres ver el camino
    entero, «Crear factura de prueba» (VERIFACTU-F11): aparece en **Registros** y su QR se coteja en la
    sede de pruebas de la AEAT (VERIFACTU-F18).
-4. Cuando todo esté listo, «Pasar a producción» (VERIFACTU-F08). Desde la primera venta o factura
-   emitida en producción, aunque su registro no haya salido aún, ya no se puede volver a pruebas.
+4. Cuando todo esté listo, «Pasar a producción» (VERIFACTU-F08). Desde la primera rectificativa
+   emitida en producción, aunque su registro no haya salido aún, ya no se puede volver a pruebas; una
+   venta o una factura normal no cierra la vuelta (VERIFACTU-F09, ERPlora/hub#2498).
 
 ## Pantallas
 
@@ -195,13 +196,13 @@ está en la línea `Estado:`.
 | VERIFACTU-F04 | Elegir quién remite: mi certificado o ERPlora | hecho | [workflow/configuracion.md](workflow/configuracion.md) |
 | VERIFACTU-F05 | Firmar y subir la autorización para que remita ERPlora | hecho | [workflow/configuracion.md](workflow/configuracion.md) |
 | VERIFACTU-F06 | Volver a enviar la autorización | hecho | [workflow/configuracion.md](workflow/configuracion.md) |
-| VERIFACTU-F07 | Solicitar o renovar la conexión segura con ERPlora | hecho | [workflow/configuracion.md](workflow/configuracion.md) |
+| VERIFACTU-F07 | Solicitar o renovar la conexión segura con ERPlora | parcial | [workflow/configuracion.md](workflow/configuracion.md) |
 | VERIFACTU-F08 | Pasar a producción | hecho | [workflow/configuracion.md](workflow/configuracion.md) |
-| VERIFACTU-F09 | Volver a pruebas | hecho | [workflow/configuracion.md](workflow/configuracion.md) |
+| VERIFACTU-F09 | Volver a pruebas | parcial | [workflow/configuracion.md](workflow/configuracion.md) |
 | VERIFACTU-F10 | Probar la conexión con la AEAT | parcial | [workflow/configuracion.md](workflow/configuracion.md) |
 | VERIFACTU-F11 | Crear una factura de prueba | hecho | [workflow/configuracion.md](workflow/configuracion.md) |
 | VERIFACTU-F12 | Consultar la declaración responsable | hecho | [workflow/configuracion.md](workflow/configuracion.md) |
-| VERIFACTU-F13 | Registrar una factura emitida | hecho | [workflow/registro-y-envio.md](workflow/registro-y-envio.md) |
+| VERIFACTU-F13 | Registrar una factura emitida | parcial | [workflow/registro-y-envio.md](workflow/registro-y-envio.md) |
 | VERIFACTU-F14 | Registrar una factura rectificativa | parcial | [workflow/registro-y-envio.md](workflow/registro-y-envio.md) |
 | VERIFACTU-F15 | Enviar el registro a la AEAT y recoger su respuesta | parcial | [workflow/registro-y-envio.md](workflow/registro-y-envio.md) |
 | VERIFACTU-F16 | Consultar los registros y su estado | parcial | [workflow/registro-y-envio.md](workflow/registro-y-envio.md) |
@@ -251,9 +252,9 @@ Requisitos de la norma (RD 1007/2023, Orden HAC/1177/2024, FAQ AEAT):
 | Registro de anulación | parcial: sin pantalla, solo asistente o API | F30 |
 | Encadenamiento por huella SHA-256 con el registro anterior | hecho (lo calcula el motor del hub) | F13, F26 |
 | Cadena separada por entorno de pruebas y de producción | hecho | F13, F08 |
-| Remisión inmediata en modalidad VERI\*FACTU | parcial: una respuesta no reconocida deja «Error» sin reenvío | F15 |
+| Remisión inmediata en modalidad VERI\*FACTU | parcial: una respuesta con un veredicto que el motor no reconoce deja «Error» sin reenvío, y un «duplicado» tras un reintento queda «Rechazado» aunque la AEAT lo tenga aceptado | F15 |
 | Remisión posterior ante incidencia, marcada como tal | hecho (motor del hub) | F20 |
-| Ningún registro generado se queda sin remitir | parcial: no se puede descartar ni desactivar o desinstalar con pendientes, pero un «Error» por respuesta no reconocida y un hub sin vía (también en pruebas, si ERPlora no le da paso) se quedan esperando | F15, F20, F23, F32 |
+| Ningún registro generado se queda sin remitir | parcial: no se puede descartar ni desactivar o desinstalar con pendientes, pero un «Error» por un veredicto no reconocido, un hub sin vía (también en pruebas, si ERPlora no le da paso) y uno con la conexión con ERPlora caducada se quedan esperando | F07, F15, F20, F23, F32 |
 | QR con URL de cotejo de la AEAT en el documento | hecho (lo pintan Venta y Facturación) | F18, F19 |
 | Identificación del sistema informático en cada registro | hecho (datos del productor llegan del SaaS) | F12 |
 | Declaración responsable consultable | hecho | F12 |
@@ -261,7 +262,7 @@ Requisitos de la norma (RD 1007/2023, Orden HAC/1177/2024, FAQ AEAT):
 | Conservación y consulta de lo remitido (consulta a la AEAT) | hecho | F27 |
 | Colaboración social: remitir en nombre del obligado con su autorización | hecho (revisión en el SaaS) | F05, F06, F07 |
 | Certificado propio del obligado | parcial: sin aviso de caducidad en el módulo | F02, F34 |
-| Paso a producción sin vuelta atrás tras la primera venta real | hecho (núcleo del hub; se cierra al emitir, no al llegar a la AEAT) | F08, F09 |
+| Paso a producción sin vuelta atrás tras la primera venta real | parcial: el núcleo del hub solo cierra la vuelta con la primera rectificativa, no con una venta (ERPlora/hub#2498); se cierra al emitir, no al llegar a la AEAT | F08, F09 |
 | Hub de demostración clavado en pruebas | hecho (núcleo del hub) | F08 |
 | Cese de actividad | no hecho en el hub (no exige nada al software: es la baja censal); el núcleo sabe cerrar un hub pero nada lo llama | F33 |
 | Envío inmediato también en pruebas, sin configurar nada | hecho por el carril de pruebas de la celda; parcial si ERPlora no da paso al hub (sin la autoridad de confianza publicada, sin enlace o con el permiso de envío negado) | F20 |
@@ -300,7 +301,9 @@ Lo que el mercado ofrece en pantalla:
     país y tipo de documento del **cliente** de una factura completa, la descripción de la factura,
     los datos de la factura rectificada o sustituida, y el XML completo que viajó (los lleva todos);
   - copia del XML en el almacenamiento de ficheros del módulo: lo mismo que el XML de la fila, con el
-    NIF y el nombre del cliente;
+    NIF y el nombre del cliente. La puede leer cualquier persona con sesión en el hub, no solo quien
+    tiene permiso de VeriFactu (ERPlora/hub#2495), y viaja dentro de una plantilla del negocio
+    exportada con sus archivos (ERPlora/hub#2496);
   - foto de la AEAT: NIF del emisor y números de factura;
   - configuración: NIF y nombre del emisor;
   - eventos: el mensaje y sus detalles pueden llevar el NIF del emisor y números de factura;
@@ -310,7 +313,8 @@ Lo que el mercado ofrece en pantalla:
   - Borrado: el borrado RGPD de la plataforma es anonimizar al cliente en Clientes; VeriFactu no
     escucha ese aviso, y el borrado del núcleo solo vacía su historial de avisos y de automatizaciones.
     Los registros, su XML en la fila y la copia en el almacenamiento conservan el NIF y el nombre del
-    cliente, a propósito: la norma obliga a conservar los registros.
+    cliente, a propósito: la norma obliga a conservar los registros. Esa copia sale también en una
+    plantilla exportada con archivos (ERPlora/hub#2496).
 
 ## Reglas que no se rompen
 
@@ -323,9 +327,12 @@ Solo las que el código hace cumplir:
   también cuando lo arrastra la desactivación de otro módulo (por ejemplo, apagar Facturación) y en
   una desinstalación forzada de VeriFactu. Con el hub en producción, además, no se puede quitar el
   último módulo que cumple su régimen fiscal aunque la cola esté vacía (VERIFACTU-F32).
-- **Producción no tiene vuelta atrás**: el núcleo niega volver a pruebas en cuanto se emite la primera
-  venta o factura en producción, aunque su registro no haya salido aún, y el módulo además lo niega en
-  cuanto hay uno aceptado en producción (VERIFACTU-F09). Un hub de demostración nunca pasa a producción (VERIFACTU-F08).
+- **Producción no tiene vuelta atrás desde la primera rectificativa**: el núcleo niega volver a pruebas
+  en cuanto se emite la primera rectificativa en producción, aunque su registro no haya salido aún. Una
+  venta o una factura normal no la cierra: es un hueco, no una regla (ERPlora/hub#2498). El módulo
+  además lo niega en cuanto hay un registro aceptado en producción, pero solo al «Guardar
+  configuración»: el botón «Volver a pruebas» llama al núcleo y esa guarda no lo frena (VERIFACTU-F09).
+  Un hub de demostración nunca pasa a producción (VERIFACTU-F08).
 - **El entorno va dentro de cada registro**: un registro sale al entorno en el que nació, no al que
   esté configurado al enviarlo; uno que no sabe su entorno no se envía (VERIFACTU-F15). El entorno lo
   manda el perfil fiscal del núcleo del hub, no la fila del módulo.
@@ -339,13 +346,19 @@ Solo las que el código hace cumplir:
 - **Lo que sale de la cola se declara como incidencia** y en el orden de su cadena. Una venta nueva
   espera si un registro anterior de su cadena tiene que salir en ese momento; si el anterior está
   esperando su reintento, la nueva sale antes que él (VERIFACTU-F15).
-- **Hueco, no regla**: que todo tique con QR llegue a la AEAT no lo garantiza el código en dos casos: un
-  hub sin certificado propio al que ERPlora no da paso (sin la autoridad de confianza de la celda, sin
-  enlace o con el permiso de envío negado) espera sin límite también en pruebas (VERIFACTU-F20); y una
-  respuesta de la AEAT no reconocida deja el registro en «Error» sin reenvío (VERIFACTU-F15).
+- **Hueco, no regla**: que todo tique con QR llegue a la AEAT no lo garantiza el código
+  (ERPlora/hub#2493). Un hub sin certificado propio al que ERPlora no da paso (sin la autoridad de
+  confianza de la celda, sin enlace o con el permiso de envío negado) espera sin límite también en
+  pruebas (VERIFACTU-F20), y lo mismo uno con la conexión con ERPlora caducada (VERIFACTU-F07); una
+  respuesta con un veredicto que el motor no reconoce deja el registro en «Error» sin reenvío si no
+  tenía ya entrada en la cola, y un «duplicado» (3000) tras un reintento queda «Rechazado» aunque la
+  AEAT lo tenga aceptado (VERIFACTU-F15). Un Fault o una respuesta sin veredicto sí van a la cola. Y un
+  hub que vuelve a pruebas después de vender en producción manda las ventas siguientes a la AEAT de
+  pruebas (VERIFACTU-F09).
 - **Dos cadenas por hub y emisor**: pruebas y producción no se encadenan entre sí.
 - **Una factura, un registro**: ingerir dos veces la misma factura no duplica el registro ni gasta otro
-  número de la cadena.
+  número de la cadena, pero la segunda entrega llega a enviarse a la AEAT antes de chocar con el
+  registro existente (VERIFACTU-F13).
 - **No se sella un registro aritméticamente imposible**: la cuota de cada línea tiene que cuadrar con
   su tipo, y una factura ordinaria no puede sumar en negativo (las devoluciones son rectificativas);
   si no cuadra, no se escribe nada ni se gasta número.
@@ -432,8 +445,13 @@ discrepancia; manda el código.
 - **Vuelta a pruebas**: el aviso de confirmación («Solo podrás volver a pruebas hasta que se remita la
   primera.»), «Todavía no se ha remitido ninguna factura a la AEAT real…» y la negativa «…ya envió a la
   AEAT un registro aceptado en producción…» hablan de remitir o de aceptar; el núcleo cierra la vuelta
-  al emitir la primera venta en producción, aunque no haya salido (F09). Un rechazo desconocido de
-  «Volver a pruebas» sale como «No se ha podido pasar a producción…».
+  al emitir la primera rectificativa en producción, aunque no haya salido, y una venta no la cierra
+  (F09, ERPlora/hub#2498). Un rechazo desconocido de «Volver a pruebas» sale como «No se ha podido
+  pasar a producción…».
+- **Test del hub que promete cerrar la vuelta con una venta**: `crates/runtime/tests/fiscal_mode.rs`
+  (`a_sale_that_starts_the_fiscal_chain_in_production_seals_the_go_live`) se llama así pero sella
+  llamando directamente a la función del núcleo; por el camino real, la factura de Facturación es un
+  manejador y no sella (F09).
 - **Aviso al subir el certificado**: dice solo «Subido el», sin fecha; el texto «Certificado subido»
   existe en el catálogo y no se usa (F02).
 - **Desactivar con registros sin enviar**: la pantalla del hub enseña la frase del motor en inglés; el
@@ -465,12 +483,20 @@ discrepancia; manda el código.
   por la ingesta siempre va vacío y el XML declara «por diferencias». El motivo «una rectificativa
   {invoice_type} exige TipoRectificativa…» ya no puede darse: el motor siempre lo pone (F14).
 - **Rectificativas**: `docs/concepts.md` dice que una segunda ingesta deja un solo registro y no gasta
-  número; es cierto, pero la ingesta falla en vez de no hacer nada y el aviso acaba en la cola de
-  fallos (verifactu#110, F13, F14).
+  número; es cierto, pero la ingesta falla en vez de no hacer nada, la segunda entrega llega a
+  enviarse a la AEAT antes de chocar y el aviso acaba en la cola de fallos (verifactu#110, F13, F14).
 - **Importes ×100**: verifactu#109 (abierta) dice que Registros enseña los totales multiplicados por
   cien; el código actual los pinta como dinero del hub (céntimos → euros), así que parece ya resuelto.
 - **Declaración «hasta entonces no se puede enviar ninguna factura»**: cierto para el envío; la venta
   no se bloquea y el registro espera en la cola (F12).
+- **Datos del productor «al minuto»**: el texto de la declaración («Llegan solos al minuto de estar el
+  sistema en marcha») y el comentario de `crates/runtime/src/producer_facts.rs` del hub («a minute at
+  most») prometen un minuto; llegan con el aviso de arranque, el diario o el de un cambio de vía, y si
+  falla el de arranque pueden tardar hasta un día (F12).
+- **Avisos de envío fallido «sin el NIF»**: el comentario del motor del hub
+  (`crates/plugins/verifactu/src/events.rs`, `failure_payload`) dice que el aviso nunca lleva el NIF;
+  el mensaje de un Fault 4116 de la AEAT lleva el NIF y la razón social del obligado y viaja en el
+  aviso (F15).
 - **Aviso de aceptado con errores**: su contenido lleva como motivo `aeat_rejected`, el mismo que un
   rechazo (F15).
 - **README**: dice versión 1.5.40; el módulo va por la 1.5.63.

@@ -5,7 +5,7 @@ Prefijo: VERIFACTU
 ## Flujos
 
 ### VERIFACTU-F13 Registrar una factura emitida
-Estado: hecho
+Estado: parcial — la segunda entrega de una factura que ya tiene registro puede salir hacia la AEAT antes de chocar con el registro existente, porque se envía antes de guardar
 Vertical: comun
 Actor: sistema
 Pantalla: ninguna
@@ -17,7 +17,7 @@ Pasos:
 5. En el mismo instante intenta enviarlo a la AEAT (VERIFACTU-F15). El registro aparece en **Registros**.
 Entra: la factura emitida, de Facturación (invoice.created); el entorno, la vía y los datos del productor, del núcleo del hub.
 Sale: el registro de alta sellado (avisa: verifactu.record.created) y su envío.
-Si falla: no deja nada a medias: si la cuota de una línea no cuadra con su tipo, si una factura ordinaria suma en negativo o si falta el NIF del emisor, no se escribe ningún registro ni se gasta número, y el aviso de Facturación se reintenta hasta acabar en la cola de fallos de Automatizaciones. Sin el permiso «Certificado del negocio (firma fiscal)» no se registra ninguna factura: los avisos acaban en esa cola y se reprocesan solos al conceder el permiso; mientras tanto, en producción, la venta no se bloquea. Una factura que ya tiene registro no se duplica: la segunda entrega choca con el registro existente y también acaba en esa cola (es lo que describe verifactu#110). Si la factura no existe, no hace nada.
+Si falla: no deja nada a medias: si la cuota de una línea no cuadra con su tipo, si una factura ordinaria suma en negativo o si falta el NIF del emisor, no se escribe ningún registro ni se gasta número, y el aviso de Facturación se reintenta hasta acabar en la cola de fallos de Automatizaciones. Sin el permiso «Certificado del negocio (firma fiscal)» no se registra ninguna factura: los avisos acaban en esa cola y se reprocesan solos al conceder el permiso; mientras tanto, en producción, la venta no se bloquea. Una factura que ya tiene registro no se duplica en el hub: la segunda entrega choca con el registro existente y también acaba en esa cola (es lo que describe verifactu#110), pero llega a enviarse a la AEAT antes de chocar, porque el envío va antes de guardar. Si la factura no existe, no hace nada.
 Implicados: INVOICE-F01, INVOICE-F02, INVOICE-F03, INVOICE-F04, INVOICE-F05, INVOICE-F11, REC_FISCAL-F03, REC_FISCAL-F04, REC_FISCAL-F10
 Pendiente de enlazar: hub — motor fiscal: secuencia, huella, QR y XML del registro de alta
 QA: L-04, BD-09, R-09, B-06, qa-hub §7
@@ -39,7 +39,7 @@ Implicados: INVOICE-F07, INVOICE-F08, INVOICE-F09, INVOICE-F10, REC_FISCAL-F04, 
 QA: L-03, R-11, B-08, BD-09
 
 ### VERIFACTU-F15 Enviar el registro a la AEAT y recoger su respuesta
-Estado: parcial — una respuesta de la AEAT que no es ni aceptación ni rechazo deja el registro en «Error» sin entrada en la cola, y nadie lo vuelve a enviar solo
+Estado: parcial — una respuesta con veredicto que el motor no reconoce queda en «Error» sin entrada en la cola (si no la tenía ya) y nadie la reenvía; un «duplicado» (3000) tras un reintento se marca «Rechazado» aunque la AEAT lo tenga aceptado
 Vertical: comun
 Actor: sistema
 Pantalla: ninguna
@@ -50,12 +50,12 @@ Pasos:
    - correcta: «Aceptado» con su CSV; evento «Envío aceptado»;
    - aceptado con errores: también «Aceptado» (está registrado y no se reenvía); evento «Aceptado con avisos». El mismo evento sale con una aceptación limpia de un registro que ha ido a un entorno distinto del actual del hub (por ejemplo, uno de pruebas que sale después de pasar a producción);
    - rechazado: «Rechazado» con el código y el mensaje de la AEAT; evento «Envío fallido»; no se reintenta solo (VERIFACTU-F24). Si el rechazo es por la cadena, el sistema consulta a la AEAT, se reengancha a su último registro y lo reenvía una vez solo;
-   - una respuesta que no es ninguna de las anteriores: «Error», sin entrada en la cola.
+   - una respuesta con veredicto que no es ninguno de los anteriores: «Error», sin entrada en la cola si no la tenía; un Fault de la AEAT o una respuesta sin veredicto (página de mantenimiento, 429, 5xx) va a la cola; los Fault 4102, 4104 y 4116 quedan «Rechazado»; un 3000 «duplicado», también, aunque la AEAT ya tenga aceptado ese registro (tras un 504, un tiempo agotado o una operación que se deshace después de enviar): deja de ser eslabón y descuadra la cadena siguiente.
 4. Si no hay respuesta (red, AEAT o celda caídas, o un fallo de la AEAT que se puede reintentar): «Error», entra en la cola de contingencia y sale solo después (VERIFACTU-F20).
 5. Un XML que no pasa el esquema no se envía ni se guarda en el archivo: queda «Rechazado» sin salir del hub.
 Entra: el registro sellado; la vía, el certificado o la conexión segura, del núcleo del hub.
-Sale: el estado y la respuesta de la AEAT en el registro, y el XML guardado en el archivo de ficheros del módulo. Avisa: verifactu.record.rejected cuando no ha llegado (rechazo de la AEAT, fallo de red, esquema inválido, entorno desconocido o sobre imposible de construir) y verifactu.record.accepted_with_errors cuando se aceptó con errores; los dos llevan solo el id del registro, el número de factura, el estado, el motivo, el código y el mensaje, y el entorno, nunca el NIF ni los importes. Una aceptación limpia no avisa a nadie.
-Si falla: lo que falla por la red o por la vía queda en la cola con su motivo en Eventos y en el detalle (VERIFACTU-F17); lo que nace sin vía queda Pendiente y lo recoge la pasada. Dos casos no se recuperan solos: el «Error» de una respuesta no reconocida, que no tiene entrada en la cola; y un registro que venía de la cola y no pasa el esquema, que conserva su entrada y se vuelve a comprobar, sin éxito, en cada pasada. Un registro que no sabe su entorno no se envía a ninguno.
+Sale: el estado y la respuesta de la AEAT en el registro, y el XML guardado en el archivo de ficheros del módulo. Avisa: verifactu.record.rejected cuando no ha llegado (rechazo de la AEAT, fallo de red, esquema inválido, entorno desconocido o sobre imposible de construir) y verifactu.record.accepted_with_errors cuando se aceptó con errores; los dos llevan solo el id del registro, el número de factura, el estado, el motivo, el código y el mensaje, y el entorno, nunca los importes; el mensaje de la AEAT puede llevar el NIF y la razón social del obligado (el de un Fault 4116 los lleva). Una aceptación limpia no avisa a nadie.
+Si falla: lo que falla por la red o por la vía queda en la cola con su motivo en Eventos y en el detalle (VERIFACTU-F17); lo que nace sin vía queda Pendiente y lo recoge la pasada. Dos casos no se recuperan solos: el «Error» de una respuesta con veredicto no reconocido, que no tiene entrada en la cola (si no la tenía ya); y un registro que venía de la cola y no pasa el esquema, que conserva su entrada y se vuelve a comprobar, sin éxito, en cada pasada. Un registro que no sabe su entorno no se envía a ninguno.
 Implicados: FLOWS-F04, REC_FISCAL-F03, REC_FISCAL-F05
 Pendiente de enlazar: hub — motor fiscal: envío, clasificación de la respuesta y reenganche de la cadena
 Pendiente de enlazar: verifactu-gateway — presentar el registro en nombre del negocio y devolver la respuesta de la AEAT
@@ -86,7 +86,7 @@ Pantalla: Registros
 Pasos:
 1. En **VeriFactu → Registros**, pulsa una fila. Mientras carga sale «Cargando…» encima de la lista.
 2. Se abre «Registro {number}» con su estado, los datos de la factura, «Generado el» y «Transmitido el», la «Cadena de huellas», la «Huella de la entrega» y la «Respuesta de la AEAT» (CSV, código, mensaje, reintentos, próximo reintento).
-3. Si el registro está Pendiente, Error o Reintento, arriba sale «Aún no está en la AEAT» con el porqué (el motivo del último aplazamiento o fallo, en palabras: por ejemplo «este hub todavía no tiene por dónde presentar…» o «antes tiene que salir un registro anterior de la misma cadena…») y el cuándo: «Está en la cola de contingencia y sale solo en su próximo intento, {at}, en orden y declarado a la AEAT como envío tardío. No tienes que hacer nada.» o «Sale solo en el próximo envío automático —cada 5 minutos, en cuanto este hub pueda enviar—, en orden y declarado a la AEAT como envío tardío. No tienes que hacer nada.». Ese segundo texto también sale para un «Error» sin entrada en la cola, que en realidad no saldrá solo (VERIFACTU-F15).
+3. Si el registro está Pendiente, Error o Reintento, arriba sale «Aún no está en la AEAT» con el porqué (el motivo del último aplazamiento o fallo, en palabras: por ejemplo «este hub todavía no tiene por dónde presentar…» o «antes tiene que salir un registro anterior de la misma cadena…») y el cuándo: «Está en la cola de contingencia y sale solo en su próximo intento, {at}, en orden y declarado a la AEAT como envío tardío. No tienes que hacer nada.» o «Sale solo en el próximo envío automático —cada 5 minutos, en cuanto este hub pueda enviar—, en orden y declarado a la AEAT como envío tardío. No tienes que hacer nada.». Ese segundo texto también sale para un «Error» sin entrada en la cola (una respuesta con veredicto no reconocido), que en realidad no saldrá solo (VERIFACTU-F15).
 4. «Volver» regresa a la lista.
 Entra: el registro, sus eventos y su entrada en la cola.
 Sale: nada; es consulta.

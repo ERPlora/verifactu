@@ -34,7 +34,7 @@ Pasos:
 4. Sale un aviso verde que dice solo «Subido el»; la pastilla pasa a «Cargado» con el Titular y «Subido el» con la fecha. El fichero y la contraseña se quedan en el hub y no vuelven a la pantalla.
 Entra: el fichero y su contraseña, que escribe la persona.
 Sale: el certificado guardado en el núcleo del hub; a partir de ahí la vía de envío la decide el interruptor de VERIFACTU-F04. El núcleo avisa al SaaS de la vía nueva.
-Si falla: sin fichero: «Elige antes un fichero .p12 o .pfx.». Un fichero de otro tipo o de más de 1 MB lo rechaza la propia zona (««{name}» no es de un tipo admitido.», ««{name}» pesa más de {size}.»). Sin permiso del módulo: «Esta app no tiene permiso para usar el certificado del negocio. Concédelo en Ajustes → Permisos.». Cualquier otro rechazo, también el de un hub de demostración (que no puede tener certificado propio) o el de quien no es administrador: «No se ha podido guardar el certificado. Revisa el fichero y la contraseña.».
+Si falla: sin fichero: «Elige antes un fichero .p12 o .pfx.». Un fichero de otro tipo o de más de 1 MB lo rechaza la propia zona (««{name}» no es de un tipo admitido.», ««{name}» pesa más de {size}.»). Sin permiso del módulo: «Esta app no tiene permiso para usar el certificado del negocio. Concédelo en Ajustes → Permisos.». Cualquier otro rechazo, también el de quien no es administrador: «No se ha podido guardar el certificado. Revisa el fichero y la contraseña.». Un hub de demostración también puede subir su certificado: lo que lo aparta de la AEAT real es que siempre remite a pruebas, no esta puerta.
 Implicados: pendiente
 Pendiente de enlazar: hub — guardar el certificado del negocio y publicar la vía de envío
 QA: qa-hub §7, qa-hub-restaurant §7.11
@@ -110,7 +110,7 @@ Pendiente de enlazar: saas — revisar el envío nuevo de la autorización sin t
 QA: qa-hub §7
 
 ### VERIFACTU-F07 Solicitar o renovar la conexión segura con ERPlora
-Estado: hecho
+Estado: parcial — con la conexión caducada el hub la sigue presentando, la celda de ERPlora la rechaza y los registros esperan sin límite, también en pruebas; «Renovar la conexión» no pide una firma nueva mientras ERPlora tenga la anterior como aprobada
 Vertical: comun
 Actor: administrador
 Pantalla: Configuración
@@ -120,8 +120,8 @@ Pasos:
 3. Pulsa el botón («Trabajando…»).
 4. Sale el resultado: «Solicitada. Una persona de ERPlora la revisa y la firma, normalmente en 24-72 horas.», «Ya estaba solicitada y sigue en revisión. Aquí no hay nada más que hacer.», «Conexión activa. ERPlora ya puede remitir en tu nombre.», «ERPlora ha devuelto la solicitud.» con el motivo, o «Demasiadas comprobaciones en una hora. El hub sigue intentándolo solo; vuelve en unos minutos.». El bloque enseña el «Identificador de este hub» y «Válida hasta».
 Entra: el estado de la identidad de máquina del hub, del núcleo.
-Sale: la solicitud enviada a ERPlora (la clave privada nace en el hub y no sale); cuando una persona la firma, el hub la instala. La conexión firmada es lo que la vía de ERPlora necesita en producción; en pruebas la celda de ERPlora acepta al hub sin ella (VERIFACTU-F20).
-Si falla: sin ser administrador, «Solo un administrador del hub puede solicitar esta conexión.»; un rechazo con nombre sale traducido con su código al lado; sin respuesta del hub, «El hub no ha respondido a la solicitud. Vuelve a intentarlo en un momento.». Con la conexión caducada la pantalla dice «ERPlora no puede remitir en tu nombre hasta que la renueves. Mientras tanto, tus registros esperan en la cola de contingencia.» (sin contrastar en el motor qué carril toma entonces un hub en pruebas).
+Sale: la solicitud enviada a ERPlora (la clave privada nace en el hub y no sale); cuando una persona la firma, el hub la instala. La conexión firmada es lo que la vía de ERPlora necesita en producción; en pruebas la celda de ERPlora acepta al hub sin ella (VERIFACTU-F20), salvo la celda hoy desplegada (verifactu-gateway#68).
+Si falla: sin ser administrador, «Solo un administrador del hub puede solicitar esta conexión.»; un rechazo con nombre sale traducido con su código al lado; sin respuesta del hub, «El hub no ha respondido a la solicitud. Vuelve a intentarlo en un momento.». Con la conexión caducada la pantalla dice «ERPlora no puede remitir en tu nombre hasta que la renueves. Mientras tanto, tus registros esperan en la cola de contingencia.»: el hub sigue usando la conexión caducada, la celda la rechaza y los registros esperan sin límite, también en pruebas. «Renovar la conexión» no presenta una solicitud nueva mientras ERPlora tenga la anterior como aprobada, y el servicio de fondo del hub no actúa mientras haya una conexión instalada, aunque esté caducada. Sin confirmar: qué devuelve erplora.com cuando la identidad del hub ha caducado.
 Implicados: pendiente
 Pendiente de enlazar: hub — identidad de máquina del hub y su solicitud de firma
 Pendiente de enlazar: verifactu-gateway — aceptar la conexión del hub con su identidad de máquina
@@ -145,18 +145,18 @@ Pendiente de enlazar: hub — paso a producción del perfil fiscal y sus comprob
 QA: L-04, qa-hub §7
 
 ### VERIFACTU-F09 Volver a pruebas
-Estado: hecho
+Estado: parcial — se puede volver a pruebas después de vender en producción, hasta la primera rectificativa; las ventas siguientes van a la AEAT de pruebas (ERPlora/hub#2498)
 Vertical: comun
 Actor: administrador
 Pantalla: Ajustes
 Pasos:
-1. En **VeriFactu → Ajustes**, con el hub en «Producción» y sin ninguna venta ni factura emitida todavía en producción, sale «Todavía no se ha remitido ninguna factura a la AEAT real, así que aún puedes volver a pruebas.» y el botón «Volver a pruebas».
+1. En **VeriFactu → Ajustes**, con el hub en «Producción» y sin ninguna rectificativa emitida todavía en producción, sale «Todavía no se ha remitido ninguna factura a la AEAT real, así que aún puedes volver a pruebas.» y el botón «Volver a pruebas».
 2. Púlsalo y confirma en «¿Volver al entorno de pruebas?» («Las facturas volverán a ir al entorno de pruebas de la AEAT y no contarán ante Hacienda.»).
 3. Sale «Tu hub ha vuelto al entorno de pruebas.».
-4. En cuanto se emite la primera venta o factura en producción —aunque su registro siga en la cola sin haber salido— el botón desaparece y sale «Tu hub ya ha remitido facturas a la AEAT real, así que no puede volver a pruebas. Para hacer pruebas, usa otro hub.».
-Entra: si ya se emitió alguna venta o factura en producción, del núcleo (lo anota al confirmar esa venta, no al llegar a la AEAT).
+4. En cuanto se emite la primera rectificativa en producción (a mano o por una devolución) —aunque su registro siga en la cola sin haber salido— el botón desaparece y sale «Tu hub ya ha remitido facturas a la AEAT real, así que no puede volver a pruebas. Para hacer pruebas, usa otro hub.». Una venta o una factura normal no cierra la vuelta: el núcleo solo la anota cuando la emite una orden declarativa, y la factura de Facturación no lo es (ERPlora/hub#2498). Si se vuelve después de vender en producción, las ventas siguientes nacen en la cadena de pruebas, con el QR de la sede de pruebas, y nunca llegan a la AEAT real.
+Entra: si ya se emitió alguna rectificativa en producción, del núcleo (lo anota al confirmarla, no al llegar a la AEAT).
 Sale: el hub vuelve a remitir en pruebas.
-Si falla: con algo ya emitido en producción, el núcleo lo niega y sale «No se puede volver al modo de pruebas: este hub ya envió a la AEAT un registro aceptado en producción. Para hacer pruebas, usa otro hub (uno gratuito o la demo).». Un rechazo que la pantalla no reconoce sale como «No se ha podido pasar a producción. Inténtalo de nuevo en un momento.», aunque se estuviera volviendo a pruebas. La configuración del módulo tiene además su propia guarda: guardarla en pruebas con un registro aceptado en producción deshace la operación entera.
+Si falla: con una rectificativa ya emitida en producción, el núcleo lo niega y sale «No se puede volver al modo de pruebas: este hub ya envió a la AEAT un registro aceptado en producción. Para hacer pruebas, usa otro hub (uno gratuito o la demo).». Un rechazo que la pantalla no reconoce sale como «No se ha podido pasar a producción. Inténtalo de nuevo en un momento.», aunque se estuviera volviendo a pruebas. La configuración del módulo tiene además su propia guarda: guardarla en pruebas con un registro aceptado en producción deshace la operación entera. Esa guarda solo actúa al pulsar «Guardar configuración»: el botón «Volver a pruebas» llama al núcleo del hub, así que no tapa el hueco.
 Implicados: REC_FISCAL-F14
 Pendiente de enlazar: hub — volver a pruebas mientras no se haya emitido nada en producción
 QA: L-04
@@ -203,7 +203,7 @@ Pasos:
 1. En **VeriFactu → Ajustes**, tarjeta «Declaración responsable» («La declaración que ERPlora firma para la versión del sistema que estás usando…»).
 2. «Leer la declaración firmada» abre el documento; al lado, «Versión de la declaración».
 3. «Datos identificativos de este sistema»: Productor, «NIF del productor», «Nombre del sistema», «Código del sistema», «Versión instalada», «Número de instalación» y los indicadores de uso, cada uno con el nombre del elemento tal como va en el XML.
-4. Si los datos del productor aún no han llegado: «Los datos identificativos de ERPlora todavía no han llegado. Llegan solos al minuto de estar el sistema en marcha; hasta entonces no se puede enviar ninguna factura a Hacienda.» y solo se ven la versión y el número de instalación.
+4. Si los datos del productor aún no han llegado: «Los datos identificativos de ERPlora todavía no han llegado. Llegan solos al minuto de estar el sistema en marcha; hasta entonces no se puede enviar ninguna factura a Hacienda.» y solo se ven la versión y el número de instalación. El «al minuto» no es exacto: llegan con el aviso que el hub manda a ERPlora al arrancar, cada día o al cambiar la vía de envío; si el del arranque falla, pueden tardar hasta un día.
 Entra: la declaración y los datos del productor, del núcleo del hub (los recibe del SaaS en cada latido).
 Sale: nada; es consulta. Mientras faltan los datos del productor, los registros se crean y esperan en la cola (VERIFACTU-F20); la venta no se bloquea.
 Si falla: «No se ha podido cargar la declaración responsable.».

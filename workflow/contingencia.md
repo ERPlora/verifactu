@@ -18,7 +18,7 @@ Pasos:
 6. Queda el evento «Cola de contingencia procesada: {successful} enviados, {failed} con error».
 Entra: los registros pendientes y la cola; la vía del núcleo del hub.
 Sale: los registros enviados y su respuesta, como en VERIFACTU-F15 (avisa: verifactu.contingency.processed).
-Si falla: sin vía, la pasada no envía nada y los registros siguen esperando con su motivo en el detalle (VERIFACTU-F17). Sin el permiso «Certificado del negocio (firma fiscal)» la pasada no llega a ejecutarse. Un registro que no sabe su entorno o cuyo sobre no se puede construir se queda en la cola con su motivo en Eventos. No recoge un «Error» sin entrada en la cola (VERIFACTU-F15).
+Si falla: sin vía, la pasada no envía nada y los registros siguen esperando con su motivo en el detalle (VERIFACTU-F17). Sin el permiso «Certificado del negocio (firma fiscal)» la pasada no llega a ejecutarse. Un registro que no sabe su entorno o cuyo sobre no se puede construir se queda en la cola con su motivo en Eventos. No recoge un «Error» sin entrada en la cola, el de una respuesta con veredicto que el motor no reconoce (VERIFACTU-F15).
 Implicados: REC_FISCAL-F06
 Pendiente de enlazar: hub — tarea programada que drena la cola y regla de no cobrar sin vía en producción
 Pendiente de enlazar: verifactu-gateway — presentar los envíos tardíos marcados como incidencia y servir el carril de pruebas
