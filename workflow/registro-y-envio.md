@@ -56,7 +56,7 @@ Pasos:
 Entra: el registro sellado; la vía, el certificado o la conexión segura, del núcleo del hub.
 Sale: el estado y la respuesta de la AEAT en el registro, y el XML guardado en el archivo de ficheros del módulo. Avisa: verifactu.record.rejected cuando no ha llegado (rechazo de la AEAT, fallo de red, esquema inválido, entorno desconocido o sobre imposible de construir) y verifactu.record.accepted_with_errors cuando se aceptó con errores; los dos llevan solo el id del registro, el número de factura, el estado, el motivo, el código y el mensaje, y el entorno, nunca el NIF ni los importes. Una aceptación limpia no avisa a nadie.
 Si falla: lo que falla por la red o por la vía queda en la cola con su motivo en Eventos y en el detalle (VERIFACTU-F17); lo que nace sin vía queda Pendiente y lo recoge la pasada. Dos casos no se recuperan solos: el «Error» de una respuesta no reconocida, que no tiene entrada en la cola; y un registro que venía de la cola y no pasa el esquema, que conserva su entrada y se vuelve a comprobar, sin éxito, en cada pasada. Un registro que no sabe su entorno no se envía a ninguno.
-Implicados: REC_FISCAL-F05
+Implicados: FLOWS-F04, REC_FISCAL-F05
 Pendiente de enlazar: hub — motor fiscal: envío, clasificación de la respuesta y reenganche de la cadena
 Pendiente de enlazar: verifactu-gateway — presentar el registro en nombre del negocio y devolver la respuesta de la AEAT
 QA: L-04, R-09, B-06, BD-09, qa-hub §7, qa-hub-restaurant §7.11
