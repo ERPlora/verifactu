@@ -34,7 +34,7 @@ Pasos:
 Entra: la petición de desactivar o desinstalar, del hub.
 Sale: nada si se niega: no se desactiva ni se desinstala ninguno del conjunto, y VeriFactu sigue activo y enviando.
 Si falla: la pantalla del hub enseña la frase del motor tal cual, en inglés: {n} VeriFactu record(s) have not reached the AEAT yet: send them before disabling or removing the module. Ojo: un registro rechazado cuenta como no enviado y no se puede descartar, así que mientras exista impide desactivar y desinstalar.
-Implicados: pendiente
+Implicados: REC_FISCAL-F06
 Pendiente de enlazar: hub — desactivar y desinstalar módulos, preguntando antes al módulo si puede irse
 QA: L-14, qa-hub §7
 

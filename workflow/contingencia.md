@@ -55,7 +55,7 @@ Pasos:
 Entra: la entrada elegida.
 Sale: la entrada reprogramada (avisa: verifactu.contingency.retried).
 Si falla: «No se pudo reencolar» o el mensaje del servidor. Un empleado recibe la petición del PIN de un responsable.
-Implicados: ninguno
+Implicados: REC_FISCAL-F06
 QA: qa-hub §7
 
 ### VERIFACTU-F23 Descartar una entrada de la cola
@@ -102,6 +102,6 @@ Pasos:
 Entra: el registro elegido.
 Sale: el envío y su respuesta (avisa: verifactu.record.transmitted).
 Si falla: un registro ya aceptado no se reenvía (la AEAT lo daría por duplicado); sin vía en el hub, se niega con un motivo que manda a subir el certificado «en Ajustes → Negocio», que ya no es donde se sube. Un fallo de red lo deja en la cola (VERIFACTU-F20).
-Implicados: pendiente
+Implicados: REC_FISCAL-F05, REC_FISCAL-F06
 Pendiente de enlazar: hub — motor fiscal: envío manual de un registro concreto
 QA: qa-hub §7
