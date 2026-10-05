@@ -18,8 +18,7 @@ Pasos:
 Entra: la factura emitida, de Facturación (invoice.created); el entorno, la vía y los datos del productor, del núcleo del hub.
 Sale: el registro de alta sellado (avisa: verifactu.record.created) y su envío.
 Si falla: no deja nada a medias: si la cuota de una línea no cuadra con su tipo, si una factura ordinaria suma en negativo o si falta el NIF del emisor, no se escribe ningún registro ni se gasta número, y el aviso de Facturación se reintenta hasta acabar en la cola de fallos de Automatizaciones. Sin el permiso «Certificado del negocio (firma fiscal)» no se registra ninguna factura: los avisos acaban en esa cola y se reprocesan solos al conceder el permiso; mientras tanto, en producción, la venta no se bloquea. Una factura que ya tiene registro no se duplica en el hub: la segunda entrega choca con el registro existente y también acaba en esa cola (es lo que describe verifactu#110), pero llega a enviarse a la AEAT antes de chocar, porque el envío va antes de guardar. Si la factura no existe, no hace nada.
-Implicados: INVOICE-F01, INVOICE-F02, INVOICE-F03, INVOICE-F04, INVOICE-F05, INVOICE-F11, REC_FISCAL-F03, REC_FISCAL-F04, REC_FISCAL-F10
-Pendiente de enlazar: hub — motor fiscal: secuencia, huella, QR y XML del registro de alta
+Implicados: INVOICE-F01, INVOICE-F02, INVOICE-F03, INVOICE-F04, INVOICE-F05, INVOICE-F11, REC_FISCAL-F03, REC_FISCAL-F04, REC_FISCAL-F10, HUB_VERIFACTU-F01, HUB_VERIFACTU-F02, HUB_VERIFACTU-F04
 QA: L-04, BD-09, R-09, B-06, qa-hub §7
 
 ### VERIFACTU-F14 Registrar una factura rectificativa
@@ -35,7 +34,7 @@ Pasos:
 Entra: la rectificativa emitida, de Facturación (invoice.rectified), y la factura que rectifica.
 Sale: el registro de alta de la rectificativa (avisa: verifactu.record.created) y su envío.
 Si falla: como VERIFACTU-F13.
-Implicados: INVOICE-F07, INVOICE-F08, INVOICE-F09, INVOICE-F10, REC_FISCAL-F04, REC_FISCAL-F11, REC_FISCAL-F12, REC_FISCAL-F13
+Implicados: INVOICE-F07, INVOICE-F08, INVOICE-F09, INVOICE-F10, REC_FISCAL-F04, REC_FISCAL-F11, REC_FISCAL-F12, REC_FISCAL-F13, HUB_VERIFACTU-F01
 QA: L-03, R-11, B-08, BD-09
 
 ### VERIFACTU-F15 Enviar el registro a la AEAT y recoger su respuesta
@@ -56,9 +55,7 @@ Pasos:
 Entra: el registro sellado; la vía, el certificado o la conexión segura, del núcleo del hub.
 Sale: el estado y la respuesta de la AEAT en el registro, y el XML guardado en el archivo de ficheros del módulo. Avisa: verifactu.record.rejected cuando no ha llegado (rechazo de la AEAT, fallo de red, esquema inválido, entorno desconocido o sobre imposible de construir) y verifactu.record.accepted_with_errors cuando se aceptó con errores; los dos llevan solo el id del registro, el número de factura, el estado, el motivo, el código y el mensaje, y el entorno, nunca los importes; el mensaje de la AEAT puede llevar el NIF y la razón social del obligado (el de un Fault 4116 los lleva). Una aceptación limpia no avisa a nadie.
 Si falla: lo que falla por la red o por la vía queda en la cola con su motivo en Eventos y en el detalle (VERIFACTU-F17); lo que nace sin vía queda Pendiente y lo recoge la pasada. Dos casos no se recuperan solos: el «Error» de una respuesta con veredicto no reconocido, que no tiene entrada en la cola (si no la tenía ya); y un registro que venía de la cola y no pasa el esquema, que conserva su entrada y se vuelve a comprobar, sin éxito, en cada pasada. Un registro que no sabe su entorno no se envía a ninguno.
-Implicados: FLOWS-F04, REC_FISCAL-F03, REC_FISCAL-F05
-Pendiente de enlazar: hub — motor fiscal: envío, clasificación de la respuesta y reenganche de la cadena
-Pendiente de enlazar: verifactu-gateway — presentar el registro en nombre del negocio y devolver la respuesta de la AEAT
+Implicados: FLOWS-F04, REC_FISCAL-F03, REC_FISCAL-F05, HUB-F247, HUB_VERIFACTU-F04, HUB_VERIFACTU-F05, HUB_VERIFACTU-F08, HUB_VERIFACTU-F09, VFGW-F06
 QA: L-04, R-09, B-06, BD-09, qa-hub §7, qa-hub-restaurant §7.11
 
 ### VERIFACTU-F16 Consultar los registros y su estado
@@ -91,7 +88,7 @@ Pasos:
 Entra: el registro, sus eventos y su entrada en la cola.
 Sale: nada; es consulta.
 Si falla: «Registro no encontrado» o el error encima de la lista; si no se pudo leer el motivo, «No se ha podido cargar el motivo.»; sin motivo guardado, «No salió al crearse.».
-Implicados: REC_FISCAL-F06
+Implicados: REC_FISCAL-F06, HUB_VERIFACTU-F05, VFGW-F06
 QA: qa-hub §7
 
 ### VERIFACTU-F18 Cotejar el QR en la sede de la AEAT

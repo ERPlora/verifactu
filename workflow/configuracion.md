@@ -18,8 +18,7 @@ Pasos:
 Entra: la identidad fiscal del negocio (Ajustes → Negocio, núcleo del hub); el entorno en que remite el hub, del núcleo.
 Sale: la configuración del módulo guardada con el emisor efectivo y el entorno (avisa: verifactu.config.changed). El entorno que se guarda es el que dijo el núcleo; si la pantalla no pudo leerlo, el que ya tenía la fila del módulo. Cada guardado vuelve a copiar el NIF y la razón social de Ajustes → Negocio. Guardar no exige el permiso del certificado: por eso se guarda aunque falte.
 Si falla: sin NIF en Ajustes → Negocio: «No se puede activar VeriFactu sin obligado tributario: configura antes el NIF y la razón social en Ajustes → Negocio.» y no se guarda nada. Quien no es administrador recibe una negativa, sin PIN de aprobación. En un hub de demostración con un intento de cambiar su identidad o su entorno sale el aviso de demostración correspondiente. Cualquier otro fallo: «No se pudo guardar la configuración» o el mensaje del servidor.
-Implicados: pendiente
-Pendiente de enlazar: hub — identidad fiscal del negocio en Ajustes → Negocio y lista de puesta en marcha del hub
+Implicados: HUB-F35, HUB-F222, HUB-F300, HUB_SHELL-F28, HUB_SHELL-F31, HUB_SHELL-F155, HUB_SHELL-F164, HUB_SHELL-F167
 QA: BD-02, qa-hub §7
 
 ### VERIFACTU-F02 Subir el certificado propio del negocio
@@ -35,8 +34,7 @@ Pasos:
 Entra: el fichero y su contraseña, que escribe la persona.
 Sale: el certificado guardado en el núcleo del hub; a partir de ahí la vía de envío la decide el interruptor de VERIFACTU-F04. El núcleo avisa al SaaS de la vía nueva.
 Si falla: sin fichero: «Elige antes un fichero .p12 o .pfx.». Un fichero de otro tipo o de más de 1 MB lo rechaza la propia zona (««{name}» no es de un tipo admitido.», ««{name}» pesa más de {size}.»). Sin permiso del módulo: «Esta app no tiene permiso para usar el certificado del negocio. Concédelo en Ajustes → Permisos.». Cualquier otro rechazo, también el de quien no es administrador: «No se ha podido guardar el certificado. Revisa el fichero y la contraseña.». Un hub de demostración también puede subir su certificado: lo que lo aparta de la AEAT real es que siempre remite a pruebas, no esta puerta.
-Implicados: pendiente
-Pendiente de enlazar: hub — guardar el certificado del negocio y publicar la vía de envío
+Implicados: HUB-F302
 QA: qa-hub §7, qa-hub-restaurant §7.11
 
 ### VERIFACTU-F03 Quitar el certificado propio
@@ -51,8 +49,7 @@ Pasos:
 Entra: nada más que la orden.
 Sale: el certificado borrado del núcleo; los registros siguientes salen por la vía de ERPlora. En producción sin autorización aprobada o sin conexión segura el hub se queda sin vía, y desde ese momento el núcleo niega las ventas (regla En producción, sin vía no se cobra, del índice). Apagar el interruptor de VERIFACTU-F04 en ese mismo caso se niega; quitar el certificado, no.
 Si falla: «No se ha podido guardar el certificado. Revisa el fichero y la contraseña.» (el mismo texto que la subida) y el certificado sigue ahí.
-Implicados: REC_FISCAL-F01
-Pendiente de enlazar: hub — borrar el certificado del negocio y pasar a la vía delegada
+Implicados: REC_FISCAL-F01, HUB-F303
 QA: qa-hub §7
 
 ### VERIFACTU-F04 Elegir quién remite: mi certificado o ERPlora
@@ -68,8 +65,7 @@ Pasos:
 Entra: la vía actual y si hay certificado subido, del núcleo del hub.
 Sale: la vía de envío cambiada en el núcleo; los registros siguientes salen por ella (VERIFACTU-F15).
 Si falla: el interruptor vuelve a la vía real y dice por qué: en producción sin autorización aprobada, «Para que ERPlora remita en producción falta que aprobemos tu otorgamiento de representación…»; en producción sin conexión segura, «Para que ERPlora remita falta que firmemos la conexión segura de este hub…»; sin certificado, «No hay ningún certificado subido: súbelo en Configuración para poder usarlo.»; otro, «No se ha podido cambiar la vía de envío. No ha cambiado nada; inténtalo de nuevo.».
-Implicados: pendiente
-Pendiente de enlazar: hub — cambiar la vía de envío (certificado propio o delegada) y sus negativas
+Implicados: HUB-F301, HUB-F304
 QA: qa-hub §7
 
 ### VERIFACTU-F05 Firmar y subir la autorización para que remita ERPlora
@@ -87,8 +83,7 @@ Pasos:
 Entra: los datos del negocio de Ajustes → Negocio y lo que adjunta la persona.
 Sale: la autorización enviada al SaaS para su revisión; su estado lo publica el núcleo del hub y es condición para pasar a producción por la vía de ERPlora (VERIFACTU-F08) y para cobrar en producción por esa vía.
 Si falla: «Enviar a revisión» no se activa sin el modelo, la copia del documento y, si tocan, la muestra de firma y el justificante; en una sociedad sí se activa sin el nombre y el NIF del representante, y entonces lo frena el servidor con «Rellena el nombre y el NIF de quien firma.». Otros rechazos salen con su frase («Adjunta el modelo firmado.», «El modelo firmado tiene que ser un PDF — escanéalo o fírmalo con AutoFirma.», «Cada fichero tiene que ocupar menos de 10 MB.», «Este hub todavía no está conectado con ERPlora.»…) o «No ha funcionado. Vuelve a intentarlo.», con el código HTTP entre paréntesis. Sin respuesta del SaaS al abrir: «No hemos podido contactar con ERPlora, así que no podemos decirte cómo va.». Quien no es administrador recibe la negativa del hub.
-Implicados: pendiente
-Pendiente de enlazar: hub — puerta de la autorización de representación y su estado en el perfil fiscal
+Implicados: HUB-F305, VFGW-F08
 Pendiente de enlazar: saas — revisar y aprobar o devolver la autorización (Anexo I)
 QA: qa-hub §7
 
@@ -105,7 +100,7 @@ Pasos:
 Entra: los mismos datos que VERIFACTU-F05.
 Sale: un envío nuevo en el SaaS que sustituye al que estaba en revisión; uno aprobado sigue en vigor mientras se revisa el nuevo.
 Si falla: como VERIFACTU-F05.
-Implicados: pendiente
+Implicados: HUB-F305
 Pendiente de enlazar: saas — revisar el envío nuevo de la autorización sin tocar el vigente
 QA: qa-hub §7
 
@@ -122,9 +117,7 @@ Pasos:
 Entra: el estado de la identidad de máquina del hub, del núcleo.
 Sale: la solicitud enviada a ERPlora (la clave privada nace en el hub y no sale); cuando una persona la firma, el hub la instala. La conexión firmada es lo que la vía de ERPlora necesita en producción; en pruebas la celda de ERPlora acepta al hub sin ella (VERIFACTU-F20), salvo la celda hoy desplegada (verifactu-gateway#68).
 Si falla: sin ser administrador, «Solo un administrador del hub puede solicitar esta conexión.»; un rechazo con nombre sale traducido con su código al lado; sin respuesta del hub, «El hub no ha respondido a la solicitud. Vuelve a intentarlo en un momento.». Con la conexión caducada la pantalla dice «ERPlora no puede remitir en tu nombre hasta que la renueves. Mientras tanto, tus registros esperan en la cola de contingencia.»: el hub sigue usando la conexión caducada, la celda la rechaza y los registros esperan sin límite, también en pruebas. «Renovar la conexión» no presenta una solicitud nueva mientras ERPlora tenga la anterior como aprobada, y el servicio de fondo del hub no actúa mientras haya una conexión instalada, aunque esté caducada. Sin confirmar: qué devuelve erplora.com cuando la identidad del hub ha caducado.
-Implicados: pendiente
-Pendiente de enlazar: hub — identidad de máquina del hub y su solicitud de firma
-Pendiente de enlazar: verifactu-gateway — aceptar la conexión del hub con su identidad de máquina
+Implicados: HUB-F306, VFGW-F01, VFGW-F03
 QA: qa-hub §7
 
 ### VERIFACTU-F08 Pasar a producción
@@ -140,8 +133,7 @@ Pasos:
 Entra: el perfil fiscal del hub (núcleo): identidad, vía, autorización, caducidad del certificado propio.
 Sale: el hub remite en producción a partir de ese momento; el NIF del negocio queda congelado. Los registros nuevos nacen en la cadena de producción, con el QR de la sede real; los que nacieron en pruebas siguen yendo a pruebas.
 Si falla: el núcleo dice qué falta: «Para pasar a producción, ERPlora necesita tu autorización firmada para remitir en tu nombre, aprobada por nuestro equipo. Fírmala en Configuración.» (vía de ERPlora sin autorización aprobada), «Tu hub aún no está listo para producción: faltan tus datos fiscales o una vía para remitir (tu propio certificado o el de ERPlora). Revisa Configuración.», «Tu certificado propio ha caducado y la AEAT no lo acepta. Sube uno renovado, o deja que remita ERPlora, y vuelve a intentarlo.», «Este hub cesó su actividad y ya no emite facturas.», «Este es un hub de demostración y no puede pasar a producción. Crea tu propio hub para facturar de verdad.», o «No se ha podido pasar a producción. Inténtalo de nuevo en un momento.». En un hub de demostración el botón no aparece: sale «Este es un hub de demostración: siempre remite al entorno de pruebas de la AEAT. Crea tu propio hub para pasar a producción.».
-Implicados: REC_FISCAL-F14
-Pendiente de enlazar: hub — paso a producción del perfil fiscal y sus comprobaciones
+Implicados: REC_FISCAL-F14, HUB-F301, HUB-F307, HUB-F315
 QA: L-04, qa-hub §7
 
 ### VERIFACTU-F09 Volver a pruebas
@@ -157,8 +149,7 @@ Pasos:
 Entra: si ya se emitió alguna rectificativa en producción, del núcleo (lo anota al confirmarla, no al llegar a la AEAT).
 Sale: el hub vuelve a remitir en pruebas.
 Si falla: con una rectificativa ya emitida en producción, el núcleo lo niega y sale «No se puede volver al modo de pruebas: este hub ya envió a la AEAT un registro aceptado en producción. Para hacer pruebas, usa otro hub (uno gratuito o la demo).». Un rechazo que la pantalla no reconoce sale como «No se ha podido pasar a producción. Inténtalo de nuevo en un momento.», aunque se estuviera volviendo a pruebas. La configuración del módulo tiene además su propia guarda: guardarla en pruebas con un registro aceptado en producción deshace la operación entera. Esa guarda solo actúa al pulsar «Guardar configuración»: el botón «Volver a pruebas» llama al núcleo del hub, así que no tapa el hueco.
-Implicados: REC_FISCAL-F14
-Pendiente de enlazar: hub — volver a pruebas mientras no se haya emitido nada en producción
+Implicados: REC_FISCAL-F14, HUB-F308
 QA: L-04
 
 ### VERIFACTU-F10 Probar la conexión con la AEAT
@@ -174,9 +165,7 @@ Pasos:
 Entra: el tipo de prueba; la vía y el entorno del hub.
 Sale: en el hub, el resultado guardado como evento «Prueba de conexión» (avisa: verifactu.diagnostic.run), sin crear ningún registro ni tocar la cadena local. Con certificado propio, además, un registro de alta en la AEAT que el hub no tiene: en producción queda en la AEAT real a nombre del negocio, y una recuperación posterior desde la AEAT (VERIFACTU-F28), que ancla en el último registro del mes, podría anclar la cadena sobre esa muestra.
 Si falla: sin configuración guardada ni certificado propio, el servidor lo niega (VeriFactu sin configurar). Sin permiso del módulo, el aviso «Permiso: Certificado del negocio (firma fiscal)» con «Ir a Permisos». Sin NIF del negocio, el recuadro del certificado dice «configura el NIF del obligado tributario (emisor) en Ajustes → Negocio antes de probar la conexión». Un empleado recibe la petición del PIN de un responsable y, con él, la prueba sigue. Otro fallo: «No se pudo ejecutar la prueba» o el mensaje del servidor.
-Implicados: REC_FISCAL-F14
-Pendiente de enlazar: hub — prueba de conexión del motor fiscal por la vía real del hub
-Pendiente de enlazar: verifactu-gateway — responder si la celda puede remitir ahora (readyz)
+Implicados: REC_FISCAL-F14, HUB_VERIFACTU-F16, HUB_VERIFACTU-F17, VFGW-F13
 QA: qa-hub §7
 
 ### VERIFACTU-F11 Crear una factura de prueba
@@ -207,7 +196,6 @@ Pasos:
 Entra: la declaración y los datos del productor, del núcleo del hub (los recibe del SaaS en cada latido).
 Sale: nada; es consulta. Mientras faltan los datos del productor, los registros se crean y esperan en la cola (VERIFACTU-F20); la venta no se bloquea.
 Si falla: «No se ha podido cargar la declaración responsable.».
-Implicados: pendiente
-Pendiente de enlazar: hub — servir la declaración responsable y los datos del productor
+Implicados: HUB-F310
 Pendiente de enlazar: saas — publicar los datos del productor del software a cada hub
 QA: L-04, qa-hub-restaurant §7.00
