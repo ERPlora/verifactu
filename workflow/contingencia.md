@@ -19,8 +19,7 @@ Pasos:
 Entra: los registros pendientes y la cola; la vía del núcleo del hub.
 Sale: los registros enviados y su respuesta, como en VERIFACTU-F15 (avisa: verifactu.contingency.processed).
 Si falla: sin vía, la pasada no envía nada y los registros siguen esperando con su motivo en el detalle (VERIFACTU-F17). Sin el permiso «Certificado del negocio (firma fiscal)» la pasada no llega a ejecutarse. Un registro que no sabe su entorno o cuyo sobre no se puede construir se queda en la cola con su motivo en Eventos. No recoge un «Error» sin entrada en la cola, el de una respuesta con veredicto que el motor no reconoce (VERIFACTU-F15).
-Implicados: REC_FISCAL-F06, HUB-F311, HUB-F313, HUB_VERIFACTU-F10, VFGW-F09, VFGW-F10, HUB-F62
-Pendiente de enlazar: saas — conceder el permiso de envío a la celda, también sin autorización para el carril de pruebas
+Implicados: REC_FISCAL-F06, HUB-F311, HUB-F313, HUB_VERIFACTU-F10, VFGW-F09, VFGW-F10, HUB-F62, REC_ALTA-F13, SAAS_DASHBOARD-F146
 QA: L-04, BD-09, qa-hub §7, qa-hub-restaurant §7.11
 
 ### VERIFACTU-F21 Procesar la cola a mano

@@ -88,7 +88,7 @@ Pasos:
 Entra: el registro, sus eventos y su entrada en la cola.
 Sale: nada; es consulta.
 Si falla: «Registro no encontrado» o el error encima de la lista; si no se pudo leer el motivo, «No se ha podido cargar el motivo.»; sin motivo guardado, «No salió al crearse.».
-Implicados: REC_FISCAL-F06, HUB_VERIFACTU-F05, VFGW-F06
+Implicados: REC_FISCAL-F06, HUB_VERIFACTU-F05, VFGW-F06, REC_ALTA-F19
 QA: qa-hub §7
 
 ### VERIFACTU-F18 Cotejar el QR en la sede de la AEAT
