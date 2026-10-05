@@ -17,25 +17,23 @@ Pasos:
 Entra: los registros, la cola y los eventos del módulo.
 Sale: nada; es consulta.
 Si falla: en la pantalla, el error con reintento; en la tarjeta de eventos, «No se han podido cargar los últimos eventos de la AEAT.».
-Implicados: pendiente
-Pendiente de enlazar: hub — panel de inicio que pinta las tarjetas de los módulos
+Implicados: HUB-F34, HUB_SHELL-F33, HUB_SHELL-F35
 QA: qa-hub §7
 
 ### VERIFACTU-F32 Impedir apagar o desinstalar con registros sin enviar
-Estado: parcial — la negativa sale en inglés en la pantalla española
+Estado: parcial — la negativa sale en inglés en la pantalla española y en un aviso que desaparece a los 2,5 segundos; en producción, desinstalar Facturación forzando deja el TPV cobrando sin factura ni registro
 Vertical: comun
 Actor: sistema
 Pantalla: Hub: Apps
 Pasos:
-1. Alguien intenta desactivar VeriFactu, o desactivar otro módulo que lo arrastra (por ejemplo, apagar Facturación apaga también VeriFactu), o desinstalar VeriFactu, también de forma forzada. Desinstalar Facturación no arrastra a VeriFactu: se niega porque VeriFactu depende de ella, y la forzada solo quita Facturación.
+1. Alguien intenta desactivar VeriFactu, o desactivar otro módulo que lo arrastra (por ejemplo, apagar Facturación apaga también VeriFactu), o desinstalar VeriFactu, también de forma forzada. Desinstalar Facturación no arrastra a VeriFactu: se niega porque VeriFactu depende de ella, y la forzada solo quita Facturación. En producción eso deja el TPV cobrando sin factura ni registro: la guarda fiscal de la desinstalación solo mira el módulo que se quita (no el conjunto, como al desactivar), y Facturación no declara régimen fiscal.
 2. Si el hub ya está en producción, el núcleo niega antes que se quede sin ningún módulo que cumpla su régimen fiscal, aunque la cola esté vacía.
 3. Después, el hub pregunta a VeriFactu cuántos registros no están aceptados (pendientes, con error, en reintento o rechazados).
 4. Si queda alguno, lo niega diciendo cuántos; si no, sigue.
 Entra: la petición de desactivar o desinstalar, del hub.
 Sale: nada si se niega: no se desactiva ni se desinstala ninguno del conjunto, y VeriFactu sigue activo y enviando.
-Si falla: la pantalla del hub enseña la frase del motor tal cual, en inglés: {n} VeriFactu record(s) have not reached the AEAT yet: send them before disabling or removing the module. Ojo: un registro rechazado cuenta como no enviado y no se puede descartar, así que mientras exista impide desactivar y desinstalar.
-Implicados: REC_FISCAL-F06
-Pendiente de enlazar: hub — desactivar y desinstalar módulos, preguntando antes al módulo si puede irse
+Si falla: la pantalla del hub enseña la frase del motor tal cual, en inglés y en un aviso que desaparece a los 2,5 segundos: {n} VeriFactu record(s) have not reached the AEAT yet: send them before disabling or removing the module. Ojo: un registro rechazado cuenta como no enviado y no se puede descartar, así que mientras exista impide desactivar y desinstalar.
+Implicados: REC_FISCAL-F06, HUB-F28, HUB-F29, HUB-F316, HUB_SHELL-F122, HUB_SHELL-F124, HUB_SHELL-F125
 QA: L-14, qa-hub §7
 
 ### VERIFACTU-F33 Cesar la actividad
@@ -50,8 +48,7 @@ Pasos:
 Entra: nada.
 Sale: nada.
 Si falla: no aplica.
-Implicados: pendiente
-Pendiente de enlazar: hub — cerrar el perfil fiscal de un negocio que cesa
+Implicados: HUB-F309
 QA: ninguno
 
 ### VERIFACTU-F34 Renovar el certificado propio
@@ -67,6 +64,5 @@ Pasos:
 Entra: el certificado nuevo y su contraseña.
 Sale: el certificado sustituido en el núcleo del hub.
 Si falla: como VERIFACTU-F02. Con el certificado caducado y el hub en producción, el cobro se niega con el motivo de certificado caducado, y «Pasar a producción» con «Tu certificado propio ha caducado y la AEAT no lo acepta…».
-Implicados: REC_FISCAL-F01
-Pendiente de enlazar: hub — sustituir el certificado del negocio sin romper la cadena
+Implicados: REC_FISCAL-F01, HUB-F302, HUB-F313
 QA: qa-hub-restaurant §7.11

@@ -17,8 +17,7 @@ Pasos:
 Entra: los registros de la cadena de ese emisor.
 Sale: el veredicto como evento «Cadena verificada» o «Cadena rota» (avisa: verifactu.chain.validated). Solo lee: no repara nada y no vuelve a auditar los importes.
 Si falla: «No se pudo validar la cadena» o el mensaje del servidor. Sin NIF los botones están apagados. Sin el permiso «Certificado del negocio (firma fiscal)» se niega, aunque solo lea.
-Implicados: pendiente
-Pendiente de enlazar: hub — motor fiscal: recalcular y comprobar las huellas de la cadena
+Implicados: HUB_VERIFACTU-F12
 QA: L-14, qa-hub §7
 
 ### VERIFACTU-F27 Consultar lo que tiene la AEAT
@@ -33,8 +32,7 @@ Pasos:
 Entra: el NIF del emisor; la respuesta de la AEAT.
 Sale: la foto de lo que tiene la AEAT, que sustituye a la anterior, y el evento «Consulta a la AEAT» (avisa: verifactu.aeat.queried). No toca la cadena.
 Si falla: «No se pudo consultar a la AEAT» o el mensaje del servidor. Un empleado recibe la petición del PIN de un responsable.
-Implicados: pendiente
-Pendiente de enlazar: hub — motor fiscal: consulta de registros a la AEAT por la vía del hub
+Implicados: HUB_VERIFACTU-F13, VFGW-F07
 QA: qa-hub §7
 
 ### VERIFACTU-F28 Recuperar la cadena desde la AEAT tras restaurar una copia
@@ -51,8 +49,7 @@ Pasos:
 Entra: el NIF del emisor y el último registro del mes en curso que tiene la AEAT. Si ese último es la muestra de una prueba en vivo con certificado propio (VERIFACTU-F10), la cadena se ancla sobre ella.
 Sale: un ancla nueva en la cadena del entorno actual (avisa: verifactu.chain.recovered) y la foto de la AEAT actualizada.
 Si falla: si la AEAT no tiene ningún registro de ese emisor en el mes en curso (por ejemplo, al restaurar una copia a primeros de mes), no se ancla nada y sale el mensaje del servidor, que dice en español que la AEAT no devolvió registros para ese periodo y no hay nada que recuperar. Solo el administrador puede hacerlo; a los demás se les niega, sin PIN.
-Implicados: pendiente
-Pendiente de enlazar: hub — motor fiscal: anclar la cadena en el último registro de la AEAT
+Implicados: HUB_VERIFACTU-F14, VFGW-F07
 QA: qa-hub §7
 
 ### VERIFACTU-F29 Continuar la cadena de otra aplicación (migración)
@@ -68,8 +65,7 @@ Pasos:
 Entra: la última huella de la aplicación anterior, que escribe la persona; sin número ni fecha, el sistema pone un número de recuperación y la fecha de hoy.
 Sale: un ancla nueva en la cadena (avisa: verifactu.chain.recovered).
 Si falla: una huella que no tiene 64 caracteres hexadecimales: «La huella debe tener 64 caracteres hexadecimales» y no se pide confirmación. Otro fallo: «No se pudo recuperar la cadena» o el mensaje del servidor. Solo el administrador puede hacerlo.
-Implicados: pendiente
-Pendiente de enlazar: hub — motor fiscal: anclar la cadena en una huella aportada a mano
+Implicados: HUB_VERIFACTU-F15
 QA: qa-hub §7
 
 ### VERIFACTU-F30 Anular un registro enviado por error
@@ -85,6 +81,5 @@ Pasos:
 Entra: los datos de la factura que se anula, que da la persona.
 Sale: el registro de anulación sellado y enviado (avisa: verifactu.record.created). La factura sigue existiendo en Facturación: anular el registro no la borra.
 Si falla: como VERIFACTU-F15.
-Implicados: INVOICE-F07, REC_FISCAL-F13
-Pendiente de enlazar: hub — motor fiscal: registro de anulación y su huella
+Implicados: INVOICE-F07, REC_FISCAL-F13, HUB_VERIFACTU-F03
 QA: L-04 (discrepa), qa-hub §7 (discrepa)
