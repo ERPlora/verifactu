@@ -455,8 +455,8 @@ discrepancia; manda el código.
   manejador y no sella (F09).
 - **Aviso al subir el certificado**: dice solo «Subido el», sin fecha; el texto «Certificado subido»
   existe en el catálogo y no se usa (F02).
-- **Desactivar con registros sin enviar**: la pantalla del hub enseña la frase del motor en inglés; el
-  hub no tiene traducción para ese código (F32).
+- **Desactivar con registros sin enviar**: la pantalla del hub ya la traduce (ERPlora/hub#2579), pero
+  no dice cuántos registros faltan y el aviso desaparece a los 2,5 s (F32).
 - **Capacidades**: `docs/overview.md`, `docs/concepts.md` y el README dicen que el módulo declara dos
   (certificado y red); `module.json` solo declara la del certificado.
 - **Motivo de no tener vía en el envío manual**: dice que se suba el `.p12` en Ajustes → Negocio; se sube en

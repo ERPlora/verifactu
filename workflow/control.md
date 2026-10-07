@@ -21,7 +21,7 @@ Implicados: HUB-F34, HUB_SHELL-F33, HUB_SHELL-F35, REC_ALTA-F19
 QA: qa-hub §7
 
 ### VERIFACTU-F32 Impedir apagar o desinstalar con registros sin enviar
-Estado: parcial — la negativa sale en inglés en la pantalla española y en un aviso que desaparece a los 2,5 segundos
+Estado: parcial — la negativa sale en un aviso que desaparece a los 2,5 segundos (ERPlora/hub#2594) y la pantalla no dice cuántos registros faltan (ERPlora/hub#2595)
 Vertical: comun
 Actor: sistema
 Pantalla: Hub: Apps
@@ -32,7 +32,7 @@ Pasos:
 4. Si queda alguno, lo niega diciendo cuántos; si no, sigue.
 Entra: la petición de desactivar o desinstalar, del hub.
 Sale: nada si se niega: no se desactiva ni se desinstala ninguno del conjunto, y VeriFactu sigue activo y enviando.
-Si falla: la pantalla del hub enseña la frase del motor tal cual, en inglés y en un aviso que desaparece a los 2,5 segundos: {n} VeriFactu record(s) have not reached the AEAT yet: send them before disabling or removing the module. Ojo: un registro rechazado cuenta como no enviado y no se puede descartar, así que mientras exista impide desactivar y desinstalar.
+Si falla: la pantalla del hub traduce la negativa por su código (`verifactu.unsent_records`, ERPlora/hub#2579), en un aviso que desaparece a los 2,5 segundos: «VeriFactu aún tiene registros que la AEAT no ha aceptado. Abre VeriFactu para enviarlos o corregirlos y vuelve a intentarlo.». El número solo viaja en la frase inglesa del hub para el registro y la API ({n} VeriFactu record(s) have not reached the AEAT yet…), no en la pantalla. Ojo: un registro rechazado cuenta como no enviado y no se puede descartar, así que mientras exista impide desactivar y desinstalar.
 Implicados: REC_FISCAL-F06, HUB-F28, HUB-F29, HUB-F316, HUB_SHELL-F122, HUB_SHELL-F124, HUB_SHELL-F125
 QA: L-14, qa-hub §7
 
