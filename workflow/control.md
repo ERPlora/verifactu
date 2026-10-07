@@ -21,13 +21,13 @@ Implicados: HUB-F34, HUB_SHELL-F33, HUB_SHELL-F35, REC_ALTA-F19
 QA: qa-hub §7
 
 ### VERIFACTU-F32 Impedir apagar o desinstalar con registros sin enviar
-Estado: parcial — la negativa sale en inglés en la pantalla española y en un aviso que desaparece a los 2,5 segundos; en producción, desinstalar Facturación forzando deja el TPV cobrando sin factura ni registro
+Estado: parcial — la negativa sale en inglés en la pantalla española y en un aviso que desaparece a los 2,5 segundos
 Vertical: comun
 Actor: sistema
 Pantalla: Hub: Apps
 Pasos:
-1. Alguien intenta desactivar VeriFactu, o desactivar otro módulo que lo arrastra (por ejemplo, apagar Facturación apaga también VeriFactu), o desinstalar VeriFactu, también de forma forzada. Desinstalar Facturación no arrastra a VeriFactu: se niega porque VeriFactu depende de ella, y la forzada solo quita Facturación. En producción eso deja el TPV cobrando sin factura ni registro: la guarda fiscal de la desinstalación solo mira el módulo que se quita (no el conjunto, como al desactivar), y Facturación no declara régimen fiscal.
-2. Si el hub ya está en producción, el núcleo niega antes que se quede sin ningún módulo que cumpla su régimen fiscal, aunque la cola esté vacía.
+1. Alguien intenta desactivar VeriFactu, o desactivar otro módulo que lo arrastra (por ejemplo, apagar Facturación apaga también VeriFactu), o desinstalar VeriFactu, también de forma forzada, o desinstalar Facturación: sin confirmar se niega porque VeriFactu depende de ella, y al confirmar la pregunta del hub se desinstala junto con VeriFactu (HUB-F29), así que pasa por las mismas preguntas que desinstalar VeriFactu.
+2. Si el hub ya está en producción, el núcleo niega antes que se quede sin ningún módulo que cumpla su régimen fiscal, aunque la cola esté vacía; mira todo lo que se iría (al desactivar, lo que se apaga con él; al desinstalar confirmando, las apps que se desinstalan con él).
 3. Después, el hub pregunta a VeriFactu cuántos registros no están aceptados (pendientes, con error, en reintento o rechazados).
 4. Si queda alguno, lo niega diciendo cuántos; si no, sigue.
 Entra: la petición de desactivar o desinstalar, del hub.
