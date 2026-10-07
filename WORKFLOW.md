@@ -324,9 +324,10 @@ Solo las que el código hace cumplir:
   registro ya está aceptado por la AEAT; en cualquier otro estado la operación entera se deshace
   (VERIFACTU-F23).
 - **No se apaga ni se desinstala con registros sin enviar**: el hub lo niega diciendo cuántos quedan,
-  también cuando lo arrastra la desactivación de otro módulo (por ejemplo, apagar Facturación) y en
-  una desinstalación forzada de VeriFactu. Con el hub en producción, además, no se puede quitar el
-  último módulo que cumple su régimen fiscal aunque la cola esté vacía (VERIFACTU-F32).
+  también cuando lo arrastra la desactivación de otro módulo (por ejemplo, apagar Facturación), en
+  una desinstalación forzada de VeriFactu y al desinstalar confirmando Facturación, que se lo lleva
+  con ella. Con el hub en producción, además, no se puede quitar el último módulo que cumple su
+  régimen fiscal aunque la cola esté vacía, tampoco arrastrado por otro (VERIFACTU-F32).
 - **Producción no tiene vuelta atrás desde la primera rectificativa**: el núcleo niega volver a pruebas
   en cuanto se emite la primera rectificativa en producción, aunque su registro no haya salido aún. Una
   venta o una factura normal no la cierra: es un hueco, no una regla (ERPlora/hub#2498). El módulo
